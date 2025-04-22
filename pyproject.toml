@@ -1,0 +1,18 @@
+[tool.poetry]
+name = "pymut"
+version = "0.1.0"
+description = ""
+authors = ["Luis <lruizm4@alumnos.nebrija.es>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+pandas = "^2.2.3"
+
+
+[tool.poetry.group.dev.dependencies]
+mkdocs = "^1.6.1"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
