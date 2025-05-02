@@ -1,1 +1,37 @@
-site_name: My Docs
+site_name: pyMut
+site_description: Una librería Python para visualizar mutaciones genéticas
+site_author: Your Name
+
+repo_name: yourusername/pyMut
+repo_url: https://github.com/yourusername/pyMut
+
+theme:
+  name: material
+  palette:
+    primary: indigo
+    accent: indigo
+  icon:
+    repo: fontawesome/brands/github
+
+nav:
+  - Inicio: index.md
+  - Guía de Usuario:
+      - Instalación: user-guide/installation.md
+      - Uso Básico: user-guide/basic-usage.md
+      - Ejemplos: user-guide/examples.md
+  - API:
+      - PyMutation: api/core.md
+      - Visualizaciones: api/visualizations.md
+      - Utilidades: api/utils.md
+  - Contribuir: contributing.md
+
+markdown_extensions:
+  - admonition
+  - codehilite
+  - footnotes
+  - pymdownx.highlight
+  - pymdownx.superfences
+  
+plugins:
+  - search
+  - mkdocstrings:
