@@ -60,3 +60,112 @@ class PyMutation:
         
         # Generar el gráfico de resumen
         return create_summary_plot(processed_data, figsize, title)
+    
+    def variant_classification_plot(self,
+                                  figsize: Tuple[int, int] = (8, 6),
+                                  title: str = "Variant Classification") -> plt.Figure:
+        """
+        Genera un gráfico de barras horizontal mostrando la distribución de clasificaciones de variantes.
+        
+        Args:
+            figsize: Tamaño de la figura.
+            title: Título del gráfico.
+            
+        Returns:
+            Figura de matplotlib con el gráfico de clasificación de variantes.
+        """
+        from .visualizations.summary import create_variant_classification_plot
+        from .utils.data_processing import extract_variant_classifications
+        
+        # Preprocesar los datos para asegurar que tenemos la columna necesaria
+        processed_data = extract_variant_classifications(
+            self.data, 
+            variant_column="Variant_Classification",
+            funcotation_column="FUNCOTATION"
+        )
+        
+        # Crear figura y ejes
+        fig, ax = plt.subplots(figsize=figsize)
+        
+        # Generar el gráfico
+        create_variant_classification_plot(processed_data, ax=ax)
+        
+        # Configurar título
+        if title:
+            fig.suptitle(title, fontsize=16)
+        
+        plt.tight_layout()
+        return fig
+    
+    def variant_type_plot(self,
+                        figsize: Tuple[int, int] = (8, 6),
+                        title: str = "Variant Type") -> plt.Figure:
+        """
+        Genera un gráfico de barras horizontal mostrando la distribución de tipos de variantes.
+        
+        Args:
+            figsize: Tamaño de la figura.
+            title: Título del gráfico.
+            
+        Returns:
+            Figura de matplotlib con el gráfico de tipos de variantes.
+        """
+        from .visualizations.summary import create_variant_type_plot
+        from .utils.data_processing import extract_variant_types
+        
+        # Preprocesar los datos para asegurar que tenemos la columna necesaria
+        processed_data = extract_variant_types(
+            self.data,
+            variant_column="Variant_Type",
+            funcotation_column="FUNCOTATION"
+        )
+        
+        # Crear figura y ejes
+        fig, ax = plt.subplots(figsize=figsize)
+        
+        # Generar el gráfico
+        create_variant_type_plot(processed_data, ax=ax)
+        
+        # Configurar título
+        if title:
+            fig.suptitle(title, fontsize=16)
+        
+        plt.tight_layout()
+        return fig
+    
+    def snv_class_plot(self,
+                      figsize: Tuple[int, int] = (8, 6),
+                      title: str = "SNV Class",
+                      ref_column: str = "REF",
+                      alt_column: str = "ALT") -> plt.Figure:
+        """
+        Genera un gráfico de barras horizontal mostrando la distribución de clases de SNV.
+        
+        Args:
+            figsize: Tamaño de la figura.
+            title: Título del gráfico.
+            ref_column: Nombre de la columna que contiene el alelo de referencia.
+            alt_column: Nombre de la columna que contiene el alelo alternativo.
+            
+        Returns:
+            Figura de matplotlib con el gráfico de clases de SNV.
+        """
+        from .visualizations.summary import create_snv_class_plot
+        
+        # Crear figura y ejes
+        fig, ax = plt.subplots(figsize=figsize)
+        
+        # Generar el gráfico
+        create_snv_class_plot(
+            self.data, 
+            ref_column=ref_column,
+            alt_column=alt_column,
+            ax=ax
+        )
+        
+        # Configurar título
+        if title:
+            fig.suptitle(title, fontsize=16)
+        
+        plt.tight_layout()
+        return fig

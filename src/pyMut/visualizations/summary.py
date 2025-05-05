@@ -121,18 +121,16 @@ def create_variant_type_plot(data: pd.DataFrame,
 
 
 def create_snv_class_plot(data: pd.DataFrame,
-                        genome_change_column: str = "Genome_Change",
-                        ref_allele_column: str = "Reference_Allele",
-                        tumor_allele_column: str = "Tumor_Allele",
+                        ref_column: str = "REF",
+                        alt_column: str = "ALT",
                         ax: Optional[plt.Axes] = None) -> plt.Axes:
     """
     Crea un diagrama de barras horizontal mostrando el recuento por cada clase de SNV.
     
     Args:
         data: DataFrame con los datos de mutaciones.
-        genome_change_column: Nombre de la columna que contiene el cambio genómico.
-        ref_allele_column: Nombre de la columna que contiene el alelo de referencia.
-        tumor_allele_column: Nombre de la columna que contiene el alelo tumoral.
+        ref_column: Nombre de la columna que contiene el alelo de referencia.
+        alt_column: Nombre de la columna que contiene el alelo alternativo (tumoral).
         ax: Eje de matplotlib donde dibujar. Si es None, se crea uno nuevo.
         
     Returns:
@@ -142,18 +140,14 @@ def create_snv_class_plot(data: pd.DataFrame,
     df_copy = data.copy()
     
     # Verificar si podemos generar la información de SNV Class
-    if genome_change_column in df_copy.columns:
-        # Extraer la SNV Class aplicando la expresión regular: se busca al final de la cadena un patrón "X>Y"
-        df_copy['SNV_Class'] = df_copy[genome_change_column].astype(str).str.extract(r'([A-Z]>[A-Z])$')
-    elif ref_allele_column in df_copy.columns and tumor_allele_column in df_copy.columns:
-        # Si no tenemos la columna Genome_Change pero tenemos las columnas de alelos,
-        # podemos generar la SNV Class combinando el alelo de referencia y el alelo tumoral
-        df_copy['SNV_Class'] = df_copy[ref_allele_column] + '>' + df_copy[tumor_allele_column]
+    if ref_column in df_copy.columns and alt_column in df_copy.columns:
+        # Generar la SNV Class combinando el alelo de referencia y el alelo alternativo
+        df_copy['SNV_Class'] = df_copy[ref_column] + '>' + df_copy[alt_column]
         # Filtrar para mantener solo los cambios de nucléotido único (un solo carácter a cada lado)
         df_copy = df_copy[df_copy['SNV_Class'].str.match(r'^[A-Z]>[A-Z]$')]
     else:
         # Si no podemos generar la información, devolver un eje vacío
-        print("No se pueden generar las clases de SNV: faltan las columnas necesarias.")
+        print(f"No se pueden generar las clases de SNV: faltan las columnas {ref_column} y/o {alt_column}.")
         if ax is None:
             _, ax = plt.subplots(figsize=(8, 6))
         ax.text(0.5, 0.5, "No hay datos disponibles para SNV Class", 
@@ -255,7 +249,10 @@ def create_summary_plot(data: pd.DataFrame,
     create_variant_type_plot(processed_data, ax=axs[0, 1])
     
     # Crear el gráfico de clases de SNV
-    create_snv_class_plot(processed_data, ax=axs[0, 2])
+    create_snv_class_plot(processed_data, 
+                         ref_column="REF",
+                         alt_column="ALT",
+                         ax=axs[0, 2])
     
     # TODO: Implementar los demás gráficos de resumen
     # Por ejemplo:

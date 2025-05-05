@@ -22,7 +22,7 @@ from src.pyMut.utils.data_processing import read_tsv
 
 # Ruta al archivo de ejemplo
 EXAMPLE_FILE = os.path.abspath(os.path.join(os.path.dirname(__file__), 
-                                         '../src/pyMut/data/examples/sample_mutations.tsv'))
+                                         '../src/pyMut/data/examples/tcga_laml_converted.tsv'))
 
 class TestPyMutation(unittest.TestCase):
     """Pruebas para la clase PyMutation."""
