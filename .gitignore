@@ -125,3 +125,6 @@ dmypy.json
 
 # Intellij IDEA
 .idea
+
+# Data
+data
