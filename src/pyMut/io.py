@@ -3,10 +3,13 @@ import logging
 import re
 from pathlib import Path
 from typing import List
-
+import io
+from pathlib import Path
+import numpy as np
 import pandas as pd
 
 from .core import PyMutation, MutationMetadata
+from .utils.format import formatear_rs, formatear_chr
 
 # ────────────────────────────────────────────────────────────────
 # LOGGING DEL MÓDULO
@@ -225,3 +228,111 @@ def read_vcf(path: str | Path) -> PyMutation:
     )
     logger.info("VCF procesado con éxito: %d filas, %d columnas.", *vcf_df.shape)
     return PyMutation(data=vcf_df, metadata=metadata)
+
+
+# ════════════════════════════════════════════════════════════════
+# FUNCIÓN PRINCIPAL: read_maf
+# ════════════════════════════════════════════════════════════════
+def read_maf(path: str | Path, fasta: str | Path | None = None) -> PyMutation:
+    """
+    Lee un archivo MAF (.maf o .maf.gz) y lo transforma al mismo
+    formato ancho que produce `read_vcf`.
+    """
+    path = Path(path)
+    logger.info("Iniciando lectura de MAF: %s", path)
+
+    # ─── 1) SEPARAR COMENTARIOS (#) DEL CUERPO ──────────────────────────────
+    comments: list[str] = []
+    buf = io.StringIO()
+    try:
+        with _open_text_maybe_gzip(path) as fh:
+            for line in fh:
+                if line.startswith("#"):
+                    comments.append(line.rstrip("\n"))
+                else:
+                    buf.write(line)
+        buf.seek(0)
+        logger.debug("Comentarios encontrados: %d", len(comments))
+    except FileNotFoundError:
+        logger.error("Archivo no encontrado: %s", path)
+        raise
+    except Exception:
+        logger.exception("Error al leer encabezado/comentarios del MAF.")
+        raise
+
+    # ─── 2) CARGAR DATAFRAME -------------------------------------------------
+    csv_kwargs = dict(sep="\t", dtype_backend="pyarrow", low_memory=False)
+    try:
+        logger.info("Leyendo MAF con motor 'pyarrow'…")
+        maf = pd.read_csv(buf, **csv_kwargs)
+        logger.info("Lectura con 'pyarrow' completada.")
+    except (ValueError, ImportError) as err:
+        logger.warning("Falló 'pyarrow' (%s). Reintentando con motor 'c'.", err)
+        buf.seek(0)
+        maf = pd.read_csv(buf, engine="c", low_memory=False, sep="\t")
+
+    # ─── 3) VALIDAR Y ESTANDARIZAR COLUMNAS ---------------------------------
+    _standardise_maf_columns(maf)
+    missing = [c for c in required_columns_MAF if c not in maf.columns]
+    if missing:
+        msg = f"Faltan columnas requeridas en el MAF: {', '.join(missing)}"
+        logger.error(msg)
+        raise ValueError(msg)
+    logger.debug("Columnas requeridas presentes.")
+
+    # ─── 4) GENERAR CAMPOS ESTILO-VCF ---------------------------------------
+    maf["CHROM"] = maf["Chromosome"].astype(str).map(formatear_chr)
+    maf["POS"] = maf["Start_Position"].astype("int64")
+
+    if "dbSNP_RS" in maf.columns:
+        maf["ID"] = (
+            maf["dbSNP_RS"]
+            .fillna(".")
+            .replace(".", np.nan)
+            .map(lambda x: formatear_rs(str(x)) if pd.notna(x) else ".")
+            .fillna(".")
+        )
+    else:
+        maf["ID"] = "."
+    maf["REF"] = maf["Reference_Allele"].astype(str)
+    maf["ALT"] = maf["Tumor_Seq_Allele2"].fillna(maf["Tumor_Seq_Allele1"]).astype(str)
+    maf["QUAL"] = "."
+    maf["FILTER"] = "."
+
+
+    # ─── 5) EXPANDIR MUESTRAS A COLUMNAS ------------------------------------
+    samples = maf["Tumor_Sample_Barcode"].dropna().unique().tolist()
+    logger.info("Se detectaron %d muestras únicas.", len(samples))
+
+    ref_ref = maf["REF"] + "|" + maf["REF"]
+    for sample in samples:
+        maf[sample] = ref_ref  # por defecto REF|REF
+
+    ref_alt = maf["REF"] + "|" + maf["ALT"]
+    for sample in samples:
+        mask = maf["Tumor_Sample_Barcode"] == sample
+        maf.loc[mask, sample] = ref_alt[mask]
+
+    # ─── 5.5) ELIMINAR COLUMNAS NO NECESARIAS -------------------------------
+    # Ya no necesitamos ni 'Tumor_Sample_Barcode' (las mutaciones quedaron
+    # expandidas en columnas) ni 'Chromosome' (ahora está en 'CHROM').
+    maf.drop(columns=["Tumor_Sample_Barcode", "Chromosome"], inplace=True)
+
+    # ─── 6) ORDENAR COLUMNAS -------------------------------------------------
+    vcf_like = ["CHROM", "POS", "ID", "REF", "ALT", "QUAL", "FILTER"]
+    final_cols = vcf_like + samples + [
+        c for c in maf.columns if c not in vcf_like + samples
+    ]
+    maf = maf[final_cols]
+
+    # ─── 7) CONSTRUIR OBJETO PyMutation -------------------------------------
+    metadata = MutationMetadata(
+        source_format="MAF",
+        file_path=str(path),
+        filters=["."],
+        fasta=str(fasta) if fasta else "",
+        notes="\n".join(comments) if comments else None,
+    )
+
+    logger.info("MAF procesado con éxito: %d filas, %d columnas.", *maf.shape)
+    return PyMutation(maf, metadata)
