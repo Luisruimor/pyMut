@@ -1,20 +1,42 @@
-[tool.poetry]
-name = "pymut"
-version = "0.1.0"
-description = ""
-authors = ["Luis <lruizm4@alumnos.nebrija.es>"]
-readme = "README.md"
-
-[tool.poetry.dependencies]
-python = "^3.10"
-pandas = "^2.2.3"
-
-
-[tool.poetry.group.dev.dependencies]
-mkdocs = "^1.6.1"
-pytest = "^8.3.5"
-pytest-cov = "^6.1.1"
-
 [build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+requires = ["setuptools>=42", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pyMut"
+version = "0.1.0"
+description = "Una librería Python para visualizar mutaciones genéticas"
+readme = "README.md"
+authors = [
+    {name = "Your Name", email = "your.email@example.com"}
+]
+license = {text = "MIT"}
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "pandas>=1.3.0",
+    "matplotlib>=3.4.0",
+    "numpy>=1.20.0",
+    "seaborn>=0.11.0",
+]
+requires-python = ">=3.7"
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=6.0",
+    "black>=21.5b2",
+    "isort>=5.9.1",
+    "flake8>=3.9.2",
+]
+docs = [
+    "mkdocs>=1.2.0",
+    "mkdocstrings>=0.15.0",
+    "mkdocs-material>=7.1.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/yourusername/pyMut"
+Issues = "https://github.com/yourusername/pyMut/issues"

@@ -1,17 +1,41 @@
-# Welcome to MkDocs
+# pyMut
 
-For full documentation visit [mkdocs.org](https://www.mkdocs.org).
+Una librería Python para visualizar mutaciones genéticas a partir de archivos .TSV.
 
-## Commands
+## Descripción
 
-* `mkdocs new [dir-name]` - Create a new project.
-* `mkdocs serve` - Start the live-reloading docs server.
-* `mkdocs build` - Build the documentation site.
-* `mkdocs -h` - Print help message and exit.
+pyMut es una herramienta de visualización para datos de mutaciones genéticas. Permite generar visualizaciones de resumen para entender mejor los patrones y distribuciones de las mutaciones en los datos.
 
-## Project layout
+## Características
 
-    mkdocs.yml    # The configuration file.
-    docs/
-        index.md  # The documentation homepage.
-        ...       # Other markdown pages, images and other files.
+- Visualizaciones de resumen estadístico:
+  - Variant Classification: Distribución de clasificaciones de variantes
+  - Variant Type: Distribución de tipos de variantes (SNP, INS, DEL, etc.)
+  - SNV Class: Distribución de clases de SNV (cambios nucleotídicos como A>G, C>T, etc.)
+
+## Instalación
+
+```bash
+pip install pyMut
+```
+
+## Uso básico
+
+```python
+from pyMut import PyMutation
+import pandas as pd
+
+# Cargar datos de mutaciones desde un archivo TSV
+data = pd.read_csv("mutations.tsv", sep="\t")
+
+# Crear un objeto PyMutation
+pyMut = PyMutation(data)
+
+# Generar un gráfico de resumen
+fig = pyMut.summary_plot()
+fig.savefig("summary.png")
+```
+
+## Proyección futura
+
+En el futuro, pyMut se ampliará con más visualizaciones y funcionalidades para un análisis más completo de mutaciones genéticas, siempre manteniendo la simplicidad y facilidad de uso.
