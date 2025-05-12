@@ -1,7 +1,6 @@
 import gzip
 import logging
 import re
-from pathlib import Path
 from typing import List
 import io
 from pathlib import Path
@@ -74,6 +73,47 @@ def _open_text_maybe_gzip(path: str | Path):
         return gzip.open(path, "rt", encoding="utf-8", errors="replace")
     logger.debug("Abriendo %s como texto plano.", path)
     return open(path, encoding="utf-8", errors="replace")
+
+def _gt_to_alleles(gt: str, ref: str, alt: str) -> str:
+    """
+    Convierte un genotipo «numérico» a alelos reales.
+    --------
+    0|1  →  T|C
+    1/1  →  C/C
+    """
+    if not gt:           # cadena vacía
+        return ""
+    # Nos quedamos sólo con la parte anterior a ':' si la hubiera
+    gt_core = gt.split(":", 1)[0]
+
+    # Caso “.” (sin llamada)
+    if gt_core in {".", "./.", ".|."}:
+        return gt_core
+
+    # Determinar el separador utilizado (‘|’ preferentemente)
+    sep = "|" if "|" in gt_core else "/"
+
+    # Lista con los alelos alternativos (pueden ser varios)
+    alt_list: list[str] = alt.split(",") if alt else []
+
+    allele_indices = gt_core.replace("|", "/").split("/")
+    translated: list[str] = []
+    for idx in allele_indices:
+        if idx == ".":
+            translated.append(".")
+            continue
+        try:
+            i = int(idx)
+        except ValueError:
+            translated.append(".")
+            continue
+
+        if i == 0:
+            translated.append(ref)
+        else:
+            # i-1 porque ALT[0] es el alelo «1»
+            translated.append(alt_list[i - 1] if i - 1 < len(alt_list) else ".")
+    return sep.join(translated)
 
 
 def _parse_info_column(info_series: pd.Series) -> pd.DataFrame:
@@ -174,6 +214,22 @@ def read_vcf(path: str | Path) -> PyMutation:
         msg = f"Faltan columnas requeridas en el VCF: {', '.join(missing)}"
         logger.error(msg)
         raise ValueError(msg)
+
+    if "FORMAT" in vcf_df.columns:
+        vcf_df.drop(columns="FORMAT", inplace=True)
+
+    # Convertir genotipos en columnas de muestras a alelos reales
+    standard_cols = set(required_columns_VCF + ["INFO", "QUAL"])
+    sample_cols = [col for col in vcf_df.columns if col not in standard_cols]
+
+    if sample_cols:
+        logger.info("Convirtiendo genotipos a alelos para %d muestras...", len(sample_cols))
+        for col in sample_cols:
+            vcf_df[col] = vcf_df.apply(
+                lambda row: _gt_to_alleles(row[col], row["REF"], row["ALT"]),
+                axis=1
+            )
+
 
     # ─── 4) EXPANSIÓN DE LA COLUMNA INFO ────────────────────────────────────
     if "INFO" in vcf_df.columns:
@@ -304,9 +360,16 @@ def read_maf(path: str | Path, fasta: str | Path | None = None) -> PyMutation:
     samples = maf["Tumor_Sample_Barcode"].dropna().unique().tolist()
     logger.info("Se detectaron %d muestras únicas.", len(samples))
 
+    # Genera un DataFrame con tantas columnas como muestras y con el valor por defecto
     ref_ref = maf["REF"] + "|" + maf["REF"]
-    for sample in samples:
-        maf[sample] = ref_ref  # por defecto REF|REF
+    default_cols = pd.DataFrame(
+        {sample: ref_ref for sample in samples},
+        index=maf.index,
+        dtype="object"            # evita castings innecesarios
+    )
+
+    # Añade todas las columnas de una sola vez
+    maf = pd.concat([maf, default_cols], axis=1)
 
     ref_alt = maf["REF"] + "|" + maf["ALT"]
     for sample in samples:
