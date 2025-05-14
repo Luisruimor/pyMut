@@ -42,7 +42,7 @@ def main():
     print("Gráfico de resumen guardado en: summary_api_example.png")
     
     # 2. Generar visualizaciones individuales
-    # print("\n2. Generando visualizaciones individuales...")
+    print("\n2. Generando visualizaciones individuales...")
     
     # 2.1 Clasificación de variantes
     # print("\n2.1 Generando gráfico de clasificación de variantes...")
@@ -62,12 +62,27 @@ def main():
     # snv_fig = pyMut.snv_class_plot(title="Clases de SNV")
     # snv_fig.savefig("snv_class_api_example.png")
     # print("Gráfico guardado en: snv_class_api_example.png")
+    #
+    # 2.4 Variantes por muestra (TMB)
+    print("\n2.4 Generando gráfico de variantes por muestra (TMB)...")
+    tmb_fig = pyMut.variants_per_sample_plot(
+        title="Carga Mutacional por Muestra (TMB)",
+        show_interactive=True  # Descomenta esta línea para mostrar la visualización interactiva
+    )
+    tmb_fig.savefig("variants_per_sample_api_example.png")
+    print("Gráfico guardado en: variants_per_sample_api_example.png")
     
-    # print("\nTodos los gráficos han sido generados correctamente.")
+    print("\nEl ejemplo de generación de gráficos ha finalizado. Descomenta las secciones para generar visualizaciones individuales.")
     
-    # Mostrar un gráfico como ejemplo (descomenta para mostrar interactivamente)
+    # Mostrar un gráfico como ejemplo (muestra interactivamente la visualización)
+    # Para ver la visualización en ventana interactiva, puedes usar cualquiera de estas opciones:
+
+    # Opción 1: Usar plt.figure() y plt.show()
     plt.figure(summary_fig.number)
     plt.show()
+
+    # Opción 2: Generar directamente con show_interactive=True (requiere implementar este parámetro en summary_plot)
+    # summary_fig = pyMut.summary_plot(title="Resumen de Mutaciones", show_interactive=True)
 
 if __name__ == "__main__":
     main() 
