@@ -223,33 +223,33 @@ def create_summary_plot(data: pd.DataFrame,
     Returns:
         Figura con las visualizaciones de resumen.
     """
-    from ..utils.data_processing import extract_variant_classifications, extract_variant_types
+    # from ..utils.data_processing import extract_variant_classifications, extract_variant_types
     
     # Crear una figura con múltiples subplots
     fig, axs = plt.subplots(2, 3, figsize=figsize)
     fig.suptitle(title, fontsize=16)
     
     # Preprocesar los datos para asegurar que tenemos las columnas necesarias
-    processed_data = extract_variant_classifications(
-        data, 
-        variant_column="Variant_Classification",
-        funcotation_column="FUNCOTATION"
-    )
+    # processed_data = extract_variant_classifications(
+    # data, 
+    # variant_column="Variant_Classification",
+    # funcotation_column="FUNCOTATION"
+    # )
     
-    processed_data = extract_variant_types(
-        processed_data,
-        variant_column="Variant_Type",
-        funcotation_column="FUNCOTATION"
-    )
+    # processed_data = extract_variant_types(
+    # processed_data,
+    # variant_column="Variant_Type",
+    # funcotation_column="FUNCOTATION"
+    # )
     
     # Crear el gráfico de clasificación de variantes
-    create_variant_classification_plot(processed_data, ax=axs[0, 0])
+    create_variant_classification_plot(data, ax=axs[0, 0])
     
     # Crear el gráfico de tipos de variantes
-    create_variant_type_plot(processed_data, ax=axs[0, 1])
+    create_variant_type_plot(data, ax=axs[0, 1])
     
     # Crear el gráfico de clases de SNV
-    create_snv_class_plot(processed_data, 
+    create_snv_class_plot(data, 
                          ref_column="REF",
                          alt_column="ALT",
                          ax=axs[0, 2])

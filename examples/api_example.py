@@ -42,31 +42,32 @@ def main():
     print("Gráfico de resumen guardado en: summary_api_example.png")
     
     # 2. Generar visualizaciones individuales
-    print("\n2. Generando visualizaciones individuales...")
+    # print("\n2. Generando visualizaciones individuales...")
     
     # 2.1 Clasificación de variantes
-    print("\n2.1 Generando gráfico de clasificación de variantes...")
-    vc_fig = pyMut.variant_classification_plot(title="Clasificación de Variantes")
-    vc_fig.savefig("variant_classification_api_example.png")
-    print("Gráfico guardado en: variant_classification_api_example.png")
+    # print("\n2.1 Generando gráfico de clasificación de variantes...")
+    # vc_fig = pyMut.variant_classification_plot(title="Clasificación de Variantes")
+    # vc_fig.savefig("variant_classification_api_example.png")
+    # print("Gráfico guardado en: variant_classification_api_example.png")
     
-    # 2.2 Tipos de variantes
-    print("\n2.2 Generando gráfico de tipos de variantes...")
-    vt_fig = pyMut.variant_type_plot(title="Tipos de Variantes")
-    vt_fig.savefig("variant_type_api_example.png")
-    print("Gráfico guardado en: variant_type_api_example.png")
+    # Descomenta las siguientes secciones para generar otros gráficos individuales:
+    # # 2.2 Tipos de variantes
+    # print("\n2.2 Generando gráfico de tipos de variantes...")
+    # vt_fig = pyMut.variant_type_plot(title="Tipos de Variantes")
+    # vt_fig.savefig("variant_type_api_example.png")
+    # print("Gráfico guardado en: variant_type_api_example.png")
+    # 
+    # # 2.3 Clases de SNV
+    # print("\n2.3 Generando gráfico de clases de SNV...")
+    # snv_fig = pyMut.snv_class_plot(title="Clases de SNV")
+    # snv_fig.savefig("snv_class_api_example.png")
+    # print("Gráfico guardado en: snv_class_api_example.png")
     
-    # 2.3 Clases de SNV
-    print("\n2.3 Generando gráfico de clases de SNV...")
-    snv_fig = pyMut.snv_class_plot(title="Clases de SNV")
-    snv_fig.savefig("snv_class_api_example.png")
-    print("Gráfico guardado en: snv_class_api_example.png")
-    
-    print("\nTodos los gráficos han sido generados correctamente.")
+    # print("\nTodos los gráficos han sido generados correctamente.")
     
     # Mostrar un gráfico como ejemplo (descomenta para mostrar interactivamente)
-    # plt.figure(summary_fig.number)
-    # plt.show()
+    plt.figure(summary_fig.number)
+    plt.show()
 
 if __name__ == "__main__":
     main() 
