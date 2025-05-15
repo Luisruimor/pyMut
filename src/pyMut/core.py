@@ -25,8 +25,8 @@ class PyMutation:
         self.data = data
     
     def summary_plot(self, 
-                   figsize: Tuple[int, int] = (12, 10),
-                   title: str = "Resumen de mutaciones",
+                   figsize: Tuple[int, int] = (16, 12),
+                   title: str = "Resumen de Mutaciones",
                    show_interactive: bool = False) -> plt.Figure:
         """
         Genera un gráfico de resumen con estadísticas generales de las mutaciones.
@@ -243,8 +243,8 @@ class PyMutation:
             ax=ax
         )
         
-        # Si se proporciona un título personalizado diferente al título por defecto con mediana
-        if title and not title.startswith("Variants per Sample (Median:"):
+        # No modificar el título si contiene la mediana
+        if title and not title.startswith("Variants per Sample"):
             fig.suptitle(title, fontsize=16, y=1.02)
         
         plt.tight_layout()

@@ -15,7 +15,8 @@ from typing import List, Dict, Union, Optional, Tuple, Any
 
 def create_variant_classification_plot(data: pd.DataFrame,
                                      variant_column: str = "Variant_Classification",
-                                     ax: Optional[plt.Axes] = None) -> plt.Axes:
+                                     ax: Optional[plt.Axes] = None,
+                                     color_map: Optional[Dict] = None) -> plt.Axes:
     """
     Crea un diagrama de barras horizontal mostrando el recuento por cada tipo de clasificación de variante.
     
@@ -23,6 +24,7 @@ def create_variant_classification_plot(data: pd.DataFrame,
         data: DataFrame con los datos de mutaciones.
         variant_column: Nombre de la columna que contiene la clasificación de variante.
         ax: Eje de matplotlib donde dibujar. Si es None, se crea uno nuevo.
+        color_map: Diccionario opcional que mapea las clasificaciones de variantes a colores.
         
     Returns:
         Eje de matplotlib con la visualización.
@@ -38,10 +40,13 @@ def create_variant_classification_plot(data: pd.DataFrame,
         _, ax = plt.subplots(figsize=(8, 6))
     
     # Crear la gráfica de barras horizontal
-    cmap = plt.colormaps['tab20']  # Obtén el colormap
-    colores = cmap(range(len(variant_counts)))  # Genera los colores necesarios
+    if color_map:
+        colors = [color_map.get(variant, cm.get_cmap('tab20')(i % 20)) for i, variant in enumerate(variant_counts.keys())]
+    else:
+        cmap = plt.colormaps['tab20']  # Obtén el colormap
+        colors = cmap(range(len(variant_counts)))  # Genera los colores necesarios
     
-    bars = ax.barh(list(variant_counts.keys()), list(variant_counts.values()), color=colores)
+    bars = ax.barh(list(variant_counts.keys()), list(variant_counts.values()), color=colors)
     
     # Ajustar título y etiquetas
     ax.set_title("Variant Classification", fontsize=14)
@@ -210,8 +215,8 @@ def create_snv_class_plot(data: pd.DataFrame,
 
 
 def create_summary_plot(data: pd.DataFrame,
-                      figsize: Tuple[int, int] = (12, 10),
-                      title: str = "Resumen de mutaciones") -> plt.Figure:
+                      figsize: Tuple[int, int] = (16, 12),
+                      title: str = "Resumen de Mutaciones") -> plt.Figure:
     """
     Crea un gráfico de resumen con múltiples visualizaciones de los datos de mutaciones.
     
@@ -223,8 +228,8 @@ def create_summary_plot(data: pd.DataFrame,
     Returns:
         Figura con las visualizaciones de resumen.
     """
-    # Crear una figura con múltiples subplots
-    fig, axs = plt.subplots(2, 3, figsize=figsize)
+    # Crear una figura con múltiples subplots, haciendo más anchos los gráficos
+    fig, axs = plt.subplots(2, 3, figsize=figsize, gridspec_kw={'width_ratios': [1.5, 1.5, 1.5]})
     fig.suptitle(title, fontsize=16)
     
     # Detectar nombres de columnas respetando capitalización original
@@ -237,9 +242,20 @@ def create_summary_plot(data: pd.DataFrame,
             if col.lower() == variant_classification_col.lower():
                 variant_classification_col = col
                 break
-                
-    # Crear el gráfico de clasificación de variantes
-    create_variant_classification_plot(data, variant_column=variant_classification_col, ax=axs[0, 0])
+    
+    # Generar un mapa de colores coherente para todas las clasificaciones de variantes
+    unique_variants = data[variant_classification_col].unique()
+    # Usar un colormap fijo para asegurar colores consistentes
+    cmap = plt.colormaps['tab20']  # Colormap con buena variedad de colores
+    variant_color_map = {variant: cmap(i % 20) for i, variant in enumerate(unique_variants)}
+    
+    # Crear el gráfico de clasificación de variantes usando el mapa de colores predefinido
+    var_class_ax = create_variant_classification_plot(
+        data, 
+        variant_column=variant_classification_col, 
+        ax=axs[0, 0],
+        color_map=variant_color_map  # Pasar el mapa de colores
+    )
     
     # Crear el gráfico de tipos de variantes
     create_variant_type_plot(data, ax=axs[0, 1])
@@ -251,14 +267,39 @@ def create_summary_plot(data: pd.DataFrame,
                          ax=axs[0, 2])
     
     # Crear el gráfico de variantes por muestra (TMB)
-    create_variants_per_sample_plot(data,
-                                   variant_column=variant_classification_col,
-                                   sample_column=sample_column,
-                                   ax=axs[1, 0])
+    # Pasando el mismo mapa de colores que usamos para el gráfico de clasificación
+    variants_ax = create_variants_per_sample_plot(
+        data,
+        variant_column=variant_classification_col,
+        sample_column=sample_column,
+        ax=axs[1, 0],
+        variant_colors=variant_color_map  # Usar el mismo mapa de colores
+    )
+    
+    # Quitar la leyenda del gráfico de clasificación de variantes
+    if var_class_ax.get_legend() is not None:
+        var_class_ax.get_legend().remove()
+    
+    # Quitar la leyenda del gráfico de variantes por muestra
+    if variants_ax.get_legend() is not None:
+        variants_ax.get_legend().remove()
+    
+    # Crear una leyenda común para los dos gráficos y colocarla en la parte inferior
+    # Crear handles y labels manualmente para la leyenda global
+    handles = []
+    labels = []
+    for variant, color in variant_color_map.items():
+        patch = plt.Rectangle((0,0), 1, 1, fc=color)
+        handles.append(patch)
+        labels.append(variant)
+    
+    # Añadir la leyenda común
+    fig.legend(handles, labels, loc='lower center', ncol=min(len(labels), 5), 
+              title=variant_classification_col, bbox_to_anchor=(0.5, 0.01))
     
     # Ajustar espaciado entre subplots
     plt.tight_layout()
-    plt.subplots_adjust(top=0.9)  # Ajustar para dejar espacio para el título principal
+    plt.subplots_adjust(top=0.9, bottom=0.12)  # Ajustar para leyenda común
     
     return fig
 
@@ -266,7 +307,8 @@ def create_summary_plot(data: pd.DataFrame,
 def create_variants_per_sample_plot(data: pd.DataFrame,
                                    variant_column: str = "Variant_Classification",
                                    sample_column: str = "Tumor_Sample_Barcode",
-                                   ax: Optional[plt.Axes] = None) -> plt.Axes:
+                                   ax: Optional[plt.Axes] = None,
+                                   variant_colors: Optional[Dict] = None) -> plt.Axes:
     """
     Crea un gráfico de barras apiladas mostrando el número de variantes por muestra (TMB)
     y su composición por tipo de variante.
@@ -279,6 +321,7 @@ def create_variants_per_sample_plot(data: pd.DataFrame,
                       o string que se usará para identificar columnas de muestra si las 
                       muestras están como columnas.
         ax: Eje de matplotlib donde dibujar. Si es None, se crea uno nuevo.
+        variant_colors: Diccionario opcional que mapea las clasificaciones de variantes a colores.
         
     Returns:
         Eje de matplotlib con la visualización.
@@ -359,7 +402,7 @@ def create_variants_per_sample_plot(data: pd.DataFrame,
             ax.set_title("Variants per Sample", fontsize=14)
             ax.axis('off')
             return ax
-            
+        
         processed_df = pd.DataFrame(samples_df)
         variant_counts = processed_df.pivot(index='Sample', columns='Variant_Classification', values='Count').fillna(0)
         
@@ -383,9 +426,22 @@ def create_variants_per_sample_plot(data: pd.DataFrame,
     if ax is None:
         _, ax = plt.subplots(figsize=(10, 6))
     
-    # Generar un colormap para las diferentes clasificaciones de variantes
-    cmap = cm.get_cmap('tab20', len(variant_counts.columns))
-    colors = [cmap(i) for i in range(len(variant_counts.columns))]
+    # Generar colores para las diferentes clasificaciones de variantes
+    if variant_colors is not None:
+        # Si se proporcionan colores específicos, usarlos para las variantes correspondientes
+        colors = []
+        for variant in variant_counts.columns:
+            # Buscar el color en el mapa de colores para esta variante exacta
+            if variant in variant_colors:
+                colors.append(variant_colors[variant])
+            else:
+                # Si no se encuentra el color exacto, usar uno predeterminado
+                cmap = cm.get_cmap('tab20', len(variant_counts.columns))
+                colors.append(cmap(len(colors) % cmap.N))
+    else:
+        # Usar el mapa de colores predeterminado
+        cmap = cm.get_cmap('tab20', len(variant_counts.columns))
+        colors = [cmap(i) for i in range(len(variant_counts.columns))]
     
     # Crear la gráfica de barras apiladas
     variant_counts.plot(kind='bar', stacked=True, ax=ax, color=colors, width=0.8)
@@ -393,13 +449,8 @@ def create_variants_per_sample_plot(data: pd.DataFrame,
     # Añadir una línea horizontal para la mediana
     ax.axhline(y=median_tmb, color='red', linestyle='--', linewidth=1)
     
-    # Añadir texto para la mediana
-    ax.text(len(variant_counts) * 0.02, median_tmb * 1.05, 
-            f"Median: {median_tmb:.1f}", 
-            color='red', fontsize=10)
-    
-    # Configurar etiquetas y título
-    ax.set_title(f"Variants per Sample (Median: {median_tmb:.1f})", fontsize=14)
+    # Configurar etiquetas y título (incluir la mediana en el título)
+    ax.set_title(f"Variants per Sample\nMedian: {median_tmb:.1f}", fontsize=14)
     ax.set_xlabel("Samples", fontsize=12)
     ax.set_ylabel("Number of Variants", fontsize=12)
     
