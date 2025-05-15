@@ -447,12 +447,20 @@ def create_summary_plot(data: pd.DataFrame,
     # Detectar nombres de columnas respetando capitalización original
     variant_classification_col = "Variant_Classification"
     sample_column = "Tumor_Sample_Barcode"
+    gene_column = "Hugo_Symbol"
     
     # Buscar variantes de capitalización para variant_classification
     if variant_classification_col not in data.columns:
         for col in data.columns:
             if col.lower() == variant_classification_col.lower():
                 variant_classification_col = col
+                break
+    
+    # Buscar variantes de capitalización para gene_column
+    if gene_column not in data.columns:
+        for col in data.columns:
+            if col.lower() == gene_column.lower():
+                gene_column = col
                 break
     
     # Generar un mapa de colores coherente para todas las clasificaciones de variantes
@@ -497,8 +505,17 @@ def create_summary_plot(data: pd.DataFrame,
         color_map=variant_color_map  # Usar el mismo mapa de colores
     )
     
-    # El último panel puede quedarse vacío o agregar información adicional
-    axs[1, 2].axis('off')  # Desactivar el último panel por ahora
+    # Crear el gráfico de top mutated genes
+    top_genes_ax = create_top_mutated_genes_plot(
+        data,
+        variant_column=variant_classification_col,
+        gene_column=gene_column,
+        sample_column=sample_column,
+        mode="variants",
+        count=10,
+        ax=axs[1, 2],
+        color_map=variant_color_map  # Usar el mismo mapa de colores
+    )
     
     # Quitar las leyendas individuales para evitar duplicación
     if var_class_ax.get_legend() is not None:
@@ -509,6 +526,9 @@ def create_summary_plot(data: pd.DataFrame,
         
     if var_boxplot_ax.get_legend() is not None:
         var_boxplot_ax.get_legend().remove()
+        
+    if top_genes_ax.get_legend() is not None:
+        top_genes_ax.get_legend().remove()
     
     # Crear una leyenda común para los gráficos y colocarla en la parte inferior
     # Crear handles y labels manualmente para la leyenda global
@@ -692,5 +712,115 @@ def create_variants_per_sample_plot(data: pd.DataFrame,
     # Ajustar márgenes y quitar recuadros innecesarios
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
+    
+    return ax
+
+
+def create_top_mutated_genes_plot(data: pd.DataFrame,
+                               mode: str = "variants",
+                               variant_column: str = "Variant_Classification",
+                               gene_column: str = "Hugo_Symbol",
+                               sample_column: str = "Tumor_Sample_Barcode",
+                               count: int = 10,
+                               ax: Optional[plt.Axes] = None,
+                               color_map: Optional[Dict] = None) -> plt.Axes:
+    """
+    Crea un diagrama de barras horizontal mostrando los genes más mutados y la distribución
+    de variantes según su clasificación.
+
+    Args:
+        data: DataFrame con los datos de mutaciones.
+        mode: Modo de conteo de mutaciones, actualmente solo soporta "variants"
+        variant_column: Nombre de la columna que contiene la clasificación de variante.
+        gene_column: Nombre de la columna que contiene el símbolo del gen.
+        sample_column: Nombre de la columna que contiene el identificador de la muestra,
+                      o string que se usará para identificar columnas de muestra si las
+                      muestras están como columnas.
+        count: Número de genes principales a mostrar.
+        ax: Eje de matplotlib donde dibujar. Si es None, se crea uno nuevo.
+        color_map: Diccionario opcional que mapea las clasificaciones de variantes a colores.
+        
+    Returns:
+        Eje de matplotlib con la visualización.
+    """
+    # Verificar si tenemos las columnas necesarias
+    if gene_column not in data.columns:
+        print(f"No se encontró la columna: {gene_column}")
+        if ax is None:
+            _, ax = plt.subplots(figsize=(10, 8))
+        ax.text(0.5, 0.5, f"No hay datos disponibles para Top Mutated Genes\nFalta columna: {gene_column}", 
+               ha='center', va='center', fontsize=12)
+        ax.set_title("Top Mutated Genes", fontsize=14)
+        ax.axis('off')
+        return ax
+        
+    if variant_column not in data.columns:
+        print(f"No se encontró la columna: {variant_column}")
+        if ax is None:
+            _, ax = plt.subplots(figsize=(10, 8))
+        ax.text(0.5, 0.5, f"No hay datos disponibles para Top Mutated Genes\nFalta columna: {variant_column}", 
+               ha='center', va='center', fontsize=12)
+        ax.set_title("Top Mutated Genes", fontsize=14)
+        ax.axis('off')
+        return ax
+    
+    # Crear el eje si no se proporcionó uno
+    if ax is None:
+        _, ax = plt.subplots(figsize=(10, 8))
+    
+    # Filtrar filas con valores faltantes o "Unknown"
+    data_filtered = data[(data[gene_column].notna()) & (data[variant_column].notna())]
+    data_filtered = data_filtered[(data_filtered[gene_column] != "Unknown") & 
+                                  (data_filtered[variant_column] != "Unknown")]
+    
+    # MODO "variants" - Contar el número total de variantes
+    # Contar variantes por gen y tipo de variante
+    gene_variant_counts = data_filtered.groupby([gene_column, variant_column]).size().unstack(fill_value=0)
+    
+    # Calcular el total para cada gen y ordenar
+    gene_totals = gene_variant_counts.sum(axis=1).sort_values(ascending=False)
+    top_genes = gene_totals.index[:count].tolist()
+    
+    # Seleccionar solo los top genes
+    df_top = gene_variant_counts.loc[top_genes]
+    
+    # Ordenarlos manualmente de menor a mayor para visualización
+    ordered_genes = sorted(top_genes, key=lambda g: gene_totals[g])
+    df_plot = df_top.loc[ordered_genes]
+    
+    # Asignar colores para cada tipo de variante
+    if color_map is None:
+        cmap = plt.colormaps['tab20']
+        colors = [cmap(i % 20) for i in range(len(df_plot.columns))]
+    else:
+        colors = [color_map.get(variant, plt.colormaps['tab20'](i % 20)) 
+                 for i, variant in enumerate(df_plot.columns)]
+    
+    # Crear gráfico de barras horizontales
+    df_plot.plot(kind='barh', stacked=True, ax=ax, color=colors)
+    
+    # Añadir etiquetas con el recuento total a la derecha de cada barra
+    for i, gene in enumerate(df_plot.index):
+        total = gene_totals[gene]
+        ax.text(total + 5, i, f'{int(total)}', va='center', fontsize=10)
+    
+    title = "Top 10 Mutated Genes (Total Variants)"
+    ax.set_title(title, fontsize=14)
+    ax.set_xlabel("Número de mutaciones", fontsize=12)
+    
+    # Configuración común
+    ax.set_ylabel("Genes", fontsize=12)
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    ax.spines['left'].set_visible(False)
+    
+    # Mejorar la leyenda
+    handles, labels = ax.get_legend_handles_labels()
+    by_label = dict(zip(labels, handles))
+    ax.legend(by_label.values(), by_label.keys(), 
+             title="Variant Classification", 
+             loc="lower center", 
+             bbox_to_anchor=(0.5, -0.2), 
+             ncol=min(len(by_label), 4))
     
     return ax 

@@ -317,3 +317,85 @@ class PyMutation:
             plt.show()
         
         return fig
+
+    def top_mutated_genes_plot(self,
+                              figsize: Tuple[int, int] = (10, 8),
+                              title: str = "Top Mutated Genes",
+                              mode: str = "variants", 
+                              variant_column: str = "Variant_Classification",
+                              gene_column: str = "Hugo_Symbol",
+                              sample_column: str = "Tumor_Sample_Barcode",
+                              count: int = 10,
+                              show_interactive: bool = False) -> plt.Figure:
+        """
+        Genera un diagrama de barras horizontal mostrando los genes más mutados y la distribución
+        de variantes según su clasificación.
+
+        Args:
+            figsize: Tamaño de la figura.
+            title: Título del gráfico.
+            mode: Modo de conteo de mutaciones, actualmente solo soporta "variants".
+            variant_column: Nombre de la columna que contiene la clasificación de variante.
+            gene_column: Nombre de la columna que contiene el símbolo del gen.
+            sample_column: Nombre de la columna que contiene el identificador de la muestra.
+            count: Número de genes principales a mostrar.
+            show_interactive: Si es True, muestra la visualización en modo interactivo.
+            
+        Returns:
+            Figura de matplotlib con el gráfico de genes más mutados.
+        """
+        from .visualizations.summary import create_top_mutated_genes_plot
+        from .utils.data_processing import extract_variant_classifications
+
+        # Si se especifica un modo distinto a "variants", mostrar advertencia
+        if mode != "variants":
+            print(f"Advertencia: El modo '{mode}' no está soportado. Se usará el modo 'variants'.")
+            mode = "variants"
+
+        # Si variant_column no está en las columnas, intentar normalizarlo
+        if variant_column not in self.data.columns:
+            # Comprobar si hay una versión con diferente capitalización
+            column_lower = variant_column.lower()
+            for col in self.data.columns:
+                if col.lower() == column_lower:
+                    variant_column = col
+                    break
+                    
+        # Si gene_column no está en las columnas, intentar normalizarlo
+        if gene_column not in self.data.columns:
+            # Comprobar si hay una versión con diferente capitalización
+            column_lower = gene_column.lower()
+            for col in self.data.columns:
+                if col.lower() == column_lower:
+                    gene_column = col
+                    break
+        
+        # Asegurar que la columna de clasificación de variantes existe o se extrae
+        processed_data = extract_variant_classifications(
+            self.data, 
+            variant_column=variant_column,
+            funcotation_column="FUNCOTATION"
+        )
+        
+        fig, ax = plt.subplots(figsize=figsize)
+        create_top_mutated_genes_plot(
+            processed_data, 
+            mode=mode,
+            variant_column=variant_column,
+            gene_column=gene_column,
+            sample_column=sample_column,
+            count=count,
+            ax=ax
+        )
+        
+        # Ajustar título personalizado si se proporciona
+        if title:
+            fig.suptitle(title, fontsize=16, y=1.02)
+        
+        plt.tight_layout()
+        
+        # Si se solicita mostrar interactivamente
+        if show_interactive:
+            plt.show()
+        
+        return fig

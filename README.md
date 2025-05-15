@@ -14,6 +14,9 @@ pyMut es una herramienta de visualización para datos de mutaciones genéticas, 
   - **SNV Class**: Distribución de clases de SNV (cambios nucleotídicos como A>G, C>T, etc.)
   - **Variants per Sample**: Distribución de variantes por muestra y mediana (TMB)
   - **Variant Classification Summary**: Diagrama de cajas y bigotes que muestra la distribución de cada tipo de variante entre las muestras, permitiendo identificar qué clasificaciones presentan mayor variabilidad entre pacientes
+  - **Top Mutated Genes**: Diagrama de barras horizontales que muestra los genes más mutados con dos modos:
+    - Modo "variants": Muestra el número total de variantes por gen
+    - Modo "samples": Muestra el porcentaje de muestras afectadas por gen
 
 ## Instalación
 
@@ -43,6 +46,22 @@ tmb_fig.savefig("variants_per_sample.png")
 
 boxplot_fig = pyMut.variant_classification_summary_plot(title="Distribución de Variantes por Muestra")
 boxplot_fig.savefig("variant_classification_summary.png")
+
+# Visualización de genes más mutados (por número de variantes)
+top_genes_fig = pyMut.top_mutated_genes_plot(
+    title="Top 10 Genes Más Mutados",
+    mode="variants",  # Contar número total de variantes
+    count=10  # Mostrar los 10 genes principales
+)
+top_genes_fig.savefig("top_mutated_genes_variants.png")
+
+# Visualización de genes más mutados (por prevalencia en muestras)
+top_genes_samples_fig = pyMut.top_mutated_genes_plot(
+    title="Top 10 Genes Más Prevalentes",
+    mode="samples",  # Contar porcentaje de muestras afectadas
+    count=10  # Mostrar los 10 genes principales
+)
+top_genes_samples_fig.savefig("top_mutated_genes_samples.png")
 ```
 
 ## Formatos de Datos Soportados

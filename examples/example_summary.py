@@ -53,22 +53,33 @@ def main():
     summary_fig.savefig(output_path, dpi=300, bbox_inches='tight')
     print(f"Gráfico de resumen guardado en: {output_path}")
     
-    # 2. Generar visualizaciones individuales
-    print("\n2. Generando visualizaciones individuales...")
+    # 2. Top Mutated Genes (modo variants)
+    print("\n2. Generando gráfico de genes más mutados...")
+    tmg_variants_fig = py_mut.top_mutated_genes_plot(
+        title="Top 10 Genes Más Mutados (Total de Variantes)",
+        count=10,
+        figsize=(12, 6),
+        show_interactive=False
+    )
+    tmg_variants_path = os.path.join(os.path.dirname(__file__), 'top_mutated_genes.png')
+    tmg_variants_fig.savefig(tmg_variants_path, dpi=300, bbox_inches='tight')
+    print(f"Gráfico guardado en: {tmg_variants_path}")
     
-    # 2.1 Variantes por muestra (TMB) - Esta se muestra por defecto
-    print("\n2.1 Generando gráfico de variantes por muestra (TMB)...")
+    # Código comentado para otras visualizaciones
+    """
+    # Variantes por muestra (TMB)
+    print("\nGenerando gráfico de variantes por muestra (TMB)...")
     tmb_fig = py_mut.variants_per_sample_plot(
         title="Carga Mutacional por Muestra (TMB)",
-        figsize=(12, 6),  # Figura más ancha
+        figsize=(12, 6),
         show_interactive=False
     )
     tmb_output_path = os.path.join(os.path.dirname(__file__), 'variants_per_sample.png')
     tmb_fig.savefig(tmb_output_path, dpi=300, bbox_inches='tight')
     print(f"Gráfico guardado en: {tmb_output_path}")
     
-    # 2.2 Variant Classification Summary (Nuevo)
-    print("\n2.2 Generando gráfico de resumen de clasificación de variantes (Boxplot)...")
+    # Variant Classification Summary
+    print("\nGenerando gráfico de resumen de clasificación de variantes (Boxplot)...")
     vcs_fig = py_mut.variant_classification_summary_plot(
         title="Resumen de Clasificación de Variantes por Muestra",
         figsize=(12, 6),
@@ -78,49 +89,46 @@ def main():
     vcs_fig.savefig(vcs_output_path, dpi=300, bbox_inches='tight')
     print(f"Gráfico guardado en: {vcs_output_path}")
     
-    # Descomenta las siguientes secciones para generar otros gráficos individuales:
+    # Clasificación de variantes
+    print("\nGenerando gráfico de clasificación de variantes...")
+    vc_fig = py_mut.variant_classification_plot(
+        title="Clasificación de Variantes",
+        figsize=(12, 6),
+        show_interactive=False
+    )
+    vc_output_path = os.path.join(os.path.dirname(__file__), 'variant_classification.png')
+    vc_fig.savefig(vc_output_path, dpi=300, bbox_inches='tight')
+    print(f"Gráfico guardado en: {vc_output_path}")
     
-    # # 2.3 Clasificación de variantes
-    # print("\n2.3 Generando gráfico de clasificación de variantes...")
-    # vc_fig = py_mut.variant_classification_plot(
-    #     title="Clasificación de Variantes",
-    #     figsize=(12, 6),  # Figura más ancha
-    #     show_interactive=False
-    # )
-    # vc_output_path = os.path.join(os.path.dirname(__file__), 'variant_classification.png')
-    # vc_fig.savefig(vc_output_path, dpi=300, bbox_inches='tight')
-    # print(f"Gráfico guardado en: {vc_output_path}")
+    # Tipos de variantes
+    print("\nGenerando gráfico de tipos de variantes...")
+    vt_fig = py_mut.variant_type_plot(
+        title="Tipos de Variantes",
+        figsize=(12, 6),
+        show_interactive=False
+    )
+    vt_output_path = os.path.join(os.path.dirname(__file__), 'variant_type.png')
+    vt_fig.savefig(vt_output_path, dpi=300, bbox_inches='tight')
+    print(f"Gráfico guardado en: {vt_output_path}")
     
-    # # 2.4 Tipos de variantes
-    # print("\n2.4 Generando gráfico de tipos de variantes...")
-    # vt_fig = py_mut.variant_type_plot(
-    #     title="Tipos de Variantes",
-    #     figsize=(12, 6),  # Figura más ancha
-    #     show_interactive=False
-    # )
-    # vt_output_path = os.path.join(os.path.dirname(__file__), 'variant_type.png')
-    # vt_fig.savefig(vt_output_path, dpi=300, bbox_inches='tight')
-    # print(f"Gráfico guardado en: {vt_output_path}")
-    
-    # # 2.5 Clases de SNV
-    # print("\n2.5 Generando gráfico de clases de SNV...")
-    # snv_fig = py_mut.snv_class_plot(
-    #     title="Clases de SNV",
-    #     figsize=(12, 6),  # Figura más ancha
-    #     show_interactive=False
-    # )
-    # snv_output_path = os.path.join(os.path.dirname(__file__), 'snv_class.png')
-    # snv_fig.savefig(snv_output_path, dpi=300, bbox_inches='tight')
-    # print(f"Gráfico guardado en: {snv_output_path}")
+    # Clases de SNV
+    print("\nGenerando gráfico de clases de SNV...")
+    snv_fig = py_mut.snv_class_plot(
+        title="Clases de SNV",
+        figsize=(12, 6),
+        show_interactive=False
+    )
+    snv_output_path = os.path.join(os.path.dirname(__file__), 'snv_class.png')
+    snv_fig.savefig(snv_output_path, dpi=300, bbox_inches='tight')
+    print(f"Gráfico guardado en: {snv_output_path}")
+    """
     
     print("\nEl ejemplo de generación de gráficos ha finalizado.")
-    print("Descomenta las secciones correspondientes en el código para generar otras visualizaciones individuales.")
     
     # Mostrar las visualizaciones interactivamente
     print("\nMostrando visualizaciones interactivas...")
     plt.figure(summary_fig.number)
-    plt.figure(tmb_fig.number)
-    plt.figure(vcs_fig.number)
+    plt.figure(tmg_variants_fig.number)
     plt.show()
 
 if __name__ == "__main__":
