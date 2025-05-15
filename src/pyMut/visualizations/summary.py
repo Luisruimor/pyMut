@@ -214,6 +214,218 @@ def create_snv_class_plot(data: pd.DataFrame,
     return ax
 
 
+def create_variant_classification_summary_plot(data: pd.DataFrame,
+                                             variant_column: str = "Variant_Classification",
+                                             sample_column: str = "Tumor_Sample_Barcode",
+                                             ax: Optional[plt.Axes] = None,
+                                             color_map: Optional[Dict] = None) -> plt.Axes:
+    """
+    Crea un diagrama de cajas y bigotes (boxplot) que resume, para cada clasificación de variantes,
+    la distribución (entre las muestras) del número de alelos alternativos detectados.
+
+    Args:
+        data: DataFrame con los datos de mutaciones.
+        variant_column: Nombre de la columna que contiene la clasificación de variante.
+        sample_column: Nombre de la columna que contiene el identificador de la muestra.
+                       Si no existe, se asume que las muestras son columnas (formato ancho).
+        ax: Eje de matplotlib donde dibujar. Si es None, se crea uno nuevo.
+        color_map: Diccionario opcional que mapea las clasificaciones de variantes a colores.
+        
+    Returns:
+        Eje de matplotlib con la visualización.
+    """
+    # Verificar si tenemos la columna de clasificación
+    if variant_column not in data.columns:
+        print(f"No se encontró la columna: {variant_column}")
+        if ax is None:
+            _, ax = plt.subplots(figsize=(12, 6))
+        ax.text(0.5, 0.5, f"No hay datos disponibles para Variant Classification Summary\nFalta columna: {variant_column}", 
+               ha='center', va='center', fontsize=12)
+        ax.set_title("Variant Classification Summary", fontsize=14)
+        ax.axis('off')
+        return ax
+    
+    # Detectar si tenemos formato largo o ancho
+    samples_as_columns = sample_column not in data.columns
+    
+    if samples_as_columns:
+        # Formato ancho: las muestras son columnas
+        # Encontrar columnas que podrían ser muestras (IDs de TCGA, etc.)
+        potential_sample_cols = [col for col in data.columns if col.startswith('TCGA-') or 
+                                (isinstance(col, str) and col.count('-') >= 2)]
+        
+        if not potential_sample_cols:
+            print(f"No se encontraron columnas de muestra que parezcan identificadores")
+            if ax is None:
+                _, ax = plt.subplots(figsize=(12, 6))
+            ax.text(0.5, 0.5, "No hay datos disponibles para Variant Classification Summary\nNo se detectaron columnas de muestra", 
+                  ha='center', va='center', fontsize=12)
+            ax.set_title("Variant Classification Summary", fontsize=14)
+            ax.axis('off')
+            return ax
+            
+        print(f"Detectadas {len(potential_sample_cols)} columnas de muestra")
+        
+        # Acumular los conteos por muestra y clasificación
+        sample_variant_counts = {}
+        
+        # Obtener valores únicos de variantes para agrupar
+        unique_variants = data[variant_column].unique()
+        unique_variants = [v for v in unique_variants if pd.notna(v) and v != "Unknown"]
+        
+        # Primero determinar el formato de los valores en las columnas de muestra
+        # Revisamos algunas filas para ver si son del tipo "A|B"
+        sample_col = potential_sample_cols[0]
+        sample_format = "unknown"
+        sample_values = data[sample_col].dropna().values[:10]  # Tomar algunas muestras
+        
+        if len(sample_values) > 0:
+            # Verificar si hay valores en formato "A|B" o "A/B"
+            if any('|' in str(x) for x in sample_values):
+                sample_format = "pipe_separated"
+            elif any('/' in str(x) for x in sample_values):
+                sample_format = "slash_separated"
+            else:
+                sample_format = "other"
+                
+        print(f"Formato detectado de muestras: {sample_format}")
+        
+        # Para cada clasificación de variante, contar cuántas muestras tienen esa variante
+        for variant_class in unique_variants:
+            # Filtrar filas con esta clasificación de variante
+            variant_subset = data[data[variant_column] == variant_class]
+            
+            # Para cada muestra, contar cuántas variantes de este tipo tiene
+            for sample in potential_sample_cols:
+                # Contar según el formato detectado
+                if sample_format == "pipe_separated":
+                    # Para formato "A|B", contar cuando A y B son diferentes (alelo variante)
+                    sample_count = variant_subset[sample].apply(
+                        lambda x: 1 if (isinstance(x, str) and '|' in x and 
+                                       x.split('|')[0] != x.split('|')[1]) else 0
+                    ).sum()
+                elif sample_format == "slash_separated":
+                    # Similar para formato "A/B"
+                    sample_count = variant_subset[sample].apply(
+                        lambda x: 1 if (isinstance(x, str) and '/' in x and 
+                                       x.split('/')[0] != x.split('/')[1]) else 0
+                    ).sum()
+                else:
+                    # Para otros formatos, asumimos que valores distintos de "0", "0/0" u "0|0" indican variante
+                    sample_count = variant_subset[sample].apply(
+                        lambda x: 1 if (x != 0 and x != '0' and x != '0/0' and 
+                                       x != '0|0' and not pd.isnull(x)) else 0
+                    ).sum()
+                
+                if sample not in sample_variant_counts:
+                    sample_variant_counts[sample] = {}
+                
+                if sample_count > 0:
+                    sample_variant_counts[sample][variant_class] = sample_count
+    else:
+        # Formato largo: hay una columna específica para la muestra
+        # Acumular los conteos por muestra y clasificación
+        sample_variant_counts = {}
+        
+        # Procesar el DataFrame para contar por muestra y variante
+        for _, row in data.iterrows():
+            sample = row[sample_column]
+            variant_class = row[variant_column]
+            
+            if pd.isnull(variant_class) or variant_class == "Unknown":
+                continue
+                
+            if sample not in sample_variant_counts:
+                sample_variant_counts[sample] = {}
+                
+            if variant_class not in sample_variant_counts[sample]:
+                sample_variant_counts[sample][variant_class] = 0
+                
+            # Incrementar el contador (asumiendo 1 alelo alternativo por variante)
+            sample_variant_counts[sample][variant_class] += 1
+    
+    # Convertir el diccionario a DataFrame (filas: muestras, columnas: variant classifications)
+    df_data = {sample: dict(variants) for sample, variants in sample_variant_counts.items()}
+    df = pd.DataFrame.from_dict(df_data, orient='index').fillna(0)
+    
+    if df.empty:
+        print("No se encontraron datos para el análisis después del procesamiento.")
+        if ax is None:
+            _, ax = plt.subplots(figsize=(12, 6))
+        ax.text(0.5, 0.5, "No hay datos disponibles para Variant Classification Summary\nNo se encontraron datos para analizar", 
+               ha='center', va='center', fontsize=12)
+        ax.set_title("Variant Classification Summary", fontsize=14)
+        ax.axis('off')
+        return ax
+    
+    # (Opcional) Reordenar las columnas según la suma total (de mayor a menor)
+    col_order = df.sum(axis=0).sort_values(ascending=False).index.tolist()
+    df = df[col_order]
+    
+    # Eliminar columnas con suma total 0
+    df = df.loc[:, df.sum() > 0]
+    
+    # Preparar los datos para el boxplot: cada columna (variant classification) es una serie de conteos por muestra
+    variant_types = df.columns.tolist()
+    data_to_plot = [df[vt].values for vt in variant_types]
+    
+    # Crear el eje si no se proporcionó uno
+    if ax is None:
+        _, ax = plt.subplots(figsize=(12, 6))
+    
+    # Dibujar el boxplot con configuración mejorada
+    bp = ax.boxplot(data_to_plot, 
+                    patch_artist=True,  # Rellenar las cajas con color
+                    medianprops=dict(color="red", linewidth=1.5),
+                    boxprops=dict(linewidth=1.5),
+                    whiskerprops=dict(linewidth=1.5),
+                    capprops=dict(linewidth=1.5),
+                    flierprops=dict(marker='o', markerfacecolor='gray', markersize=4, alpha=0.5),
+                    showfliers=True,  # Mostrar outliers
+                    widths=0.7)
+    
+    # Colorear cada caja usando una paleta de colores o el mapa de colores proporcionado
+    if color_map:
+        colors = [color_map.get(vt, plt.colormaps['tab20'](i % 20)) for i, vt in enumerate(variant_types)]
+    else:
+        # Usar un colormap de alta diferenciación para las cajas
+        cmap = plt.colormaps['tab20']
+        colors = [cmap(i % 20) for i in range(len(variant_types))]
+    
+    # Aplicar colores a cada caja
+    for patch, color in zip(bp['boxes'], colors):
+        patch.set_facecolor(color)
+        patch.set_alpha(0.7)
+    
+    # Configurar las etiquetas del eje X con mejor rotación y formato
+    ax.set_xticklabels(variant_types, rotation=45, ha='right', fontsize=10)
+    
+    # Ajustar los límites del eje Y
+    ymin = 0
+    ymax = max(max(d) if len(d) > 0 else 0 for d in data_to_plot) * 1.1
+    if ymax == 0:  # Por si no hay datos positivos
+        ymax = 1
+    ax.set_ylim(ymin, ymax)
+    
+    # Mejorar la presentación visual
+    # Añadir título más descriptivo
+    ax.set_title("Variant Classification Summary", fontsize=14, fontweight='bold')
+    ax.set_xlabel("Variant Classification", fontsize=12, fontweight='bold')
+    ax.set_ylabel("Número de alelos alternativos por muestra", fontsize=12, fontweight='bold')
+    
+    # Añadir cuadrícula para mejor legibilidad
+    ax.yaxis.grid(True, linestyle='--', alpha=0.3)
+    
+    # Eliminar algunos bordes de los ejes
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    
+    # Ajustar espacio para las etiquetas del eje X
+    plt.setp(ax.get_xticklabels(), rotation=45, ha='right')
+    
+    return ax
+
+
 def create_summary_plot(data: pd.DataFrame,
                       figsize: Tuple[int, int] = (16, 12),
                       title: str = "Resumen de Mutaciones") -> plt.Figure:
@@ -229,7 +441,7 @@ def create_summary_plot(data: pd.DataFrame,
         Figura con las visualizaciones de resumen.
     """
     # Crear una figura con múltiples subplots, haciendo más anchos los gráficos
-    fig, axs = plt.subplots(2, 3, figsize=figsize, gridspec_kw={'width_ratios': [1.5, 1.5, 1.5]})
+    fig, axs = plt.subplots(2, 3, figsize=figsize, gridspec_kw={'width_ratios': [1.5, 1.5, 1.5], 'height_ratios': [1, 1.2]})
     fig.suptitle(title, fontsize=16)
     
     # Detectar nombres de columnas respetando capitalización original
@@ -247,7 +459,7 @@ def create_summary_plot(data: pd.DataFrame,
     unique_variants = data[variant_classification_col].unique()
     # Usar un colormap fijo para asegurar colores consistentes
     cmap = plt.colormaps['tab20']  # Colormap con buena variedad de colores
-    variant_color_map = {variant: cmap(i % 20) for i, variant in enumerate(unique_variants)}
+    variant_color_map = {variant: cmap(i % 20) for i, variant in enumerate(unique_variants) if pd.notna(variant)}
     
     # Crear el gráfico de clasificación de variantes usando el mapa de colores predefinido
     var_class_ax = create_variant_classification_plot(
@@ -276,19 +488,35 @@ def create_summary_plot(data: pd.DataFrame,
         variant_colors=variant_color_map  # Usar el mismo mapa de colores
     )
     
-    # Quitar la leyenda del gráfico de clasificación de variantes
+    # Crear el gráfico de variant classification summary
+    var_boxplot_ax = create_variant_classification_summary_plot(
+        data,
+        variant_column=variant_classification_col,
+        sample_column=sample_column,
+        ax=axs[1, 1],
+        color_map=variant_color_map  # Usar el mismo mapa de colores
+    )
+    
+    # El último panel puede quedarse vacío o agregar información adicional
+    axs[1, 2].axis('off')  # Desactivar el último panel por ahora
+    
+    # Quitar las leyendas individuales para evitar duplicación
     if var_class_ax.get_legend() is not None:
         var_class_ax.get_legend().remove()
     
-    # Quitar la leyenda del gráfico de variantes por muestra
     if variants_ax.get_legend() is not None:
         variants_ax.get_legend().remove()
+        
+    if var_boxplot_ax.get_legend() is not None:
+        var_boxplot_ax.get_legend().remove()
     
-    # Crear una leyenda común para los dos gráficos y colocarla en la parte inferior
+    # Crear una leyenda común para los gráficos y colocarla en la parte inferior
     # Crear handles y labels manualmente para la leyenda global
     handles = []
     labels = []
     for variant, color in variant_color_map.items():
+        if pd.isnull(variant) or variant == "Unknown":
+            continue
         patch = plt.Rectangle((0,0), 1, 1, fc=color)
         handles.append(patch)
         labels.append(variant)
@@ -299,7 +527,7 @@ def create_summary_plot(data: pd.DataFrame,
     
     # Ajustar espaciado entre subplots
     plt.tight_layout()
-    plt.subplots_adjust(top=0.9, bottom=0.12)  # Ajustar para leyenda común
+    plt.subplots_adjust(top=0.9, bottom=0.18)  # Ajustar para leyenda común, dándole más espacio
     
     return fig
 

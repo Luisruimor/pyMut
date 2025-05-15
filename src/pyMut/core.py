@@ -194,6 +194,69 @@ class PyMutation:
         
         return fig
 
+    def variant_classification_summary_plot(self,
+                                           figsize: Tuple[int, int] = (12, 6),
+                                           title: str = "Variant Classification Summary",
+                                           variant_column: str = "Variant_Classification",
+                                           sample_column: str = "Tumor_Sample_Barcode",
+                                           show_interactive: bool = False) -> plt.Figure:
+        """
+        Genera un diagrama de cajas y bigotes (boxplot) que resume, para cada clasificación de variantes,
+        la distribución (entre las muestras) del número de alelos alternativos detectados.
+
+        Este gráfico muestra la variabilidad entre muestras para cada tipo de clasificación de variante,
+        permitiendo identificar cuáles presentan más diferencias entre pacientes.
+
+        Args:
+            figsize: Tamaño de la figura.
+            title: Título del gráfico.
+            variant_column: Nombre de la columna que contiene la clasificación de variante.
+            sample_column: Nombre de la columna que contiene el identificador de la muestra.
+                          Si no existe, se asume que las muestras son columnas (formato ancho).
+            show_interactive: Si es True, muestra la visualización en modo interactivo.
+            
+        Returns:
+            Figura de matplotlib con el gráfico de cajas y bigotes.
+        """
+        from .visualizations.summary import create_variant_classification_summary_plot
+        from .utils.data_processing import extract_variant_classifications
+
+        # Asegurar que la columna de clasificación de variantes existe o se extrae
+        processed_data = extract_variant_classifications(
+            self.data, 
+            variant_column=variant_column,
+            funcotation_column="FUNCOTATION"
+        )
+        
+        # Verificar si estamos en formato ancho (muestras como columnas)
+        is_wide_format = sample_column not in processed_data.columns
+        if is_wide_format:
+            # Detectar y mostrar información sobre el formato
+            sample_cols = [col for col in processed_data.columns if col.startswith('TCGA-') or 
+                           (isinstance(col, str) and col.count('-') >= 2)]
+            if sample_cols:
+                print(f"Detectado formato ancho con {len(sample_cols)} posibles columnas de muestra.")
+        
+        fig, ax = plt.subplots(figsize=figsize)
+        create_variant_classification_summary_plot(
+            processed_data, 
+            variant_column=variant_column,
+            sample_column=sample_column,
+            ax=ax
+        )
+        
+        # Configurar título
+        if title:
+            fig.suptitle(title, fontsize=16)
+        
+        plt.tight_layout()
+        
+        # Si se solicita mostrar interactivamente
+        if show_interactive:
+            plt.show()
+        
+        return fig
+
     def variants_per_sample_plot(self,
                                  figsize: Tuple[int, int] = (10, 6),
                                  title: str = "Variants per Sample",

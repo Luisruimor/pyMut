@@ -67,10 +67,21 @@ def main():
     tmb_fig.savefig(tmb_output_path, dpi=300, bbox_inches='tight')
     print(f"Gráfico guardado en: {tmb_output_path}")
     
+    # 2.2 Variant Classification Summary (Nuevo)
+    print("\n2.2 Generando gráfico de resumen de clasificación de variantes (Boxplot)...")
+    vcs_fig = py_mut.variant_classification_summary_plot(
+        title="Resumen de Clasificación de Variantes por Muestra",
+        figsize=(12, 6),
+        show_interactive=False
+    )
+    vcs_output_path = os.path.join(os.path.dirname(__file__), 'variant_classification_summary.png')
+    vcs_fig.savefig(vcs_output_path, dpi=300, bbox_inches='tight')
+    print(f"Gráfico guardado en: {vcs_output_path}")
+    
     # Descomenta las siguientes secciones para generar otros gráficos individuales:
     
-    # # 2.2 Clasificación de variantes
-    # print("\n2.2 Generando gráfico de clasificación de variantes...")
+    # # 2.3 Clasificación de variantes
+    # print("\n2.3 Generando gráfico de clasificación de variantes...")
     # vc_fig = py_mut.variant_classification_plot(
     #     title="Clasificación de Variantes",
     #     figsize=(12, 6),  # Figura más ancha
@@ -80,8 +91,8 @@ def main():
     # vc_fig.savefig(vc_output_path, dpi=300, bbox_inches='tight')
     # print(f"Gráfico guardado en: {vc_output_path}")
     
-    # # 2.3 Tipos de variantes
-    # print("\n2.3 Generando gráfico de tipos de variantes...")
+    # # 2.4 Tipos de variantes
+    # print("\n2.4 Generando gráfico de tipos de variantes...")
     # vt_fig = py_mut.variant_type_plot(
     #     title="Tipos de Variantes",
     #     figsize=(12, 6),  # Figura más ancha
@@ -91,8 +102,8 @@ def main():
     # vt_fig.savefig(vt_output_path, dpi=300, bbox_inches='tight')
     # print(f"Gráfico guardado en: {vt_output_path}")
     
-    # # 2.4 Clases de SNV
-    # print("\n2.4 Generando gráfico de clases de SNV...")
+    # # 2.5 Clases de SNV
+    # print("\n2.5 Generando gráfico de clases de SNV...")
     # snv_fig = py_mut.snv_class_plot(
     #     title="Clases de SNV",
     #     figsize=(12, 6),  # Figura más ancha
@@ -109,6 +120,7 @@ def main():
     print("\nMostrando visualizaciones interactivas...")
     plt.figure(summary_fig.number)
     plt.figure(tmb_fig.number)
+    plt.figure(vcs_fig.number)
     plt.show()
 
 if __name__ == "__main__":

@@ -9,9 +9,11 @@ pyMut es una herramienta de visualización para datos de mutaciones genéticas, 
 ## Características
 
 - Visualizaciones de resumen de mutaciones:
-  - Variant Classification: Distribución de clasificaciones de variantes
-  - Variant Type: Distribución de tipos de variantes (SNP, INS, DEL, etc.)
-  - SNV Class: Distribución de clases de SNV (cambios nucleotídicos como A>G, C>T, etc.)
+  - **Variant Classification**: Distribución de clasificaciones de variantes
+  - **Variant Type**: Distribución de tipos de variantes (SNP, INS, DEL, etc.)
+  - **SNV Class**: Distribución de clases de SNV (cambios nucleotídicos como A>G, C>T, etc.)
+  - **Variants per Sample**: Distribución de variantes por muestra y mediana (TMB)
+  - **Variant Classification Summary**: Diagrama de cajas y bigotes que muestra la distribución de cada tipo de variante entre las muestras, permitiendo identificar qué clasificaciones presentan mayor variabilidad entre pacientes
 
 ## Instalación
 
@@ -31,10 +33,29 @@ data = pd.read_csv("mutations.tsv", sep="\t")
 # Crear un objeto PyMutation
 pyMut = PyMutation(data)
 
-# Generar un gráfico de resumen
+# Generar un gráfico de resumen completo
 fig = pyMut.summary_plot(title="Resumen de mutaciones")
 fig.savefig("summary.png")
+
+# Generar visualizaciones individuales
+tmb_fig = pyMut.variants_per_sample_plot(title="Carga Mutacional por Muestra")
+tmb_fig.savefig("variants_per_sample.png")
+
+boxplot_fig = pyMut.variant_classification_summary_plot(title="Distribución de Variantes por Muestra")
+boxplot_fig.savefig("variant_classification_summary.png")
 ```
+
+## Formatos de Datos Soportados
+
+pyMut puede trabajar con datos en dos formatos principales:
+
+- **Formato Largo**: Cada fila representa una mutación, con columnas como `Variant_Classification` y `Tumor_Sample_Barcode`.
+- **Formato Ancho**: Las muestras se representan como columnas (por ejemplo, columnas con nombres como `TCGA-XX-YYYY`).
+
+La biblioteca detecta automáticamente el formato y adapta las visualizaciones según corresponda. Para el formato ancho, pyMut puede interpretar datos en diferentes notaciones:
+- Genotipos separados por pipe (`|`): como "A|B" donde A y B son diferentes alelos
+- Genotipos separados por barra (`/`): como "A/B"
+- Otros formatos: valores numéricos o textuales que indican presencia de variante
 
 ## Requisitos
 

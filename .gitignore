@@ -126,9 +126,8 @@ dmypy.json
 # Intellij IDEA
 .idea
 
-src/pyMut/data/examples/genes_unicos.tsv
-src/pyMut/data/examples/reducido-1k.tsv
-src/pyMut/data/examples/reducido-100k.tsv.gz
-src/pyMut/data/examples/xtra-reducido.tsv
-src/pyMut/data/examples/sample_mutations.tsv
 src/pyMut/data/examples/tcga_laml_converted_reduced.tsv
+.cursor/rules/
+.cursorproject.yml
+
+*.png
