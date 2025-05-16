@@ -334,10 +334,12 @@ class PyMutation:
         Args:
             figsize: Tamaño de la figura.
             title: Título del gráfico.
-            mode: Modo de conteo de mutaciones, actualmente solo soporta "variants".
+            mode: Modo de conteo de mutaciones: "variants" (cuenta número total de variantes)
+                  o "samples" (cuenta número de muestras afectadas).
             variant_column: Nombre de la columna que contiene la clasificación de variante.
             gene_column: Nombre de la columna que contiene el símbolo del gen.
-            sample_column: Nombre de la columna que contiene el identificador de la muestra.
+            sample_column: Nombre de la columna que contiene el identificador de la muestra,
+                          o prefijo para identificar columnas de muestra si están como columnas.
             count: Número de genes principales a mostrar.
             show_interactive: Si es True, muestra la visualización en modo interactivo.
             
@@ -347,8 +349,8 @@ class PyMutation:
         from .visualizations.summary import create_top_mutated_genes_plot
         from .utils.data_processing import extract_variant_classifications
 
-        # Si se especifica un modo distinto a "variants", mostrar advertencia
-        if mode != "variants":
+        # Verificar que el modo sea válido
+        if mode not in ["variants", "samples"]:
             print(f"Advertencia: El modo '{mode}' no está soportado. Se usará el modo 'variants'.")
             mode = "variants"
 
@@ -388,9 +390,14 @@ class PyMutation:
             ax=ax
         )
         
-        # Ajustar título personalizado si se proporciona
+        # Ajustar título personalizado basado en el modo
         if title:
-            fig.suptitle(title, fontsize=16, y=1.02)
+            if mode == "variants" and title == "Top Mutated Genes":
+                fig.suptitle("Top 10 Genes Más Mutados (Total de Variantes)", fontsize=16, y=1.02)
+            elif mode == "samples" and title == "Top Mutated Genes":
+                fig.suptitle("Top 10 Genes Más Mutados (Prevalencia en Muestras)", fontsize=16, y=1.02)
+            else:
+                fig.suptitle(title, fontsize=16, y=1.02)
         
         plt.tight_layout()
         

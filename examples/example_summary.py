@@ -54,16 +54,30 @@ def main():
     print(f"Gráfico de resumen guardado en: {output_path}")
     
     # 2. Top Mutated Genes (modo variants)
-    print("\n2. Generando gráfico de genes más mutados...")
+    print("\n2. Generando gráfico de genes más mutados (modo variants)...")
     tmg_variants_fig = py_mut.top_mutated_genes_plot(
         title="Top 10 Genes Más Mutados (Total de Variantes)",
+        mode="variants",
         count=10,
         figsize=(12, 6),
         show_interactive=False
     )
-    tmg_variants_path = os.path.join(os.path.dirname(__file__), 'top_mutated_genes.png')
+    tmg_variants_path = os.path.join(os.path.dirname(__file__), 'top_mutated_genes_variants.png')
     tmg_variants_fig.savefig(tmg_variants_path, dpi=300, bbox_inches='tight')
     print(f"Gráfico guardado en: {tmg_variants_path}")
+    
+    # 3. Top Mutated Genes (modo samples)
+    print("\n3. Generando gráfico de genes más mutados (modo samples)...")
+    tmg_samples_fig = py_mut.top_mutated_genes_plot(
+        title="Top 10 Genes Más Mutados (Prevalencia en Muestras)",
+        mode="samples",
+        count=10,
+        figsize=(12, 6),
+        show_interactive=False
+    )
+    tmg_samples_path = os.path.join(os.path.dirname(__file__), 'top_mutated_genes_samples.png')
+    tmg_samples_fig.savefig(tmg_samples_path, dpi=300, bbox_inches='tight')
+    print(f"Gráfico guardado en: {tmg_samples_path}")
     
     # Código comentado para otras visualizaciones
     """
@@ -125,11 +139,13 @@ def main():
     
     print("\nEl ejemplo de generación de gráficos ha finalizado.")
     
-    # Mostrar las visualizaciones interactivamente
-    print("\nMostrando visualizaciones interactivas...")
-    plt.figure(summary_fig.number)
-    plt.figure(tmg_variants_fig.number)
-    plt.show()
+    # Comentar la visualización interactiva para evitar posibles bloqueos
+    # print("\nMostrando visualizaciones interactivas...")
+    # plt.ion()  # Activar modo interactivo
+    # plt.figure(summary_fig.number)
+    # plt.figure(tmg_variants_fig.number)
+    # plt.figure(tmg_samples_fig.number)
+    # plt.show()
 
 if __name__ == "__main__":
     main() 

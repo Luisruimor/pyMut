@@ -624,17 +624,6 @@ def create_variants_per_sample_plot(data: pd.DataFrame,
                 if sample_variants > 0:
                     variant_counts[sample_col][variant_type] = sample_variants
         
-        # Convertir el diccionario a DataFrame
-        if not variant_counts:
-            print("No se encontraron variantes para ninguna muestra")
-            if ax is None:
-                _, ax = plt.subplots(figsize=(10, 6))
-            ax.text(0.5, 0.5, "No hay datos disponibles para Variants per Sample\nNo se detectaron variantes", 
-                  ha='center', va='center', fontsize=12)
-            ax.set_title("Variants per Sample", fontsize=14)
-            ax.axis('off')
-            return ax
-        
         # Crear DataFrame a partir del diccionario
         samples_df = []
         for sample, variants in variant_counts.items():
@@ -730,11 +719,12 @@ def create_top_mutated_genes_plot(data: pd.DataFrame,
 
     Args:
         data: DataFrame con los datos de mutaciones.
-        mode: Modo de conteo de mutaciones, actualmente solo soporta "variants"
+        mode: Modo de conteo de mutaciones: "variants" (cuenta número total de variantes)
+              o "samples" (cuenta número de muestras afectadas).
         variant_column: Nombre de la columna que contiene la clasificación de variante.
         gene_column: Nombre de la columna que contiene el símbolo del gen.
         sample_column: Nombre de la columna que contiene el identificador de la muestra,
-                      o string que se usará para identificar columnas de muestra si las
+                      o prefijo que se usará para identificar columnas de muestra si las
                       muestras están como columnas.
         count: Número de genes principales a mostrar.
         ax: Eje de matplotlib donde dibujar. Si es None, se crea uno nuevo.
@@ -764,6 +754,22 @@ def create_top_mutated_genes_plot(data: pd.DataFrame,
         ax.axis('off')
         return ax
     
+    # Detectar si las muestras están como columnas (formato ancho)
+    # Buscar columnas que puedan ser muestras (por ejemplo, empiezan con TCGA-)
+    sample_cols = [col for col in data.columns if str(col).startswith("TCGA-")]
+    samples_as_columns = len(sample_cols) > 0
+    
+    if not samples_as_columns and sample_column not in data.columns:
+        print(f"No se encontró la columna de muestras: {sample_column}")
+        print("Tampoco se detectaron columnas de muestra con formato TCGA-*")
+        if ax is None:
+            _, ax = plt.subplots(figsize=(10, 8))
+        ax.text(0.5, 0.5, f"No hay datos disponibles para Top Mutated Genes\nNo se detectaron muestras", 
+               ha='center', va='center', fontsize=12)
+        ax.set_title("Top Mutated Genes", fontsize=14)
+        ax.axis('off')
+        return ax
+    
     # Crear el eje si no se proporcionó uno
     if ax is None:
         _, ax = plt.subplots(figsize=(10, 8))
@@ -773,54 +779,199 @@ def create_top_mutated_genes_plot(data: pd.DataFrame,
     data_filtered = data_filtered[(data_filtered[gene_column] != "Unknown") & 
                                   (data_filtered[variant_column] != "Unknown")]
     
-    # MODO "variants" - Contar el número total de variantes
-    # Contar variantes por gen y tipo de variante
-    gene_variant_counts = data_filtered.groupby([gene_column, variant_column]).size().unstack(fill_value=0)
+    if mode == "variants":
+        # MODO "variants" - Contar el número total de variantes
+        # Contar variantes por gen y tipo de variante
+        gene_variant_counts = data_filtered.groupby([gene_column, variant_column]).size().unstack(fill_value=0)
+        
+        # Calcular el total para cada gen y ordenar
+        gene_totals = gene_variant_counts.sum(axis=1).sort_values(ascending=False)
+        top_genes = gene_totals.index[:count].tolist()
+        
+        # Seleccionar solo los top genes
+        df_top = gene_variant_counts.loc[top_genes]
+        
+        # Ordenarlos manualmente de menor a mayor para visualización
+        ordered_genes = sorted(top_genes, key=lambda g: gene_totals[g])
+        df_plot = df_top.loc[ordered_genes]
+        
+        # Asignar colores para cada tipo de variante
+        if color_map is None:
+            cmap = plt.colormaps['tab20']
+            colors = [cmap(i % 20) for i in range(len(df_plot.columns))]
+        else:
+            colors = [color_map.get(variant, plt.colormaps['tab20'](i % 20)) 
+                     for i, variant in enumerate(df_plot.columns)]
+        
+        # Crear gráfico de barras horizontales
+        df_plot.plot(kind='barh', stacked=True, ax=ax, color=colors)
+        
+        # Añadir etiquetas con el recuento total a la derecha de cada barra
+        for i, gene in enumerate(df_plot.index):
+            total = gene_totals[gene]
+            ax.text(total + 5, i, f'{int(total)}', va='center', fontsize=10)
+        
+        title = "Top 10 Mutated Genes (Total Variants)"
+        ax.set_xlabel("Número de mutaciones", fontsize=12)
+        return ax
     
-    # Calcular el total para cada gen y ordenar
-    gene_totals = gene_variant_counts.sum(axis=1).sort_values(ascending=False)
-    top_genes = gene_totals.index[:count].tolist()
-    
-    # Seleccionar solo los top genes
-    df_top = gene_variant_counts.loc[top_genes]
-    
-    # Ordenarlos manualmente de menor a mayor para visualización
-    ordered_genes = sorted(top_genes, key=lambda g: gene_totals[g])
-    df_plot = df_top.loc[ordered_genes]
-    
-    # Asignar colores para cada tipo de variante
-    if color_map is None:
-        cmap = plt.colormaps['tab20']
-        colors = [cmap(i % 20) for i in range(len(df_plot.columns))]
-    else:
-        colors = [color_map.get(variant, plt.colormaps['tab20'](i % 20)) 
-                 for i, variant in enumerate(df_plot.columns)]
-    
-    # Crear gráfico de barras horizontales
-    df_plot.plot(kind='barh', stacked=True, ax=ax, color=colors)
-    
-    # Añadir etiquetas con el recuento total a la derecha de cada barra
-    for i, gene in enumerate(df_plot.index):
-        total = gene_totals[gene]
-        ax.text(total + 5, i, f'{int(total)}', va='center', fontsize=10)
-    
-    title = "Top 10 Mutated Genes (Total Variants)"
-    ax.set_title(title, fontsize=14)
-    ax.set_xlabel("Número de mutaciones", fontsize=12)
-    
-    # Configuración común
-    ax.set_ylabel("Genes", fontsize=12)
-    ax.spines['top'].set_visible(False)
-    ax.spines['right'].set_visible(False)
-    ax.spines['left'].set_visible(False)
-    
-    # Mejorar la leyenda
-    handles, labels = ax.get_legend_handles_labels()
-    by_label = dict(zip(labels, handles))
-    ax.legend(by_label.values(), by_label.keys(), 
-             title="Variant Classification", 
-             loc="lower center", 
-             bbox_to_anchor=(0.5, -0.2), 
-             ncol=min(len(by_label), 4))
-    
-    return ax 
+    else:  # mode == "samples"
+        # MODO "samples" - Contar el número de muestras afectadas por gen y tipo de variante
+        
+        # gene_variant_sample_counts: Dict[str (gene), Dict[str (variant_type), Set[str (sample_id)]]]
+        gene_variant_sample_counts = {}
+
+        # Iterar sobre cada gen único presente en los datos filtrados
+        for gene_iter_val in data_filtered[gene_column].unique():
+            if pd.isna(gene_iter_val) or gene_iter_val == "Unknown":
+                continue
+            
+            gene_variant_sample_counts[gene_iter_val] = {}
+            # Filtrar el DataFrame para obtener solo las filas correspondientes al gen actual
+            gene_data_for_current_gene = data_filtered[data_filtered[gene_column] == gene_iter_val]
+
+            if samples_as_columns:  # Formato ancho: las muestras son columnas TCGA-*
+                for sample_col_name in sample_cols:
+                    # Para cada fila (variante específica) del gen actual
+                    for _, row_series in gene_data_for_current_gene.iterrows():
+                        sample_genotype_value = str(row_series[sample_col_name]).strip().upper()
+                        actual_variant_type = row_series[variant_column]
+                        
+                        if pd.isna(actual_variant_type) or actual_variant_type == "Unknown":
+                            continue
+
+                        is_mutation_present_in_sample = False
+                        if '|' in sample_genotype_value:
+                            alleles = sample_genotype_value.split('|')
+                            if len(alleles) >= 2 and alleles[0] != alleles[1]: 
+                                is_mutation_present_in_sample = True
+                        elif '/' in sample_genotype_value: 
+                            alleles = sample_genotype_value.split('/')
+                            if len(alleles) >= 2 and alleles[0] != alleles[1]:
+                                is_mutation_present_in_sample = True
+                        elif sample_genotype_value not in ["", ".", "0", "0/0", "0|0"] and not pd.isna(row_series[sample_col_name]):
+                            is_mutation_present_in_sample = True
+                        
+                        if is_mutation_present_in_sample:
+                            if actual_variant_type not in gene_variant_sample_counts[gene_iter_val]:
+                                gene_variant_sample_counts[gene_iter_val][actual_variant_type] = set()
+                            gene_variant_sample_counts[gene_iter_val][actual_variant_type].add(sample_col_name)
+            
+            else:  # Formato largo: hay una columna 'sample_column'
+                for _, row_series in gene_data_for_current_gene.iterrows():
+                    actual_sample_id = row_series[sample_column]
+                    actual_variant_type = row_series[variant_column]
+
+                    if pd.isna(actual_variant_type) or actual_variant_type == "Unknown" or pd.isna(actual_sample_id):
+                        continue
+                    
+                    if actual_variant_type not in gene_variant_sample_counts[gene_iter_val]:
+                        gene_variant_sample_counts[gene_iter_val][actual_variant_type] = set()
+                    gene_variant_sample_counts[gene_iter_val][actual_variant_type].add(actual_sample_id)
+
+        plot_data_list = []
+        for gene, variant_dict in gene_variant_sample_counts.items():
+            row_for_df = {gene_column: gene}
+            has_data_for_gene = False
+            for variant_type, sample_set in variant_dict.items():
+                if sample_set: 
+                    row_for_df[variant_type] = len(sample_set)
+                    has_data_for_gene = True
+            if has_data_for_gene: 
+                plot_data_list.append(row_for_df)
+        
+        if not plot_data_list:
+            ax.text(0.5, 0.5, "No hay datos disponibles para analizar (modo samples)", 
+                      ha='center', va='center', fontsize=12)
+            ax.set_title(f"Top {count} Mutated Genes (Sample Prevalence)", fontsize=14)
+            ax.axis('off')
+            return ax
+
+        gene_variant_counts_df = pd.DataFrame(plot_data_list).set_index(gene_column).fillna(0)
+        
+        gene_total_affected_samples = {}
+        for gene, variant_dict in gene_variant_sample_counts.items():
+            all_samples_for_gene = set()
+            for _, sample_set in variant_dict.items(): 
+                all_samples_for_gene.update(sample_set) 
+            if all_samples_for_gene: 
+                 gene_total_affected_samples[gene] = len(all_samples_for_gene)
+
+        if not gene_total_affected_samples: 
+            ax.text(0.5, 0.5, "No hay genes con muestras afectadas para mostrar (modo samples)", 
+                      ha='center', va='center', fontsize=12)
+            ax.set_title(f"Top {count} Mutated Genes (Sample Prevalence)", fontsize=14)
+            ax.axis('off')
+            return ax
+
+        gene_totals_series = pd.Series(gene_total_affected_samples).sort_values(ascending=False)
+        
+        total_samples_in_dataset = len(sample_cols) if samples_as_columns else data_filtered[sample_column].nunique()
+
+        top_genes_list = gene_totals_series.index[:count].tolist()
+        
+        df_top_plot = gene_variant_counts_df.loc[gene_variant_counts_df.index.isin(top_genes_list)]
+        df_top_plot = df_top_plot.loc[:, (df_top_plot != 0).any(axis=0)] 
+
+        valid_top_genes_for_plot = [g for g in top_genes_list if g in df_top_plot.index]
+        ordered_genes_for_plot = sorted(valid_top_genes_for_plot, key=lambda g: gene_totals_series[g])
+        
+        if not ordered_genes_for_plot: 
+            ax.text(0.5, 0.5, "No hay genes en top seleccionados para mostrar (modo samples)", 
+                      ha='center', va='center', fontsize=12)
+            ax.set_title(f"Top {count} Mutated Genes (Sample Prevalence)", fontsize=14)
+            ax.axis('off')
+            return ax
+
+        df_plot_final = df_top_plot.loc[ordered_genes_for_plot]
+
+        variant_types_in_plot = df_plot_final.columns.tolist()
+        if color_map is None:
+            cmap_instance = plt.colormaps.get_cmap('tab20')
+            colors_for_plot = [cmap_instance(i % cmap_instance.N) for i in range(len(variant_types_in_plot))]
+        else:
+            cmap_instance = plt.colormaps.get_cmap('tab20')
+            colors_for_plot = [color_map.get(vt, cmap_instance(i % cmap_instance.N)) 
+                               for i, vt in enumerate(variant_types_in_plot)]
+        
+        df_plot_final.plot(kind='barh', stacked=True, ax=ax, color=colors_for_plot)
+        
+        for i, gene_name_in_plot in enumerate(df_plot_final.index):
+            num_unique_samples_affected = gene_totals_series[gene_name_in_plot]
+            percentage = (num_unique_samples_affected / total_samples_in_dataset) * 100 if total_samples_in_dataset > 0 else 0
+            bar_length = df_plot_final.loc[gene_name_in_plot].sum()
+            offset = 0.01 * ax.get_xlim()[1] if ax.get_xlim()[1] > 0 else 0.1 
+            ax.text(bar_length + offset , i, f'{percentage:.1f}%', va='center', fontsize=10)
+        
+        title_text = f"Top {count} Mutated Genes (Sample Prevalence)"
+        ax.set_xlabel("Número de muestras por tipo de variante", fontsize=12)
+        ax.set_title(title_text, fontsize=14) 
+        ax.set_ylabel("Genes", fontsize=12)
+        ax.spines['top'].set_visible(False)
+        ax.spines['right'].set_visible(False)
+
+        handles, labels = ax.get_legend_handles_labels()
+        legend_elements = {label: handle for label, handle in zip(labels, handles)}
+        # Asegurar que valid_handles y valid_labels se basen en las columnas de df_plot_final que realmente están en la leyenda
+        valid_handles = [legend_elements[label] for label in df_plot_final.columns if label in legend_elements]
+        valid_labels = [label for label in df_plot_final.columns if label in legend_elements]
+
+
+        if valid_labels: 
+            num_legend_items = len(valid_labels)
+            ncol_legend = min(num_legend_items, 4) 
+            # Ajuste más robusto para vertical_offset
+            base_offset = -0.20 
+            row_offset_factor = 0.06
+            num_legend_rows = (num_legend_items + ncol_legend - 1) // ncol_legend
+            vertical_offset = base_offset - (row_offset_factor * num_legend_rows)
+
+            ax.legend(valid_handles, valid_labels, 
+                    title="Variant Classification", 
+                    loc="lower center", 
+                    bbox_to_anchor=(0.5, vertical_offset), 
+                    ncol=ncol_legend) 
+        elif ax.get_legend() is not None: 
+            ax.get_legend().remove()
+            
+        return ax
