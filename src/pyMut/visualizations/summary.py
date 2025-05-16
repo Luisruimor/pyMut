@@ -809,10 +809,39 @@ def create_top_mutated_genes_plot(data: pd.DataFrame,
         # Añadir etiquetas con el recuento total a la derecha de cada barra
         for i, gene in enumerate(df_plot.index):
             total = gene_totals[gene]
-            ax.text(total + 5, i, f'{int(total)}', va='center', fontsize=10)
+            # Ajustar el offset para los números
+            offset_variants = max(1, 0.01 * ax.get_xlim()[1]) if ax.get_xlim()[1] > 0 else 1
+            ax.text(total + offset_variants, i, f'{int(total)}', va='center', fontsize=10)
         
-        title = "Top 10 Mutated Genes (Total Variants)"
+        title_text_variants = f"Top {count} Mutated Genes (Total Variants)" # Usar count variable
         ax.set_xlabel("Número de mutaciones", fontsize=12)
+        # Configuración común del título y ejes para el modo variants
+        ax.set_title(title_text_variants, fontsize=14) 
+        ax.set_ylabel("Genes", fontsize=12) 
+        ax.spines['top'].set_visible(False)
+        ax.spines['right'].set_visible(False)
+        ax.spines['left'].set_visible(False) # Ocultar línea del eje izquierdo
+        ax.tick_params(axis='y', which='both', left=False, right=False, labelleft=True) # Sin ticks en eje Y, pero con etiquetas
+
+        # Mejorar la leyenda para el modo variants
+        handles_v, labels_v = ax.get_legend_handles_labels()
+        by_label_v = dict(zip(labels_v, handles_v))
+        
+        if by_label_v:
+            num_legend_items_v = len(by_label_v)
+            ncol_legend_v = min(num_legend_items_v, 4)
+            base_offset_v = -0.20
+            row_offset_factor_v = 0.06
+            num_legend_rows_v = (num_legend_items_v + ncol_legend_v - 1) // ncol_legend_v
+            vertical_offset_v = base_offset_v - (row_offset_factor_v * num_legend_rows_v)
+            ax.legend(by_label_v.values(), by_label_v.keys(),
+                      title="Variant Classification",
+                      loc="lower center",
+                      bbox_to_anchor=(0.5, vertical_offset_v),
+                      ncol=ncol_legend_v)
+        elif ax.get_legend() is not None:
+            ax.get_legend().remove()
+            
         return ax
     
     else:  # mode == "samples"
@@ -925,6 +954,33 @@ def create_top_mutated_genes_plot(data: pd.DataFrame,
 
         df_plot_final = df_top_plot.loc[ordered_genes_for_plot]
 
+        # NORMALIZACIÓN: Modificar df_plot_final para que la suma total de cada fila (gen) sea igual 
+        # al número total de muestras únicas afectadas por ese gen
+        normalized_df_plot = pd.DataFrame(index=df_plot_final.index, columns=df_plot_final.columns)
+        
+        for gene in df_plot_final.index:
+            # Número total de muestras únicas afectadas por este gen (para el 100% de la barra)
+            total_unique_samples = gene_totals_series[gene]
+            
+            # Valores actuales (sin normalizar) por tipo de variante para este gen
+            current_values = df_plot_final.loc[gene]
+            
+            # Suma actual de los valores por tipo de variante
+            current_sum = current_values.sum()
+            
+            if current_sum > 0:  # Evitar división por cero
+                # Factor de normalización: cuánto representa cada unidad actual respecto al total de muestras únicas
+                normalization_factor = total_unique_samples / current_sum
+                
+                # Calcular nuevos valores normalizados: los valores actuales * factor de normalización
+                normalized_values = current_values * normalization_factor
+                
+                # Asignar los valores normalizados a la fila correspondiente al gen actual
+                normalized_df_plot.loc[gene] = normalized_values
+        
+        # Reemplazar df_plot_final con la versión normalizada
+        df_plot_final = normalized_df_plot.fillna(0)
+
         variant_types_in_plot = df_plot_final.columns.tolist()
         if color_map is None:
             cmap_instance = plt.colormaps.get_cmap('tab20')
@@ -949,6 +1005,8 @@ def create_top_mutated_genes_plot(data: pd.DataFrame,
         ax.set_ylabel("Genes", fontsize=12)
         ax.spines['top'].set_visible(False)
         ax.spines['right'].set_visible(False)
+        ax.spines['left'].set_visible(False) # Ocultar la línea del eje izquierdo
+        ax.tick_params(axis='y', which='both', left=False, right=False, labelleft=True) # Sin ticks en eje Y, pero con etiquetas
 
         handles, labels = ax.get_legend_handles_labels()
         legend_elements = {label: handle for label, handle in zip(labels, handles)}
