@@ -49,7 +49,7 @@ def create_variant_classification_plot(data: pd.DataFrame,
     bars = ax.barh(list(variant_counts.keys()), list(variant_counts.values()), color=colors)
     
     # Ajustar título y etiquetas
-    ax.set_title("Variant Classification", fontsize=14)
+    ax.set_title("Variant Classification", fontsize=14, fontweight='bold')
     ax.set_ylabel("")  # Se elimina el título del eje Y
     
     # Añadir etiquetas con el recuento en cada barra
@@ -103,7 +103,7 @@ def create_variant_type_plot(data: pd.DataFrame,
     bars = ax.barh(list(variant_counts.keys()), list(variant_counts.values()), color=colors)
     
     # Ajustar título y etiquetas
-    ax.set_title("Variant Type", fontsize=14)
+    ax.set_title("Variant Type", fontsize=14, fontweight='bold')
     ax.set_ylabel("")  # Se elimina el título del eje Y
     
     # Configuración de las etiquetas del eje Y en cursiva
@@ -157,7 +157,7 @@ def create_snv_class_plot(data: pd.DataFrame,
             _, ax = plt.subplots(figsize=(8, 6))
         ax.text(0.5, 0.5, "No hay datos disponibles para SNV Class", 
                ha='center', va='center', fontsize=12)
-        ax.set_title("SNV Class", fontsize=14)
+        ax.set_title("SNV Class", fontsize=14, fontweight='bold')
         ax.axis('off')
         return ax
     
@@ -173,7 +173,7 @@ def create_snv_class_plot(data: pd.DataFrame,
             _, ax = plt.subplots(figsize=(8, 6))
         ax.text(0.5, 0.5, "No hay datos disponibles para SNV Class", 
                ha='center', va='center', fontsize=12)
-        ax.set_title("SNV Class", fontsize=14)
+        ax.set_title("SNV Class", fontsize=14, fontweight='bold')
         ax.axis('off')
         return ax
     
@@ -196,7 +196,7 @@ def create_snv_class_plot(data: pd.DataFrame,
     bars = ax.barh(list(snv_counts.keys()), list(snv_counts.values()), color=colors)
     
     # Ajustar título y etiquetas
-    ax.set_title("SNV Class", fontsize=14)
+    ax.set_title("SNV Class", fontsize=14, fontweight='bold')
     ax.set_ylabel("")  # Se elimina el título del eje Y
     
     # Añadir etiquetas con el recuento en cada barra
@@ -241,7 +241,7 @@ def create_variant_classification_summary_plot(data: pd.DataFrame,
             _, ax = plt.subplots(figsize=(12, 6))
         ax.text(0.5, 0.5, f"No hay datos disponibles para Variant Classification Summary\nFalta columna: {variant_column}", 
                ha='center', va='center', fontsize=12)
-        ax.set_title("Variant Classification Summary", fontsize=14)
+        ax.set_title("Variant Classification Summary", fontsize=14, fontweight='bold')
         ax.axis('off')
         return ax
     
@@ -260,7 +260,7 @@ def create_variant_classification_summary_plot(data: pd.DataFrame,
                 _, ax = plt.subplots(figsize=(12, 6))
             ax.text(0.5, 0.5, "No hay datos disponibles para Variant Classification Summary\nNo se detectaron columnas de muestra", 
                   ha='center', va='center', fontsize=12)
-            ax.set_title("Variant Classification Summary", fontsize=14)
+            ax.set_title("Variant Classification Summary", fontsize=14, fontweight='bold')
             ax.axis('off')
             return ax
             
@@ -354,7 +354,7 @@ def create_variant_classification_summary_plot(data: pd.DataFrame,
             _, ax = plt.subplots(figsize=(12, 6))
         ax.text(0.5, 0.5, "No hay datos disponibles para Variant Classification Summary\nNo se encontraron datos para analizar", 
                ha='center', va='center', fontsize=12)
-        ax.set_title("Variant Classification Summary", fontsize=14)
+        ax.set_title("Variant Classification Summary", fontsize=14, fontweight='bold')
         ax.axis('off')
         return ax
     
@@ -398,7 +398,7 @@ def create_variant_classification_summary_plot(data: pd.DataFrame,
         patch.set_alpha(0.7)
     
     # Configurar las etiquetas del eje X con mejor rotación y formato
-    ax.set_xticklabels(variant_types, rotation=45, ha='right', fontsize=10)
+    ax.set_xticklabels([], rotation=0)  # Eliminar etiquetas del eje X (nombres de clasificaciones)
     
     # Ajustar los límites del eje Y
     ymin = 0
@@ -411,7 +411,6 @@ def create_variant_classification_summary_plot(data: pd.DataFrame,
     # Añadir título más descriptivo
     ax.set_title("Variant Classification Summary", fontsize=14, fontweight='bold')
     ax.set_xlabel("Variant Classification", fontsize=12, fontweight='bold')
-    ax.set_ylabel("Número de alelos alternativos por muestra", fontsize=12, fontweight='bold')
     
     # Añadir cuadrícula para mejor legibilidad
     ax.yaxis.grid(True, linestyle='--', alpha=0.3)
@@ -581,7 +580,7 @@ def create_variants_per_sample_plot(data: pd.DataFrame,
             _, ax = plt.subplots(figsize=(10, 6))
         ax.text(0.5, 0.5, f"No hay datos disponibles para Variants per Sample\nFalta columna: {variant_column}", 
                ha='center', va='center', fontsize=12)
-        ax.set_title("Variants per Sample", fontsize=14)
+        ax.set_title("Variants per Sample", fontsize=14, fontweight='bold')
         ax.axis('off')
         return ax
     
@@ -600,7 +599,7 @@ def create_variants_per_sample_plot(data: pd.DataFrame,
                 _, ax = plt.subplots(figsize=(10, 6))
             ax.text(0.5, 0.5, "No hay datos disponibles para Variants per Sample\nNo se detectaron columnas de muestra", 
                   ha='center', va='center', fontsize=12)
-            ax.set_title("Variants per Sample", fontsize=14)
+            ax.set_title("Variants per Sample", fontsize=14, fontweight='bold')
             ax.axis('off')
             return ax
         
@@ -636,7 +635,7 @@ def create_variants_per_sample_plot(data: pd.DataFrame,
                 _, ax = plt.subplots(figsize=(10, 6))
             ax.text(0.5, 0.5, "No hay datos disponibles para Variants per Sample\nNo se pudieron procesar las variantes", 
                   ha='center', va='center', fontsize=12)
-            ax.set_title("Variants per Sample", fontsize=14)
+            ax.set_title("Variants per Sample", fontsize=14, fontweight='bold')
             ax.axis('off')
             return ax
         
@@ -686,10 +685,11 @@ def create_variants_per_sample_plot(data: pd.DataFrame,
     # Añadir una línea horizontal para la mediana
     ax.axhline(y=median_tmb, color='red', linestyle='--', linewidth=1)
     
-    # Configurar etiquetas y título (incluir la mediana en el título)
-    ax.set_title(f"Variants per Sample\nMedian: {median_tmb:.1f}", fontsize=14)
-    ax.set_xlabel("Samples", fontsize=12)
-    ax.set_ylabel("Number of Variants", fontsize=12)
+    # Configurar etiquetas y título (incluir la mediana en el título pero sin negrita)
+    ax.set_title("Variants per Sample", fontsize=14, fontweight='bold')
+    # Añadir la información de la mediana como subtítulo sin negrita
+    ax.text(0.5, 0.92, f"Median: {median_tmb:.1f}", transform=ax.transAxes, ha='center', fontsize=12)
+    ax.set_xlabel("")  # Eliminar la etiqueta del eje X "Samples"
     
     # Quitar las etiquetas del eje X para mayor claridad cuando hay muchas muestras
     ax.set_xticklabels([])
@@ -740,7 +740,7 @@ def create_top_mutated_genes_plot(data: pd.DataFrame,
             _, ax = plt.subplots(figsize=(10, 8))
         ax.text(0.5, 0.5, f"No hay datos disponibles para Top Mutated Genes\nFalta columna: {gene_column}", 
                ha='center', va='center', fontsize=12)
-        ax.set_title("Top Mutated Genes", fontsize=14)
+        ax.set_title("Top Mutated Genes", fontsize=14, fontweight='bold')
         ax.axis('off')
         return ax
         
@@ -750,7 +750,7 @@ def create_top_mutated_genes_plot(data: pd.DataFrame,
             _, ax = plt.subplots(figsize=(10, 8))
         ax.text(0.5, 0.5, f"No hay datos disponibles para Top Mutated Genes\nFalta columna: {variant_column}", 
                ha='center', va='center', fontsize=12)
-        ax.set_title("Top Mutated Genes", fontsize=14)
+        ax.set_title("Top Mutated Genes", fontsize=14, fontweight='bold')
         ax.axis('off')
         return ax
     
@@ -766,7 +766,7 @@ def create_top_mutated_genes_plot(data: pd.DataFrame,
             _, ax = plt.subplots(figsize=(10, 8))
         ax.text(0.5, 0.5, f"No hay datos disponibles para Top Mutated Genes\nNo se detectaron muestras", 
                ha='center', va='center', fontsize=12)
-        ax.set_title("Top Mutated Genes", fontsize=14)
+        ax.set_title("Top Mutated Genes", fontsize=14, fontweight='bold')
         ax.axis('off')
         return ax
     
@@ -804,7 +804,7 @@ def create_top_mutated_genes_plot(data: pd.DataFrame,
                      for i, variant in enumerate(df_plot.columns)]
         
         # Crear gráfico de barras horizontales
-        df_plot.plot(kind='barh', stacked=True, ax=ax, color=colors)
+        df_plot.plot(kind='barh', stacked=True, ax=ax, color=colors, width=0.65)
         
         # Añadir etiquetas con el recuento total a la derecha de cada barra
         for i, gene in enumerate(df_plot.index):
@@ -814,10 +814,9 @@ def create_top_mutated_genes_plot(data: pd.DataFrame,
             ax.text(total + offset_variants, i, f'{int(total)}', va='center', fontsize=10)
         
         title_text_variants = f"Top {count} Mutated Genes (Total Variants)" # Usar count variable
-        ax.set_xlabel("Número de mutaciones", fontsize=12)
         # Configuración común del título y ejes para el modo variants
-        ax.set_title(title_text_variants, fontsize=14) 
-        ax.set_ylabel("Genes", fontsize=12) 
+        ax.set_title(title_text_variants, fontsize=14, fontweight='bold') 
+        ax.set_ylabel("")  # Eliminar la etiqueta del eje Y
         ax.spines['top'].set_visible(False)
         ax.spines['right'].set_visible(False)
         ax.spines['left'].set_visible(False) # Ocultar línea del eje izquierdo
@@ -912,7 +911,7 @@ def create_top_mutated_genes_plot(data: pd.DataFrame,
         if not plot_data_list:
             ax.text(0.5, 0.5, "No hay datos disponibles para analizar (modo samples)", 
                       ha='center', va='center', fontsize=12)
-            ax.set_title(f"Top {count} Mutated Genes (Sample Prevalence)", fontsize=14)
+            ax.set_title(f"Top {count} Mutated Genes (Sample Prevalence)", fontsize=14, fontweight='bold')
             ax.axis('off')
             return ax
 
@@ -929,7 +928,7 @@ def create_top_mutated_genes_plot(data: pd.DataFrame,
         if not gene_total_affected_samples: 
             ax.text(0.5, 0.5, "No hay genes con muestras afectadas para mostrar (modo samples)", 
                       ha='center', va='center', fontsize=12)
-            ax.set_title(f"Top {count} Mutated Genes (Sample Prevalence)", fontsize=14)
+            ax.set_title(f"Top {count} Mutated Genes (Sample Prevalence)", fontsize=14, fontweight='bold')
             ax.axis('off')
             return ax
 
@@ -948,7 +947,7 @@ def create_top_mutated_genes_plot(data: pd.DataFrame,
         if not ordered_genes_for_plot: 
             ax.text(0.5, 0.5, "No hay genes en top seleccionados para mostrar (modo samples)", 
                       ha='center', va='center', fontsize=12)
-            ax.set_title(f"Top {count} Mutated Genes (Sample Prevalence)", fontsize=14)
+            ax.set_title(f"Top {count} Mutated Genes (Sample Prevalence)", fontsize=14, fontweight='bold')
             ax.axis('off')
             return ax
 
@@ -990,7 +989,7 @@ def create_top_mutated_genes_plot(data: pd.DataFrame,
             colors_for_plot = [color_map.get(vt, cmap_instance(i % cmap_instance.N)) 
                                for i, vt in enumerate(variant_types_in_plot)]
         
-        df_plot_final.plot(kind='barh', stacked=True, ax=ax, color=colors_for_plot)
+        df_plot_final.plot(kind='barh', stacked=True, ax=ax, color=colors_for_plot, width=0.65)
         
         for i, gene_name_in_plot in enumerate(df_plot_final.index):
             num_unique_samples_affected = gene_totals_series[gene_name_in_plot]
@@ -1001,8 +1000,8 @@ def create_top_mutated_genes_plot(data: pd.DataFrame,
         
         title_text = f"Top {count} Mutated Genes (Sample Prevalence)"
         ax.set_xlabel("Número de muestras por tipo de variante", fontsize=12)
-        ax.set_title(title_text, fontsize=14) 
-        ax.set_ylabel("Genes", fontsize=12)
+        ax.set_title(title_text, fontsize=14, fontweight='bold') 
+        ax.set_ylabel("")  # Eliminar la etiqueta del eje Y "Genes"
         ax.spines['top'].set_visible(False)
         ax.spines['right'].set_visible(False)
         ax.spines['left'].set_visible(False) # Ocultar la línea del eje izquierdo

@@ -44,7 +44,7 @@ def main():
     # 1. Generar el gráfico de resumen completo
     print("\n1. Generando gráfico de resumen completo...")
     summary_fig = py_mut.summary_plot(
-        title="Resumen de Mutaciones", 
+        title="Ejemplo del plot summary", 
         show_interactive=False
     )
     
