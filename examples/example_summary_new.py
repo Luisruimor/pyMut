@@ -72,13 +72,13 @@ def main():
     
     # 3. Variant Type Plot
     print("\n3. Generando gráfico de tipos de variantes...")
-    # vt_fig = py_mut.variant_type_plot()
+    vt_fig = py_mut.variant_type_plot()
     # Parámetros opcionales comentados:
-    vt_fig = py_mut.variant_type_plot(
-         figsize=(12, 6),                      # Tamaño de la figura
-         title="Variant Type",                 # Título personalizado
-         show_interactive=True                 # Mostrar interactivamente
-     )
+    # vt_fig = py_mut.variant_type_plot(
+    #      figsize=(12, 6),                      # Tamaño de la figura
+    #      title="Variant Type",                 # Título personalizado
+    #      show_interactive=True                 # Mostrar interactivamente
+    #  )
     
     vt_output_path = os.path.join(os.path.dirname(__file__), 'variant_type.png')
     vt_fig.savefig(vt_output_path)

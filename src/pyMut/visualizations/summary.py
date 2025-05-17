@@ -558,14 +558,22 @@ def create_summary_plot(data: pd.DataFrame,
     # Create handles and labels manually for the global legend
     handles = []
     labels = []
-    for variant, color in variant_color_map.items():
-        if pd.isnull(variant) or variant == "Unknown":
-            continue
-        patch = plt.Rectangle((0,0), 1, 1, fc=color)
-        handles.append(patch)
-        labels.append(variant)
     
-    # Add the common legend
+    # Count variants to order by frequency
+    variant_counts = data[variant_classification_col].value_counts()
+    
+    # Sort variants by frequency (descending order)
+    ordered_variants = variant_counts.index.tolist()
+    
+    # Create handles and labels in order of frequency
+    for variant in ordered_variants:
+        if variant in variant_color_map and not pd.isnull(variant) and variant != "Unknown":
+            color = variant_color_map[variant]
+            patch = plt.Rectangle((0,0), 1, 1, fc=color)
+            handles.append(patch)
+            labels.append(variant)
+    
+    # Add the common legend with variants ordered by frequency
     fig.legend(handles, labels, loc='lower center', ncol=min(len(labels), 5), 
                bbox_to_anchor=(0.5, 0.02))
     

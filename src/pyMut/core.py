@@ -424,11 +424,11 @@ class PyMutation:
         # Ajustar título personalizado basado en el modo
         if title:
             if mode == "variants" and title == "Top Mutated Genes":
-                fig.suptitle("Top mutated genes (variants)", fontsize=16, fontweight='bold', y=1.02)
+                fig.suptitle("Top mutated genes (variants)", fontsize=16, fontweight='bold', y=0.98)
             elif mode == "samples" and title == "Top Mutated Genes":
-                fig.suptitle("Top mutated genes (samples)", fontsize=16, fontweight='bold', y=1.02)
+                fig.suptitle("Top mutated genes (samples)", fontsize=16, fontweight='bold', y=0.98)
             else:
-                fig.suptitle(title, fontsize=16, fontweight='bold', y=1.02)
+                fig.suptitle(title, fontsize=16, fontweight='bold', y=0.98)
         
         plt.tight_layout()
         
