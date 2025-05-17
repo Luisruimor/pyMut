@@ -1,41 +1,41 @@
 # pyMut
 
-Una librería Python para visualizar mutaciones genéticas a partir de archivos .TSV.
+A Python library for visualizing genetic mutations from TSV files.
 
-## Descripción
+## Description
 
-pyMut es una herramienta de visualización para datos de mutaciones genéticas. Permite generar visualizaciones de resumen para entender mejor los patrones y distribuciones de las mutaciones en los datos.
+pyMut is a visualization tool for genetic mutation data. It allows generating summary visualizations to better understand patterns and distributions of mutations in the data.
 
-## Características
+## Features
 
-- Visualizaciones de resumen estadístico:
-  - Variant Classification: Distribución de clasificaciones de variantes
-  - Variant Type: Distribución de tipos de variantes (SNP, INS, DEL, etc.)
-  - SNV Class: Distribución de clases de SNV (cambios nucleotídicos como A>G, C>T, etc.)
+- Statistical summary visualizations:
+  - Variant Classification: Distribution of variant classifications
+  - Variant Type: Distribution of variant types (SNP, INS, DEL, etc.)
+  - SNV Class: Distribution of SNV classes (nucleotide changes like A>G, C>T, etc.)
 
-## Instalación
+## Installation
 
 ```bash
 pip install pyMut
 ```
 
-## Uso básico
+## Basic Usage
 
 ```python
 from pyMut import PyMutation
 import pandas as pd
 
-# Cargar datos de mutaciones desde un archivo TSV
+# Load mutation data from a TSV file
 data = pd.read_csv("mutations.tsv", sep="\t")
 
-# Crear un objeto PyMutation
+# Create a PyMutation object
 pyMut = PyMutation(data)
 
-# Generar un gráfico de resumen
+# Generate a summary plot
 fig = pyMut.summary_plot()
 fig.savefig("summary.png")
 ```
 
-## Proyección futura
+## Future Development
 
-En el futuro, pyMut se ampliará con más visualizaciones y funcionalidades para un análisis más completo de mutaciones genéticas, siempre manteniendo la simplicidad y facilidad de uso.
+In the future, pyMut will be expanded with more visualizations and functionalities for a more comprehensive analysis of genetic mutations, while maintaining simplicity and ease of use.

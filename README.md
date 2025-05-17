@@ -1,82 +1,82 @@
 # pyMut
 
-Una librería Python para visualizar mutaciones genéticas a partir de archivos .TSV.
+A Python library for visualizing genetic mutations from TSV files.
 
-## Descripción
+## Description
 
-pyMut es una herramienta de visualización para datos de mutaciones genéticas, inspirada en herramientas como Maftools y Mutscape. Permite generar visualizaciones de resumen para entender las mutaciones genéticas en un dataset de formato TSV.
+pyMut is a visualization tool for genetic mutation data, inspired by tools like Maftools and Mutscape. It allows generating summary visualizations to understand genetic mutations in a TSV-format dataset.
 
-## Características
+## Features
 
-- Visualizaciones de resumen de mutaciones:
-  - **Variant Classification**: Distribución de clasificaciones de variantes
-  - **Variant Type**: Distribución de tipos de variantes (SNP, INS, DEL, etc.)
-  - **SNV Class**: Distribución de clases de SNV (cambios nucleotídicos como A>G, C>T, etc.)
-  - **Variants per Sample**: Distribución de variantes por muestra y mediana (TMB)
-  - **Variant Classification Summary**: Diagrama de cajas y bigotes que muestra la distribución de cada tipo de variante entre las muestras, permitiendo identificar qué clasificaciones presentan mayor variabilidad entre pacientes
-  - **Top Mutated Genes**: Diagrama de barras horizontales que muestra los genes más mutados con dos modos:
-    - Modo "variants": Muestra el número total de variantes por gen
-    - Modo "samples": Muestra el porcentaje de muestras afectadas por gen
+- Mutation summary visualizations:
+  - **Variant Classification**: Distribution of variant classifications
+  - **Variant Type**: Distribution of variant types (SNP, INS, DEL, etc.)
+  - **SNV Class**: Distribution of SNV classes (nucleotide changes like A>G, C>T, etc.)
+  - **Variants per Sample**: Distribution of variants per sample and median (TMB)
+  - **Variant Classification Summary**: Box and whisker plot showing the distribution of each variant type across samples, allowing identification of which classifications show greater variability between patients
+  - **Top Mutated Genes**: Horizontal bar chart showing the most mutated genes with two modes:
+    - "variants" mode: Shows the total number of variants per gene
+    - "samples" mode: Shows the percentage of affected samples per gene
 
-## Instalación
+## Installation
 
 ```bash
 pip install pyMut
 ```
 
-## Uso básico
+## Basic Usage
 
 ```python
 from pyMut import PyMutation
 import pandas as pd
 
-# Cargar datos de mutaciones desde un archivo TSV
+# Load mutation data from a TSV file
 data = pd.read_csv("mutations.tsv", sep="\t")
 
-# Crear un objeto PyMutation
+# Create a PyMutation object
 pyMut = PyMutation(data)
 
-# Generar un gráfico de resumen completo
-fig = pyMut.summary_plot(title="Resumen de mutaciones")
+# Generate a complete summary plot
+fig = pyMut.summary_plot(title="Mutation Summary")
 fig.savefig("summary.png")
 
-# Generar visualizaciones individuales
-tmb_fig = pyMut.variants_per_sample_plot(title="Carga Mutacional por Muestra")
+# Generate individual visualizations
+tmb_fig = pyMut.variants_per_sample_plot(title="Tumor Mutation Burden per Sample")
 tmb_fig.savefig("variants_per_sample.png")
 
-boxplot_fig = pyMut.variant_classification_summary_plot(title="Distribución de Variantes por Muestra")
+boxplot_fig = pyMut.variant_classification_summary_plot(title="Variant Distribution per Sample")
 boxplot_fig.savefig("variant_classification_summary.png")
 
-# Visualización de genes más mutados (por número de variantes)
+# Top mutated genes visualization (by number of variants)
 top_genes_fig = pyMut.top_mutated_genes_plot(
-    title="Top 10 Genes Más Mutados",
-    mode="variants",  # Contar número total de variantes
-    count=10  # Mostrar los 10 genes principales
+    title="Top 10 Most Mutated Genes",
+    mode="variants",  # Count total number of variants
+    count=10  # Show top 10 genes
 )
 top_genes_fig.savefig("top_mutated_genes_variants.png")
 
-# Visualización de genes más mutados (por prevalencia en muestras)
+# Top mutated genes visualization (by sample prevalence)
 top_genes_samples_fig = pyMut.top_mutated_genes_plot(
-    title="Top 10 Genes Más Prevalentes",
-    mode="samples",  # Contar porcentaje de muestras afectadas
-    count=10  # Mostrar los 10 genes principales
+    title="Top 10 Most Prevalent Genes",
+    mode="samples",  # Count percentage of affected samples
+    count=10  # Show top 10 genes
 )
 top_genes_samples_fig.savefig("top_mutated_genes_samples.png")
 ```
 
-## Formatos de Datos Soportados
+## Supported Data Formats
 
-pyMut puede trabajar con datos en dos formatos principales:
+pyMut can work with data in two main formats:
 
-- **Formato Largo**: Cada fila representa una mutación, con columnas como `Variant_Classification` y `Tumor_Sample_Barcode`.
-- **Formato Ancho**: Las muestras se representan como columnas (por ejemplo, columnas con nombres como `TCGA-XX-YYYY`).
+- **Long Format**: Each row represents a mutation, with columns like `Variant_Classification` and `Tumor_Sample_Barcode`.
+- **Wide Format**: Samples are represented as columns (e.g., columns with names like `TCGA-XX-YYYY`).
 
-La biblioteca detecta automáticamente el formato y adapta las visualizaciones según corresponda. Para el formato ancho, pyMut puede interpretar datos en diferentes notaciones:
-- Genotipos separados por pipe (`|`): como "A|B" donde A y B son diferentes alelos
-- Genotipos separados por barra (`/`): como "A/B"
-- Otros formatos: valores numéricos o textuales que indican presencia de variante
+The library automatically detects the format and adapts visualizations accordingly. For wide format, pyMut can interpret data in different notations:
+- Pipe-separated genotypes (`|`): such as "A|B" where A and B are different alleles
+- Slash-separated genotypes (`/`): such as "A/B"
+- Other formats: numerical or textual values indicating variant presence
 
-## Requisitos
+## Requirements
 
 - Python 3.7+
 - pandas
@@ -84,14 +84,14 @@ La biblioteca detecta automáticamente el formato y adapta las visualizaciones s
 - numpy
 - seaborn
 
-## Documentación
+## Documentation
 
-Para obtener más información, consulte la [documentación completa](https://pymut.readthedocs.io/).
+For more information, see the [complete documentation](https://pymut.readthedocs.io/).
 
-## Contribuir
+## Contributing
 
-Las contribuciones son bienvenidas. Por favor, abra un issue primero para discutir lo que le gustaría cambiar.
+Contributions are welcome. Please open an issue first to discuss what you would like to change.
 
-## Licencia
+## License
 
 [MIT](LICENSE)

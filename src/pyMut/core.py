@@ -86,7 +86,7 @@ class PyMutation:
         return fig
     
     def variant_classification_plot(self,
-                                    figsize: Tuple[int, int] = (8, 6),
+                                    figsize: Tuple[int, int] = DEFAULT_PLOT_FIGSIZE,
                                     title: str = "Variant Classification",
                                     show_interactive: bool = False) -> plt.Figure:
         """
@@ -129,7 +129,7 @@ class PyMutation:
         return fig
     
     def variant_type_plot(self,
-                          figsize: Tuple[int, int] = (8, 6),
+                          figsize: Tuple[int, int] = DEFAULT_PLOT_FIGSIZE,
                           title: str = "Variant Type",
                           show_interactive: bool = False) -> plt.Figure:
         """
@@ -172,7 +172,7 @@ class PyMutation:
         return fig
     
     def snv_class_plot(self,
-                        figsize: Tuple[int, int] = (8, 6),
+                        figsize: Tuple[int, int] = DEFAULT_PLOT_FIGSIZE,
                         title: str = "SNV Class",
                         ref_column: str = "REF",
                         alt_column: str = "ALT",
@@ -208,9 +208,71 @@ class PyMutation:
             plt.show(block=False)
         
         return fig
+    
+    def variants_per_sample_plot(self,
+                                 figsize: Tuple[int, int] = DEFAULT_PLOT_FIGSIZE,
+                                 title: str = "Variants per Sample",
+                                 variant_column: str = "Variant_Classification",
+                                 sample_column: str = "Tumor_Sample_Barcode",
+                                 show_interactive: bool = False) -> plt.Figure:
+        """
+        Genera un gráfico de barras apiladas mostrando el número de variantes por muestra (TMB)
+        y su composición por tipo de variante.
 
+        Args:
+            figsize: Tamaño de la figura.
+            title: Título del gráfico.
+            variant_column: Nombre de la columna que contiene la clasificación de variante.
+            sample_column: Nombre de la columna que contiene el identificador de la muestra,
+                          o string que se usará para identificar columnas de muestra si las
+                          muestras están como columnas.
+            show_interactive: Si es True, muestra la visualización en modo interactivo.
+            
+        Returns:
+            Figura de matplotlib con el gráfico de variantes por muestra.
+        """
+        from .visualizations.summary import create_variants_per_sample_plot
+        from .utils.data_processing import extract_variant_classifications
+
+        # Si variant_column no está en las columnas, intentar normalizarlo
+        if variant_column not in self.data.columns:
+            # Comprobar si hay una versión con diferente capitalización
+            column_lower = variant_column.lower()
+            for col in self.data.columns:
+                if col.lower() == column_lower:
+                    variant_column = col
+                    break
+        
+        # Asegurar que la columna de clasificación de variantes existe o se extrae
+        processed_data = extract_variant_classifications(
+            self.data, 
+            variant_column=variant_column,
+            funcotation_column="FUNCOTATION"
+        )
+        
+        fig, ax = plt.subplots(figsize=figsize)
+        create_variants_per_sample_plot(
+            processed_data, 
+            variant_column=variant_column,
+            sample_column=sample_column,
+            ax=ax
+        )
+        
+        # No modificar el título si contiene la mediana
+        if title and not title.startswith("Variants per Sample"):
+            fig.suptitle(title, fontsize=16, y=1.02)
+        
+        plt.tight_layout()
+        
+        # Si se solicita mostrar interactivamente
+        if show_interactive:
+            plt.show(block=False)
+        
+        return fig
+    
+    
     def variant_classification_summary_plot(self,
-                                           figsize: Tuple[int, int] = (12, 6),
+                                           figsize: Tuple[int, int] = DEFAULT_PLOT_FIGSIZE,
                                            title: str = "Variant Classification Summary",
                                            variant_column: str = "Variant_Classification",
                                            sample_column: str = "Tumor_Sample_Barcode",
@@ -273,66 +335,6 @@ class PyMutation:
         
         return fig
 
-    def variants_per_sample_plot(self,
-                                 figsize: Tuple[int, int] = (10, 6),
-                                 title: str = "Variants per Sample",
-                                 variant_column: str = "Variant_Classification",
-                                 sample_column: str = "Tumor_Sample_Barcode",
-                                 show_interactive: bool = False) -> plt.Figure:
-        """
-        Genera un gráfico de barras apiladas mostrando el número de variantes por muestra (TMB)
-        y su composición por tipo de variante.
-
-        Args:
-            figsize: Tamaño de la figura.
-            title: Título del gráfico.
-            variant_column: Nombre de la columna que contiene la clasificación de variante.
-            sample_column: Nombre de la columna que contiene el identificador de la muestra,
-                          o string que se usará para identificar columnas de muestra si las
-                          muestras están como columnas.
-            show_interactive: Si es True, muestra la visualización en modo interactivo.
-            
-        Returns:
-            Figura de matplotlib con el gráfico de variantes por muestra.
-        """
-        from .visualizations.summary import create_variants_per_sample_plot
-        from .utils.data_processing import extract_variant_classifications
-
-        # Si variant_column no está en las columnas, intentar normalizarlo
-        if variant_column not in self.data.columns:
-            # Comprobar si hay una versión con diferente capitalización
-            column_lower = variant_column.lower()
-            for col in self.data.columns:
-                if col.lower() == column_lower:
-                    variant_column = col
-                    break
-        
-        # Asegurar que la columna de clasificación de variantes existe o se extrae
-        processed_data = extract_variant_classifications(
-            self.data, 
-            variant_column=variant_column,
-            funcotation_column="FUNCOTATION"
-        )
-        
-        fig, ax = plt.subplots(figsize=figsize)
-        create_variants_per_sample_plot(
-            processed_data, 
-            variant_column=variant_column,
-            sample_column=sample_column,
-            ax=ax
-        )
-        
-        # No modificar el título si contiene la mediana
-        if title and not title.startswith("Variants per Sample"):
-            fig.suptitle(title, fontsize=16, y=1.02)
-        
-        plt.tight_layout()
-        
-        # Si se solicita mostrar interactivamente
-        if show_interactive:
-            plt.show(block=False)
-        
-        return fig
 
     def top_mutated_genes_plot(self,
                               figsize: Tuple[int, int] = DEFAULT_PLOT_FIGSIZE,

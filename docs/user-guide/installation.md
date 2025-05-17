@@ -1,26 +1,26 @@
-# Instalación
+# Installation
 
-## Requisitos
+## Requirements
 
-Para utilizar pyMut, necesitarás:
+To use pyMut, you'll need:
 
-- Python 3.7 o superior
+- Python 3.7 or higher
 - pandas
 - matplotlib
 - numpy
 - seaborn
 
-## Instalación con pip
+## Installation with pip
 
-La forma más sencilla de instalar pyMut es mediante pip:
+The easiest way to install pyMut is using pip:
 
 ```bash
 pip install pyMut
 ```
 
-## Instalación desde el código fuente
+## Installation from source code
 
-También puedes instalar pyMut desde el código fuente:
+You can also install pyMut from source:
 
 ```bash
 git clone https://github.com/yourusername/pyMut.git
@@ -28,13 +28,13 @@ cd pyMut
 pip install -e .
 ```
 
-## Verificar la instalación
+## Verify installation
 
-Para verificar que la instalación se ha realizado correctamente, puedes importar pyMut en Python:
+To verify that the installation has been completed successfully, you can import pyMut in Python:
 
 ```python
 import pyMut
 print(pyMut.__version__)
 ```
 
-Esto debería imprimir la versión de pyMut que has instalado. 
+This should print the version of pyMut that you have installed. 

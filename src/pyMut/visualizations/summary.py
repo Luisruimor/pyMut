@@ -429,85 +429,85 @@ def create_variant_classification_summary_plot(data: pd.DataFrame,
 
 def create_summary_plot(data: pd.DataFrame,
                       figsize: Tuple[int, int] = (16, 12),
-                      title: str = "Resumen de Mutaciones") -> plt.Figure:
+                      title: str = "Mutation Summary") -> plt.Figure:
     """
-    Crea un gráfico de resumen con múltiples visualizaciones de los datos de mutaciones.
+    Creates a summary plot with multiple visualizations of mutation data.
     
     Args:
-        data: DataFrame con los datos de mutaciones.
-        figsize: Tamaño de la figura.
-        title: Título del gráfico.
+        data: DataFrame with mutation data.
+        figsize: Figure size.
+        title: Plot title.
         
     Returns:
-        Figura con las visualizaciones de resumen.
+        Figure with summary visualizations.
     """
-    # Crear una figura con múltiples subplots, haciendo más anchos los gráficos
+    # Create a figure with multiple subplots, making the charts wider
     fig, axs = plt.subplots(2, 3, figsize=figsize, gridspec_kw={'width_ratios': [1.5, 1.5, 1.5], 'height_ratios': [1, 1.2]})
     fig.suptitle(title, fontsize=16)
     
-    # Detectar nombres de columnas respetando capitalización original
+    # Detect column names respecting original capitalization
     variant_classification_col = "Variant_Classification"
     sample_column = "Tumor_Sample_Barcode"
     gene_column = "Hugo_Symbol"
     
-    # Buscar variantes de capitalización para variant_classification
+    # Look for capitalization variants for variant_classification
     if variant_classification_col not in data.columns:
         for col in data.columns:
             if col.lower() == variant_classification_col.lower():
                 variant_classification_col = col
                 break
     
-    # Buscar variantes de capitalización para gene_column
+    # Look for capitalization variants for gene_column
     if gene_column not in data.columns:
         for col in data.columns:
             if col.lower() == gene_column.lower():
                 gene_column = col
                 break
     
-    # Generar un mapa de colores coherente para todas las clasificaciones de variantes
+    # Generate a coherent color map for all variant classifications
     unique_variants = data[variant_classification_col].unique()
-    # Usar un colormap fijo para asegurar colores consistentes
-    cmap = plt.colormaps['tab20']  # Colormap con buena variedad de colores
+    # Use a fixed colormap to ensure consistent colors
+    cmap = plt.colormaps['tab20']  # Colormap with good variety of colors
     variant_color_map = {variant: cmap(i % 20) for i, variant in enumerate(unique_variants) if pd.notna(variant)}
     
-    # Crear el gráfico de clasificación de variantes usando el mapa de colores predefinido
+    # Create the variant classification plot using the predefined color map
     var_class_ax = create_variant_classification_plot(
         data, 
         variant_column=variant_classification_col, 
         ax=axs[0, 0],
-        color_map=variant_color_map  # Pasar el mapa de colores
+        color_map=variant_color_map  # Pass the color map
     )
     
-    # Crear el gráfico de tipos de variantes
+    # Create the variant type plot
     create_variant_type_plot(data, ax=axs[0, 1])
     
-    # Crear el gráfico de clases de SNV
+    # Create the SNV class plot
     create_snv_class_plot(data, 
                          ref_column="REF",
                          alt_column="ALT",
                          ax=axs[0, 2])
     
-    # Crear el gráfico de variantes por muestra (TMB)
-    # Pasando el mismo mapa de colores que usamos para el gráfico de clasificación
+    # Create the variants per sample plot (TMB)
+    # Passing the same color map used for the classification plot
     variants_ax = create_variants_per_sample_plot(
         data,
         variant_column=variant_classification_col,
         sample_column=sample_column,
         ax=axs[1, 0],
-        color_map=variant_color_map  # Usar el mismo mapa de colores
+        color_map=variant_color_map  # Use the same color map
     )
     
-    # Crear el gráfico de variant classification summary
+    # Create the variant classification summary plot
     var_boxplot_ax = create_variant_classification_summary_plot(
         data,
         variant_column=variant_classification_col,
         sample_column=sample_column,
         ax=axs[1, 1],
-        color_map=variant_color_map,  # Usar el mismo mapa de colores
-        show_labels=False  # No mostrar etiquetas en el summary plot
+        color_map=variant_color_map,  # Use the same color map
+        show_labels=False  # Don't show labels in the summary plot
     )
     
-    # Crear el gráfico de top mutated genes
+    # Create the top mutated genes plot
     top_genes_ax = create_top_mutated_genes_plot(
         data,
         variant_column=variant_classification_col,
@@ -516,10 +516,10 @@ def create_summary_plot(data: pd.DataFrame,
         mode="variants",
         count=10,
         ax=axs[1, 2],
-        color_map=variant_color_map  # Usar el mismo mapa de colores
+        color_map=variant_color_map  # Use the same color map
     )
     
-    # Quitar las leyendas individuales para evitar duplicación
+    # Remove individual legends to avoid duplication
     if var_class_ax.get_legend() is not None:
         var_class_ax.get_legend().remove()
     
@@ -532,8 +532,8 @@ def create_summary_plot(data: pd.DataFrame,
     if top_genes_ax.get_legend() is not None:
         top_genes_ax.get_legend().remove()
     
-    # Crear una leyenda común para los gráficos y colocarla en la parte inferior
-    # Crear handles y labels manualmente para la leyenda global
+    # Create a common legend for the plots and place it at the bottom
+    # Create handles and labels manually for the global legend
     handles = []
     labels = []
     for variant, color in variant_color_map.items():
@@ -543,13 +543,15 @@ def create_summary_plot(data: pd.DataFrame,
         handles.append(patch)
         labels.append(variant)
     
-    # Añadir la leyenda común
+    # Add the common legend
     fig.legend(handles, labels, loc='lower center', ncol=min(len(labels), 5), 
-              title=variant_classification_col, bbox_to_anchor=(0.5, 0.01))
+               bbox_to_anchor=(0.5, 0.02))
     
-    # Ajustar espaciado entre subplots
+    # Adjust spacing between subplots
     plt.tight_layout()
-    plt.subplots_adjust(top=0.9, bottom=0.18)  # Ajustar para leyenda común, dándole más espacio
+    
+    # Increase separation between first and second row, reduce space between second row and legend
+    plt.subplots_adjust(top=0.9, bottom=0.15, hspace=0.4)
     
     return fig
 

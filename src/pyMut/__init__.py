@@ -1,4 +1,4 @@
 from .core import PyMutation
-from .version import __version__
+from .version import VERSION as __version__
 
 __all__ = ['PyMutation']

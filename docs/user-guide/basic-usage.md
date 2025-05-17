@@ -1,67 +1,67 @@
-# Uso Básico
+# Basic Usage
 
-## Importar la biblioteca
+## Import the library
 
-Para empezar a utilizar pyMut, primero debes importar la clase principal, `PyMutation`:
+To start using pyMut, first import the main class, `PyMutation`:
 
 ```python
 from pyMut import PyMutation
 import pandas as pd
 ```
 
-## Cargar datos
+## Load data
 
-pyMut trabaja con datos de mutaciones en formato DataFrame de pandas. Puedes cargar tus datos desde un archivo TSV:
+pyMut works with mutation data in pandas DataFrame format. You can load your data from a TSV file:
 
 ```python
-# Cargar datos desde un archivo TSV
+# Load data from a TSV file
 data = pd.read_csv("path/to/mutations.tsv", sep="\t")
 
-# Crear un objeto PyMutation
+# Create a PyMutation object
 pyMut = PyMutation(data)
 ```
 
-## Generar visualizaciones
+## Generate visualizations
 
-### Gráfico de Resumen
+### Summary Plot
 
-Un gráfico de resumen muestra estadísticas generales de las mutaciones. Esta visualización incluye:
+A summary plot shows general mutation statistics. This visualization includes:
 
-- Variant Classification: Distribución de clasificaciones de variantes
-- Variant Type: Distribución de tipos de variantes (SNP, INS, DEL, etc.)
-- SNV Class: Distribución de clases de SNV (cambios nucleotídicos como A>G, C>T, etc.)
+- Variant Classification: Distribution of variant classifications
+- Variant Type: Distribution of variant types (SNP, INS, DEL, etc.)
+- SNV Class: Distribution of SNV classes (nucleotide changes like A>G, C>T, etc.)
 
-Para generar un gráfico de resumen:
+To generate a summary plot:
 
 ```python
-# Generar un gráfico de resumen
-fig = pyMut.summary_plot(title="Resumen de Mutaciones")
+# Generate a summary plot
+fig = pyMut.summary_plot(title="Mutation Summary")
 
-# Guardar el gráfico como un archivo PNG
+# Save the plot as a PNG file
 fig.savefig("summary.png")
 ```
 
-### Personalización
+### Customization
 
-Puedes personalizar el gráfico de resumen cambiando los parámetros:
+You can customize the summary plot by changing the parameters:
 
 ```python
-# Generar un gráfico de resumen personalizado
+# Generate a customized summary plot
 fig = pyMut.summary_plot(
-    figsize=(15, 12),     # Tamaño de la figura
-    title="Análisis de Mutaciones en Pacientes con Cáncer"  # Título personalizado
+    figsize=(15, 12),     # Figure size
+    title="Mutation Analysis in Cancer Patients"  # Custom title
 )
 
-# Guardar el gráfico como un archivo PNG de alta resolución
-fig.savefig("summary_personalizado.png", dpi=300)
+# Save the plot as a high-resolution PNG file
+fig.savefig("custom_summary.png", dpi=300)
 ```
 
-### Visualización interactiva
+### Interactive Visualization
 
-También puedes mostrar el gráfico de forma interactiva:
+You can also display the plot interactively:
 
 ```python
-# Generar y mostrar el gráfico interactivamente
+# Generate and display the plot interactively
 fig = pyMut.summary_plot()
 import matplotlib.pyplot as plt
 plt.show()
