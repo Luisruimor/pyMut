@@ -16,7 +16,8 @@ from typing import List, Dict, Union, Optional, Tuple, Any
 def create_variant_classification_plot(data: pd.DataFrame,
                                      variant_column: str = "Variant_Classification",
                                      ax: Optional[plt.Axes] = None,
-                                     color_map: Optional[Dict] = None) -> plt.Axes:
+                                     color_map: Optional[Dict] = None,
+                                     set_title: bool = True) -> plt.Axes:
     """
     Crea un diagrama de barras horizontal mostrando el recuento por cada tipo de clasificación de variante.
     
@@ -25,6 +26,7 @@ def create_variant_classification_plot(data: pd.DataFrame,
         variant_column: Nombre de la columna que contiene la clasificación de variante.
         ax: Eje de matplotlib donde dibujar. Si es None, se crea uno nuevo.
         color_map: Diccionario opcional que mapea las clasificaciones de variantes a colores.
+        set_title: Indica si se debe establecer el título en el gráfico.
         
     Returns:
         Eje de matplotlib con la visualización.
@@ -49,8 +51,9 @@ def create_variant_classification_plot(data: pd.DataFrame,
     
     bars = ax.barh(list(variant_counts.keys()), list(variant_counts.values()), color=colors)
     
-    # Ajustar título y etiquetas
-    ax.set_title("Variant Classification", fontsize=14, fontweight='bold')
+    # Ajustar título y etiquetas, solo si set_title es True
+    if set_title:
+        ax.set_title("Variant Classification", fontsize=14, fontweight='bold')
     ax.set_ylabel("")  # Se elimina el título del eje Y
     
     # Añadir etiquetas con el recuento en cada barra
@@ -70,7 +73,8 @@ def create_variant_classification_plot(data: pd.DataFrame,
 
 def create_variant_type_plot(data: pd.DataFrame,
                            variant_column: str = "Variant_Type",
-                           ax: Optional[plt.Axes] = None) -> plt.Axes:
+                           ax: Optional[plt.Axes] = None,
+                           set_title: bool = True) -> plt.Axes:
     """
     Crea un diagrama de barras horizontal mostrando el recuento por cada tipo de variante.
     
@@ -78,6 +82,7 @@ def create_variant_type_plot(data: pd.DataFrame,
         data: DataFrame con los datos de mutaciones.
         variant_column: Nombre de la columna que contiene el tipo de variante.
         ax: Eje de matplotlib donde dibujar. Si es None, se crea uno nuevo.
+        set_title: Indica si se debe establecer el título en el gráfico.
         
     Returns:
         Eje de matplotlib con la visualización.
@@ -103,8 +108,9 @@ def create_variant_type_plot(data: pd.DataFrame,
     # Crear la gráfica de barras horizontal
     bars = ax.barh(list(variant_counts.keys()), list(variant_counts.values()), color=colors)
     
-    # Ajustar título y etiquetas
-    ax.set_title("Variant Type", fontsize=14, fontweight='bold')
+    # Ajustar título y etiquetas, solo si set_title es True
+    if set_title:
+        ax.set_title("Variant Type", fontsize=14, fontweight='bold')
     ax.set_ylabel("")  # Se elimina el título del eje Y
     
     # Configuración de las etiquetas del eje Y en cursiva
@@ -129,7 +135,8 @@ def create_variant_type_plot(data: pd.DataFrame,
 def create_snv_class_plot(data: pd.DataFrame,
                         ref_column: str = "REF",
                         alt_column: str = "ALT",
-                        ax: Optional[plt.Axes] = None) -> plt.Axes:
+                        ax: Optional[plt.Axes] = None,
+                        set_title: bool = True) -> plt.Axes:
     """
     Crea un diagrama de barras horizontal mostrando el recuento por cada clase de SNV.
     
@@ -138,6 +145,7 @@ def create_snv_class_plot(data: pd.DataFrame,
         ref_column: Nombre de la columna que contiene el alelo de referencia.
         alt_column: Nombre de la columna que contiene el alelo alternativo (tumoral).
         ax: Eje de matplotlib donde dibujar. Si es None, se crea uno nuevo.
+        set_title: Indica si se debe establecer el título en el gráfico.
         
     Returns:
         Eje de matplotlib con la visualización.
@@ -158,7 +166,8 @@ def create_snv_class_plot(data: pd.DataFrame,
             _, ax = plt.subplots(figsize=(8, 6))
         ax.text(0.5, 0.5, "No hay datos disponibles para SNV Class", 
                ha='center', va='center', fontsize=12)
-        ax.set_title("SNV Class", fontsize=14, fontweight='bold')
+        if set_title:
+            ax.set_title("SNV Class", fontsize=14, fontweight='bold')
         ax.axis('off')
         return ax
     
@@ -174,7 +183,8 @@ def create_snv_class_plot(data: pd.DataFrame,
             _, ax = plt.subplots(figsize=(8, 6))
         ax.text(0.5, 0.5, "No hay datos disponibles para SNV Class", 
                ha='center', va='center', fontsize=12)
-        ax.set_title("SNV Class", fontsize=14, fontweight='bold')
+        if set_title:
+            ax.set_title("SNV Class", fontsize=14, fontweight='bold')
         ax.axis('off')
         return ax
     
@@ -196,8 +206,9 @@ def create_snv_class_plot(data: pd.DataFrame,
     # Crear la gráfica de barras horizontal
     bars = ax.barh(list(snv_counts.keys()), list(snv_counts.values()), color=colors)
     
-    # Ajustar título y etiquetas
-    ax.set_title("SNV Class", fontsize=14, fontweight='bold')
+    # Ajustar título y etiquetas, solo si set_title es True
+    if set_title:
+        ax.set_title("SNV Class", fontsize=14, fontweight='bold')
     ax.set_ylabel("")  # Se elimina el título del eje Y
     
     # Añadir etiquetas con el recuento en cada barra
@@ -220,7 +231,8 @@ def create_variant_classification_summary_plot(data: pd.DataFrame,
                                              sample_column: str = "Tumor_Sample_Barcode",
                                              ax: Optional[plt.Axes] = None,
                                              color_map: Optional[Dict] = None,
-                                             show_labels: bool = True) -> plt.Axes:
+                                             show_labels: bool = True,
+                                             set_title: bool = True) -> plt.Axes:
     """
     Crea un diagrama de cajas y bigotes (boxplot) que resume, para cada clasificación de variantes,
     la distribución (entre las muestras) del número de alelos alternativos detectados.
@@ -233,6 +245,7 @@ def create_variant_classification_summary_plot(data: pd.DataFrame,
         ax: Eje de matplotlib donde dibujar. Si es None, se crea uno nuevo.
         color_map: Diccionario opcional que mapea las clasificaciones de variantes a colores.
         show_labels: Si True, muestra las etiquetas de las clasificaciones en el eje X.
+        set_title: Indica si se debe establecer el título en el gráfico.
         
     Returns:
         Eje de matplotlib con la visualización.
@@ -244,7 +257,8 @@ def create_variant_classification_summary_plot(data: pd.DataFrame,
             _, ax = plt.subplots(figsize=(12, 6))
         ax.text(0.5, 0.5, f"No hay datos disponibles para Variant Classification Summary\nFalta columna: {variant_column}", 
                ha='center', va='center', fontsize=12)
-        ax.set_title("Variant Classification Summary", fontsize=14, fontweight='bold')
+        if set_title:
+            ax.set_title("Variant Classification Summary", fontsize=14, fontweight='bold')
         ax.axis('off')
         return ax
     
@@ -263,7 +277,8 @@ def create_variant_classification_summary_plot(data: pd.DataFrame,
                 _, ax = plt.subplots(figsize=(12, 6))
             ax.text(0.5, 0.5, "No hay datos disponibles para Variant Classification Summary\nNo se detectaron columnas de muestra", 
                   ha='center', va='center', fontsize=12)
-            ax.set_title("Variant Classification Summary", fontsize=14, fontweight='bold')
+            if set_title:
+                ax.set_title("Variant Classification Summary", fontsize=14, fontweight='bold')
             ax.axis('off')
             return ax
             
@@ -357,7 +372,8 @@ def create_variant_classification_summary_plot(data: pd.DataFrame,
             _, ax = plt.subplots(figsize=(12, 6))
         ax.text(0.5, 0.5, "No hay datos disponibles para Variant Classification Summary\nNo se encontraron datos para analizar", 
                ha='center', va='center', fontsize=12)
-        ax.set_title("Variant Classification Summary", fontsize=14, fontweight='bold')
+        if set_title:
+            ax.set_title("Variant Classification Summary", fontsize=14, fontweight='bold')
         ax.axis('off')
         return ax
     
@@ -414,8 +430,9 @@ def create_variant_classification_summary_plot(data: pd.DataFrame,
     ax.set_ylim(ymin, ymax)
     
     # Mejorar la presentación visual
-    # Añadir título más descriptivo
-    ax.set_title("Variant Classification Summary", fontsize=14, fontweight='bold')
+    # Añadir título más descriptivo, solo si set_title es True
+    if set_title:
+        ax.set_title("Variant Classification Summary", fontsize=14, fontweight='bold')
     
     # Añadir cuadrícula para mejor legibilidad
     ax.yaxis.grid(True, linestyle='--', alpha=0.3)
@@ -475,17 +492,19 @@ def create_summary_plot(data: pd.DataFrame,
         data, 
         variant_column=variant_classification_col, 
         ax=axs[0, 0],
-        color_map=variant_color_map  # Pass the color map
+        color_map=variant_color_map,  # Pass the color map
+        set_title=True  # Establecer título para el resumen
     )
     
     # Create the variant type plot
-    create_variant_type_plot(data, ax=axs[0, 1])
+    create_variant_type_plot(data, ax=axs[0, 1], set_title=True)
     
     # Create the SNV class plot
     create_snv_class_plot(data, 
                          ref_column="REF",
                          alt_column="ALT",
-                         ax=axs[0, 2])
+                         ax=axs[0, 2],
+                         set_title=True)
     
     # Create the variants per sample plot (TMB)
     # Passing the same color map used for the classification plot
@@ -494,7 +513,8 @@ def create_summary_plot(data: pd.DataFrame,
         variant_column=variant_classification_col,
         sample_column=sample_column,
         ax=axs[1, 0],
-        color_map=variant_color_map  # Use the same color map
+        color_map=variant_color_map,  # Use the same color map
+        set_title=True
     )
     
     # Create the variant classification summary plot
@@ -504,7 +524,8 @@ def create_summary_plot(data: pd.DataFrame,
         sample_column=sample_column,
         ax=axs[1, 1],
         color_map=variant_color_map,  # Use the same color map
-        show_labels=False  # Don't show labels in the summary plot
+        show_labels=False,  # Don't show labels in the summary plot
+        set_title=True
     )
     
     # Create the top mutated genes plot
@@ -516,7 +537,8 @@ def create_summary_plot(data: pd.DataFrame,
         mode="variants",
         count=10,
         ax=axs[1, 2],
-        color_map=variant_color_map  # Use the same color map
+        color_map=variant_color_map,  # Use the same color map
+        set_title=True
     )
     
     # Remove individual legends to avoid duplication
@@ -560,7 +582,8 @@ def create_variants_per_sample_plot(data: pd.DataFrame,
                                    variant_column: str = "Variant_Classification",
                                    sample_column: str = "Tumor_Sample_Barcode",
                                    ax: Optional[plt.Axes] = None,
-                                   color_map: Optional[Dict] = None) -> plt.Axes:
+                                   color_map: Optional[Dict] = None,
+                                   set_title: bool = True) -> plt.Axes:
     """
     Crea un gráfico de barras apiladas mostrando el número de variantes por muestra (TMB)
     y su composición por tipo de variante.
@@ -574,6 +597,7 @@ def create_variants_per_sample_plot(data: pd.DataFrame,
                       muestras están como columnas.
         ax: Eje de matplotlib donde dibujar. Si es None, se crea uno nuevo.
         color_map: Diccionario opcional que mapea las clasificaciones de variantes a colores.
+        set_title: Indica si se debe establecer el título en el gráfico.
         
     Returns:
         Eje de matplotlib con la visualización.
@@ -585,7 +609,8 @@ def create_variants_per_sample_plot(data: pd.DataFrame,
             _, ax = plt.subplots(figsize=(10, 6))
         ax.text(0.5, 0.5, f"No hay datos disponibles para Variants per Sample\nFalta columna: {variant_column}", 
                ha='center', va='center', fontsize=12)
-        ax.set_title("Variants per Sample", fontsize=14, fontweight='bold')
+        if set_title:
+            ax.set_title("Variants per Sample", fontsize=14, fontweight='bold')
         ax.axis('off')
         return ax
     
@@ -604,7 +629,8 @@ def create_variants_per_sample_plot(data: pd.DataFrame,
                 _, ax = plt.subplots(figsize=(10, 6))
             ax.text(0.5, 0.5, "No hay datos disponibles para Variants per Sample\nNo se detectaron columnas de muestra", 
                   ha='center', va='center', fontsize=12)
-            ax.set_title("Variants per Sample", fontsize=14, fontweight='bold')
+            if set_title:
+                ax.set_title("Variants per Sample", fontsize=14, fontweight='bold')
             ax.axis('off')
             return ax
         
@@ -640,7 +666,8 @@ def create_variants_per_sample_plot(data: pd.DataFrame,
                 _, ax = plt.subplots(figsize=(10, 6))
             ax.text(0.5, 0.5, "No hay datos disponibles para Variants per Sample\nNo se pudieron procesar las variantes", 
                   ha='center', va='center', fontsize=12)
-            ax.set_title("Variants per Sample", fontsize=14, fontweight='bold')
+            if set_title:
+                ax.set_title("Variants per Sample", fontsize=14, fontweight='bold')
             ax.axis('off')
             return ax
         
@@ -691,8 +718,9 @@ def create_variants_per_sample_plot(data: pd.DataFrame,
     # Añadir una línea horizontal para la mediana
     ax.axhline(y=median_tmb, color='red', linestyle='--', linewidth=1)
     
-    # Configurar etiquetas y título (incluir la mediana en el título pero sin negrita)
-    ax.set_title("Variants per Sample", fontsize=14, fontweight='bold')
+    # Configurar etiquetas y título, solo si set_title es True
+    if set_title:
+        ax.set_title("Variants per Sample", fontsize=14, fontweight='bold')
     # Añadir la información de la mediana como subtítulo sin negrita
     ax.text(0.5, 0.92, f"Median: {median_tmb:.1f}", transform=ax.transAxes, ha='center', fontsize=12)
     ax.set_xlabel("")  # Eliminar la etiqueta del eje X "Samples"
@@ -718,7 +746,8 @@ def create_top_mutated_genes_plot(data: pd.DataFrame,
                                sample_column: str = "Tumor_Sample_Barcode",
                                count: int = 10,
                                ax: Optional[plt.Axes] = None,
-                               color_map: Optional[Dict] = None) -> plt.Axes:
+                               color_map: Optional[Dict] = None,
+                               set_title: bool = True) -> plt.Axes:
     """
     Crea un diagrama de barras horizontal mostrando los genes más mutados y la distribución
     de variantes según su clasificación.
@@ -735,6 +764,7 @@ def create_top_mutated_genes_plot(data: pd.DataFrame,
         count: Número de genes principales a mostrar.
         ax: Eje de matplotlib donde dibujar. Si es None, se crea uno nuevo.
         color_map: Diccionario opcional que mapea las clasificaciones de variantes a colores.
+        set_title: Indica si se debe establecer el título en el gráfico.
         
     Returns:
         Eje de matplotlib con la visualización.
@@ -746,7 +776,8 @@ def create_top_mutated_genes_plot(data: pd.DataFrame,
             _, ax = plt.subplots(figsize=(10, 8))
         ax.text(0.5, 0.5, f"No hay datos disponibles para Top Mutated Genes\nFalta columna: {gene_column}", 
                ha='center', va='center', fontsize=12)
-        ax.set_title("Top Mutated Genes", fontsize=14, fontweight='bold')
+        if set_title:
+            ax.set_title("Top Mutated Genes", fontsize=14, fontweight='bold')
         ax.axis('off')
         return ax
         
@@ -756,7 +787,8 @@ def create_top_mutated_genes_plot(data: pd.DataFrame,
             _, ax = plt.subplots(figsize=(10, 8))
         ax.text(0.5, 0.5, f"No hay datos disponibles para Top Mutated Genes\nFalta columna: {variant_column}", 
                ha='center', va='center', fontsize=12)
-        ax.set_title("Top Mutated Genes", fontsize=14, fontweight='bold')
+        if set_title:
+            ax.set_title("Top Mutated Genes", fontsize=14, fontweight='bold')
         ax.axis('off')
         return ax
     
@@ -772,7 +804,8 @@ def create_top_mutated_genes_plot(data: pd.DataFrame,
             _, ax = plt.subplots(figsize=(10, 8))
         ax.text(0.5, 0.5, f"No hay datos disponibles para Top Mutated Genes\nNo se detectaron muestras", 
                ha='center', va='center', fontsize=12)
-        ax.set_title("Top Mutated Genes", fontsize=14, fontweight='bold')
+        if set_title:
+            ax.set_title("Top Mutated Genes", fontsize=14, fontweight='bold')
         ax.axis('off')
         return ax
     
@@ -821,7 +854,8 @@ def create_top_mutated_genes_plot(data: pd.DataFrame,
         
         title_text_variants = f"Top {count} Mutated Genes (Total Variants)" # Usar count variable
         # Configuración común del título y ejes para el modo variants
-        ax.set_title(title_text_variants, fontsize=14, fontweight='bold') 
+        if set_title:
+            ax.set_title(title_text_variants, fontsize=14, fontweight='bold') 
         ax.set_ylabel("")  # Eliminar la etiqueta del eje Y
         ax.spines['top'].set_visible(False)
         ax.spines['right'].set_visible(False)
@@ -917,7 +951,8 @@ def create_top_mutated_genes_plot(data: pd.DataFrame,
         if not plot_data_list:
             ax.text(0.5, 0.5, "No hay datos disponibles para analizar (modo samples)", 
                       ha='center', va='center', fontsize=12)
-            ax.set_title(f"Top {count} Mutated Genes (Sample Prevalence)", fontsize=14, fontweight='bold')
+            if set_title:
+                ax.set_title(f"Top {count} Mutated Genes (Sample Prevalence)", fontsize=14, fontweight='bold')
             ax.axis('off')
             return ax
 
@@ -934,7 +969,8 @@ def create_top_mutated_genes_plot(data: pd.DataFrame,
         if not gene_total_affected_samples: 
             ax.text(0.5, 0.5, "No hay genes con muestras afectadas para mostrar (modo samples)", 
                       ha='center', va='center', fontsize=12)
-            ax.set_title(f"Top {count} Mutated Genes (Sample Prevalence)", fontsize=14, fontweight='bold')
+            if set_title:
+                ax.set_title(f"Top {count} Mutated Genes (Sample Prevalence)", fontsize=14, fontweight='bold')
             ax.axis('off')
             return ax
 
@@ -953,7 +989,8 @@ def create_top_mutated_genes_plot(data: pd.DataFrame,
         if not ordered_genes_for_plot: 
             ax.text(0.5, 0.5, "No hay genes en top seleccionados para mostrar (modo samples)", 
                       ha='center', va='center', fontsize=12)
-            ax.set_title(f"Top {count} Mutated Genes (Sample Prevalence)", fontsize=14, fontweight='bold')
+            if set_title:
+                ax.set_title(f"Top {count} Mutated Genes (Sample Prevalence)", fontsize=14, fontweight='bold')
             ax.axis('off')
             return ax
 
@@ -1005,7 +1042,8 @@ def create_top_mutated_genes_plot(data: pd.DataFrame,
             ax.text(bar_length + offset , i, f'{percentage:.1f}%', va='center', fontsize=10)
         
         title_text = f"Top {count} Mutated Genes (Sample Prevalence)"
-        ax.set_title(title_text, fontsize=14, fontweight='bold') 
+        if set_title:
+            ax.set_title(title_text, fontsize=14, fontweight='bold') 
         ax.set_ylabel("")  # Eliminar la etiqueta del eje Y "Genes"
         ax.spines['top'].set_visible(False)
         ax.spines['right'].set_visible(False)

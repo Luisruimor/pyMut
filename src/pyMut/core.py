@@ -113,12 +113,12 @@ class PyMutation:
         # Crear figura y ejes
         fig, ax = plt.subplots(figsize=figsize)
         
-        # Generar el gráfico
-        create_variant_classification_plot(processed_data, ax=ax)
+        # Generar el gráfico, pasando set_title=False para evitar título duplicado
+        create_variant_classification_plot(processed_data, ax=ax, set_title=False)
         
         # Configurar título
         if title:
-            fig.suptitle(title, fontsize=16)
+            fig.suptitle(title, fontsize=16, fontweight='bold')
         
         plt.tight_layout()
         
@@ -156,12 +156,12 @@ class PyMutation:
         # Crear figura y ejes
         fig, ax = plt.subplots(figsize=figsize)
         
-        # Generar el gráfico
-        create_variant_type_plot(processed_data, ax=ax)
+        # Generar el gráfico, pasando set_title=False para evitar título duplicado
+        create_variant_type_plot(processed_data, ax=ax, set_title=False)
         
         # Configurar título
         if title:
-            fig.suptitle(title, fontsize=16)
+            fig.suptitle(title, fontsize=16, fontweight='bold')
         
         plt.tight_layout()
         
@@ -197,10 +197,12 @@ class PyMutation:
             self.data, 
             ref_column=ref_column,
             alt_column=alt_column,
-            ax=ax
+            ax=ax,
+            set_title=False  # Evitar título duplicado
         )
+        
         if title:
-            fig.suptitle(title, fontsize=16)
+            fig.suptitle(title, fontsize=16, fontweight='bold')
         plt.tight_layout()
         
         # Si se solicita mostrar interactivamente
@@ -255,12 +257,15 @@ class PyMutation:
             processed_data, 
             variant_column=variant_column,
             sample_column=sample_column,
-            ax=ax
+            ax=ax,
+            set_title=False  # Evitar título duplicado
         )
         
         # No modificar el título si contiene la mediana
         if title and not title.startswith("Variants per Sample"):
-            fig.suptitle(title, fontsize=16, y=1.02)
+            fig.suptitle(title, fontsize=16, fontweight='bold', y=1.02)
+        elif title:
+            fig.suptitle(title, fontsize=16, fontweight='bold')
         
         plt.tight_layout()
         
@@ -320,12 +325,13 @@ class PyMutation:
             variant_column=variant_column,
             sample_column=sample_column,
             ax=ax,
-            show_labels=True  # Asegurarnos de que siempre muestre las etiquetas cuando se genera individualmente
+            show_labels=True,  # Asegurarnos de que siempre muestre las etiquetas cuando se genera individualmente
+            set_title=False  # Evitar título duplicado
         )
         
         # Configurar título
         if title:
-            fig.suptitle(title, fontsize=16)
+            fig.suptitle(title, fontsize=16, fontweight='bold')
         
         plt.tight_layout()
         
@@ -411,17 +417,18 @@ class PyMutation:
             gene_column=gene_column,
             sample_column=sample_column,
             count=count,
-            ax=ax
+            ax=ax,
+            set_title=False  # Evitar título duplicado
         )
         
         # Ajustar título personalizado basado en el modo
         if title:
             if mode == "variants" and title == "Top Mutated Genes":
-                fig.suptitle("Top 10 Genes Más Mutados (Total de Variantes)", fontsize=16, y=1.02)
+                fig.suptitle("Top mutated genes (variants)", fontsize=16, fontweight='bold', y=1.02)
             elif mode == "samples" and title == "Top Mutated Genes":
-                fig.suptitle("Top 10 Genes Más Mutados (Prevalencia en Muestras)", fontsize=16, y=1.02)
+                fig.suptitle("Top mutated genes (samples)", fontsize=16, fontweight='bold', y=1.02)
             else:
-                fig.suptitle(title, fontsize=16, y=1.02)
+                fig.suptitle(title, fontsize=16, fontweight='bold', y=1.02)
         
         plt.tight_layout()
         
