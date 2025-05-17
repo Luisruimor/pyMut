@@ -42,6 +42,7 @@ class PyMutation:
     def summary_plot(self, 
                    figsize: Tuple[int, int] = DEFAULT_SUMMARY_FIGSIZE,
                    title: str = DEFAULT_PLOT_TITLE,
+                   max_samples: Optional[int] = 200,
                    show_interactive: bool = False) -> plt.Figure:
         """
         Genera un gráfico de resumen con estadísticas generales de las mutaciones.
@@ -55,6 +56,8 @@ class PyMutation:
         Args:
             figsize: Tamaño de la figura.
             title: Título del gráfico.
+            max_samples: Número máximo de muestras a mostrar en el gráfico de variantes por muestra.
+                        Si es None, se muestran todas las muestras.
             show_interactive: Si es True, muestra la visualización en modo interactivo.
             
         Returns:
@@ -77,7 +80,7 @@ class PyMutation:
         )
         
         # Generar el gráfico de resumen
-        fig = create_summary_plot(processed_data, figsize, title)
+        fig = create_summary_plot(processed_data, figsize, title, max_samples)
         
         # Si se solicita mostrar interactivamente
         if show_interactive:
@@ -216,6 +219,7 @@ class PyMutation:
                                  title: str = "Variants per Sample",
                                  variant_column: str = "Variant_Classification",
                                  sample_column: str = "Tumor_Sample_Barcode",
+                                 max_samples: Optional[int] = 200,
                                  show_interactive: bool = False) -> plt.Figure:
         """
         Genera un gráfico de barras apiladas mostrando el número de variantes por muestra (TMB)
@@ -228,6 +232,8 @@ class PyMutation:
             sample_column: Nombre de la columna que contiene el identificador de la muestra,
                           o string que se usará para identificar columnas de muestra si las
                           muestras están como columnas.
+            max_samples: Número máximo de muestras a mostrar. Si es None, se muestran todas.
+                        Si hay más muestras que este número, solo se muestran las primeras max_samples.
             show_interactive: Si es True, muestra la visualización en modo interactivo.
             
         Returns:
@@ -258,7 +264,8 @@ class PyMutation:
             variant_column=variant_column,
             sample_column=sample_column,
             ax=ax,
-            set_title=False  # Evitar título duplicado
+            set_title=False,  # Evitar título duplicado
+            max_samples=max_samples  # Pasar el límite de muestras configurado
         )
         
         # No modificar el título si contiene la mediana

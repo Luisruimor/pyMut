@@ -113,9 +113,8 @@ def create_variant_type_plot(data: pd.DataFrame,
         ax.set_title("Variant Type", fontsize=14, fontweight='bold')
     ax.set_ylabel("")  # Se elimina el título del eje Y
     
-    # Configuración de las etiquetas del eje Y en cursiva
-    for tick in ax.get_yticklabels():
-        tick.set_fontstyle('italic')
+    # Etiquetas del eje Y en estilo normal (no cursiva)
+    # Se ha eliminado la configuración de estilo en cursiva
     
     # Añadir etiquetas con el recuento en cada barra
     for bar in bars:
@@ -216,7 +215,7 @@ def create_snv_class_plot(data: pd.DataFrame,
         ax.text(bar.get_width() + 10,
                  bar.get_y() + bar.get_height()/2,
                  f'{int(bar.get_width())}',
-                 va='center', fontstyle='italic')
+                 va='center', fontsize=10)
     
     # Ajustar márgenes y quitar recuadros innecesarios
     ax.spines['top'].set_visible(False)
@@ -446,7 +445,8 @@ def create_variant_classification_summary_plot(data: pd.DataFrame,
 
 def create_summary_plot(data: pd.DataFrame,
                       figsize: Tuple[int, int] = (16, 12),
-                      title: str = "Mutation Summary") -> plt.Figure:
+                      title: str = "Mutation Summary",
+                      max_samples: Optional[int] = 200) -> plt.Figure:
     """
     Creates a summary plot with multiple visualizations of mutation data.
     
@@ -454,6 +454,8 @@ def create_summary_plot(data: pd.DataFrame,
         data: DataFrame with mutation data.
         figsize: Figure size.
         title: Plot title.
+        max_samples: Maximum number of samples to show in the variants per sample plot.
+                    If None, all samples are shown.
         
     Returns:
         Figure with summary visualizations.
@@ -514,7 +516,8 @@ def create_summary_plot(data: pd.DataFrame,
         sample_column=sample_column,
         ax=axs[1, 0],
         color_map=variant_color_map,  # Use the same color map
-        set_title=True
+        set_title=True,
+        max_samples=max_samples  # Pass the max_samples parameter
     )
     
     # Create the variant classification summary plot
@@ -591,7 +594,8 @@ def create_variants_per_sample_plot(data: pd.DataFrame,
                                    sample_column: str = "Tumor_Sample_Barcode",
                                    ax: Optional[plt.Axes] = None,
                                    color_map: Optional[Dict] = None,
-                                   set_title: bool = True) -> plt.Axes:
+                                   set_title: bool = True,
+                                   max_samples: Optional[int] = 200) -> plt.Axes:
     """
     Crea un gráfico de barras apiladas mostrando el número de variantes por muestra (TMB)
     y su composición por tipo de variante.
@@ -606,6 +610,8 @@ def create_variants_per_sample_plot(data: pd.DataFrame,
         ax: Eje de matplotlib donde dibujar. Si es None, se crea uno nuevo.
         color_map: Diccionario opcional que mapea las clasificaciones de variantes a colores.
         set_title: Indica si se debe establecer el título en el gráfico.
+        max_samples: Número máximo de muestras a mostrar. Si es None, se muestran todas.
+                    Si hay más muestras que este número, solo se muestran las primeras max_samples.
         
     Returns:
         Eje de matplotlib con la visualización.
@@ -691,6 +697,10 @@ def create_variants_per_sample_plot(data: pd.DataFrame,
     variant_counts['total'] = variant_counts.sum(axis=1)
     variant_counts = variant_counts.sort_values('total', ascending=False)
     
+    # Limitar el número de muestras si se especifica max_samples
+    if max_samples is not None and len(variant_counts) > max_samples:
+        variant_counts = variant_counts.iloc[:max_samples]
+    
     # Calcular la mediana de variantes por muestra
     median_tmb = variant_counts['total'].median()
     
@@ -737,8 +747,8 @@ def create_variants_per_sample_plot(data: pd.DataFrame,
     ax.set_xticklabels([])
     ax.tick_params(axis='x', which='both', bottom=False)
     
-    # Ajustar leyenda
-    ax.legend(title=variant_column, bbox_to_anchor=(1.05, 1), loc='upper left')
+    # Ajustar leyenda con título fijo "Variant Classification"
+    ax.legend(title="Variant Classification", bbox_to_anchor=(1.05, 1), loc='upper left')
     
     # Ajustar márgenes y quitar recuadros innecesarios
     ax.spines['top'].set_visible(False)

@@ -44,9 +44,10 @@ def main():
     summary_fig = py_mut.summary_plot()
     # Parámetros opcionales comentados:
     # summary_fig = py_mut.summary_plot(
-    #     title="Ejemplo del plot summary",     # Título personalizado
-    #     figsize=(16, 12),                     # Tamaño de la figura
-    #     show_interactive=True                 # Mostrar interactivamente
+         # title="Ejemplo del plot summary",     # Título personalizado
+         # figsize=(16, 12),                     # Tamaño de la figura
+         # max_samples=50,                       # Máximo de muestras a mostrar
+         # show_interactive=True                 # Mostrar interactivamente
     # )
     
     # Guardar la figura
@@ -105,11 +106,12 @@ def main():
     tmb_fig = py_mut.variants_per_sample_plot()
     # Parámetros opcionales comentados:
     # tmb_fig = py_mut.variants_per_sample_plot(
-    #     figsize=(12, 6),                      # Tamaño de la figura
-    #     title="Variants per Sample",          # Título personalizado
-    #     variant_column="Variant_Classification", # Columna con clasificación de variante
-    #     sample_column="Tumor_Sample_Barcode", # Columna con ID de muestra
-    #     show_interactive=True                 # Mostrar interactivamente
+         # figsize=(12, 6),                         # Tamaño de la figura
+         # max_samples=50,                          # Máximo de muestras a mostrar
+         # title="Variants per Sample",             # Título personalizado
+         # variant_column="Variant_Classification", # Columna con clasificación de variante
+         # sample_column="Tumor_Sample_Barcode",    # Columna con ID de muestra
+         # show_interactive=True                    # Mostrar interactivamente
     # )
     
     tmb_output_path = os.path.join(os.path.dirname(__file__), 'variants_per_sample.png')
