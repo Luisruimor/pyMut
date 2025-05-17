@@ -39,12 +39,13 @@ def create_variant_classification_plot(data: pd.DataFrame,
     if ax is None:
         _, ax = plt.subplots(figsize=(8, 6))
     
-    # Crear la gráfica de barras horizontal
+    # Colorear cada barra usando una paleta de colores
     if color_map:
-        colors = [color_map.get(variant, cm.get_cmap('tab20')(i % 20)) for i, variant in enumerate(variant_counts.keys())]
+        colors = [color_map.get(variant, plt.colormaps['tab20'](i % 20)) for i, variant in enumerate(variant_counts.keys())]
     else:
-        cmap = plt.colormaps['tab20']  # Obtén el colormap
-        colors = cmap(range(len(variant_counts)))  # Genera los colores necesarios
+        # Usar el colormap 'tab20'
+        cmap = plt.colormaps['tab20']  # En lugar de cm.get_cmap('tab20')
+        colors = [cmap(i % 20) for i in range(len(variant_counts))]
     
     bars = ax.barh(list(variant_counts.keys()), list(variant_counts.values()), color=colors)
     
@@ -218,7 +219,8 @@ def create_variant_classification_summary_plot(data: pd.DataFrame,
                                              variant_column: str = "Variant_Classification",
                                              sample_column: str = "Tumor_Sample_Barcode",
                                              ax: Optional[plt.Axes] = None,
-                                             color_map: Optional[Dict] = None) -> plt.Axes:
+                                             color_map: Optional[Dict] = None,
+                                             show_labels: bool = True) -> plt.Axes:
     """
     Crea un diagrama de cajas y bigotes (boxplot) que resume, para cada clasificación de variantes,
     la distribución (entre las muestras) del número de alelos alternativos detectados.
@@ -230,6 +232,7 @@ def create_variant_classification_summary_plot(data: pd.DataFrame,
                        Si no existe, se asume que las muestras son columnas (formato ancho).
         ax: Eje de matplotlib donde dibujar. Si es None, se crea uno nuevo.
         color_map: Diccionario opcional que mapea las clasificaciones de variantes a colores.
+        show_labels: Si True, muestra las etiquetas de las clasificaciones en el eje X.
         
     Returns:
         Eje de matplotlib con la visualización.
@@ -398,7 +401,10 @@ def create_variant_classification_summary_plot(data: pd.DataFrame,
         patch.set_alpha(0.7)
     
     # Configurar las etiquetas del eje X con mejor rotación y formato
-    ax.set_xticklabels([], rotation=0)  # Eliminar etiquetas del eje X (nombres de clasificaciones)
+    if show_labels:
+        ax.set_xticklabels(variant_types, rotation=45, ha='right', fontsize=10)
+    else:
+        ax.set_xticklabels([])  # No mostrar etiquetas
     
     # Ajustar los límites del eje Y
     ymin = 0
@@ -410,7 +416,6 @@ def create_variant_classification_summary_plot(data: pd.DataFrame,
     # Mejorar la presentación visual
     # Añadir título más descriptivo
     ax.set_title("Variant Classification Summary", fontsize=14, fontweight='bold')
-    ax.set_xlabel("Variant Classification", fontsize=12, fontweight='bold')
     
     # Añadir cuadrícula para mejor legibilidad
     ax.yaxis.grid(True, linestyle='--', alpha=0.3)
@@ -418,9 +423,6 @@ def create_variant_classification_summary_plot(data: pd.DataFrame,
     # Eliminar algunos bordes de los ejes
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
-    
-    # Ajustar espacio para las etiquetas del eje X
-    plt.setp(ax.get_xticklabels(), rotation=45, ha='right')
     
     return ax
 
@@ -492,7 +494,7 @@ def create_summary_plot(data: pd.DataFrame,
         variant_column=variant_classification_col,
         sample_column=sample_column,
         ax=axs[1, 0],
-        variant_colors=variant_color_map  # Usar el mismo mapa de colores
+        color_map=variant_color_map  # Usar el mismo mapa de colores
     )
     
     # Crear el gráfico de variant classification summary
@@ -501,7 +503,8 @@ def create_summary_plot(data: pd.DataFrame,
         variant_column=variant_classification_col,
         sample_column=sample_column,
         ax=axs[1, 1],
-        color_map=variant_color_map  # Usar el mismo mapa de colores
+        color_map=variant_color_map,  # Usar el mismo mapa de colores
+        show_labels=False  # No mostrar etiquetas en el summary plot
     )
     
     # Crear el gráfico de top mutated genes
@@ -555,7 +558,7 @@ def create_variants_per_sample_plot(data: pd.DataFrame,
                                    variant_column: str = "Variant_Classification",
                                    sample_column: str = "Tumor_Sample_Barcode",
                                    ax: Optional[plt.Axes] = None,
-                                   variant_colors: Optional[Dict] = None) -> plt.Axes:
+                                   color_map: Optional[Dict] = None) -> plt.Axes:
     """
     Crea un gráfico de barras apiladas mostrando el número de variantes por muestra (TMB)
     y su composición por tipo de variante.
@@ -568,7 +571,7 @@ def create_variants_per_sample_plot(data: pd.DataFrame,
                       o string que se usará para identificar columnas de muestra si las 
                       muestras están como columnas.
         ax: Eje de matplotlib donde dibujar. Si es None, se crea uno nuevo.
-        variant_colors: Diccionario opcional que mapea las clasificaciones de variantes a colores.
+        color_map: Diccionario opcional que mapea las clasificaciones de variantes a colores.
         
     Returns:
         Eje de matplotlib con la visualización.
@@ -663,21 +666,22 @@ def create_variants_per_sample_plot(data: pd.DataFrame,
         _, ax = plt.subplots(figsize=(10, 6))
     
     # Generar colores para las diferentes clasificaciones de variantes
-    if variant_colors is not None:
+    if color_map is not None:
         # Si se proporcionan colores específicos, usarlos para las variantes correspondientes
         colors = []
         for variant in variant_counts.columns:
             # Buscar el color en el mapa de colores para esta variante exacta
-            if variant in variant_colors:
-                colors.append(variant_colors[variant])
+            if variant in color_map:
+                colors.append(color_map[variant])
             else:
                 # Si no se encuentra el color exacto, usar uno predeterminado
-                cmap = cm.get_cmap('tab20', len(variant_counts.columns))
-                colors.append(cmap(len(colors) % cmap.N))
+                # Usar plt.colormaps en lugar de cm.get_cmap
+                colors.append(plt.colormaps['tab20'](len(colors) % 20))
     else:
         # Usar el mapa de colores predeterminado
-        cmap = cm.get_cmap('tab20', len(variant_counts.columns))
-        colors = [cmap(i) for i in range(len(variant_counts.columns))]
+        # Usar plt.colormaps en lugar de cm.get_cmap
+        cmap = plt.colormaps['tab20']
+        colors = [cmap(i % cmap.N) for i in range(len(variant_counts.columns))]
     
     # Crear la gráfica de barras apiladas
     variant_counts.plot(kind='bar', stacked=True, ax=ax, color=colors, width=0.8)
@@ -777,7 +781,7 @@ def create_top_mutated_genes_plot(data: pd.DataFrame,
     # Filtrar filas con valores faltantes o "Unknown"
     data_filtered = data[(data[gene_column].notna()) & (data[variant_column].notna())]
     data_filtered = data_filtered[(data_filtered[gene_column] != "Unknown") & 
-                                  (data_filtered[variant_column] != "Unknown")]
+                                   (data_filtered[variant_column] != "Unknown")]
     
     if mode == "variants":
         # MODO "variants" - Contar el número total de variantes
@@ -797,7 +801,7 @@ def create_top_mutated_genes_plot(data: pd.DataFrame,
         
         # Asignar colores para cada tipo de variante
         if color_map is None:
-            cmap = plt.colormaps['tab20']
+            cmap = plt.colormaps['tab20']  # En lugar de cm.get_cmap
             colors = [cmap(i % 20) for i in range(len(df_plot.columns))]
         else:
             colors = [color_map.get(variant, plt.colormaps['tab20'](i % 20)) 
@@ -999,7 +1003,6 @@ def create_top_mutated_genes_plot(data: pd.DataFrame,
             ax.text(bar_length + offset , i, f'{percentage:.1f}%', va='center', fontsize=10)
         
         title_text = f"Top {count} Mutated Genes (Sample Prevalence)"
-        ax.set_xlabel("Número de muestras por tipo de variante", fontsize=12)
         ax.set_title(title_text, fontsize=14, fontweight='bold') 
         ax.set_ylabel("")  # Eliminar la etiqueta del eje Y "Genes"
         ax.spines['top'].set_visible(False)

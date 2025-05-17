@@ -33,9 +33,7 @@ def main():
         exit(1)
     
     # Leer los datos
-    print(f"Leyendo datos de {tsv_file}...")
     mutation_data = pd.read_csv(tsv_file, sep='\t')
-    print(f"Datos cargados: {mutation_data.shape[0]} filas, {mutation_data.shape[1]} columnas")
     
     # Crear objeto PyMutation
     print("Creando objeto PyMutation...")
@@ -44,6 +42,7 @@ def main():
     # 1. Generar el gráfico de resumen completo
     print("\n1. Generando gráfico de resumen completo...")
     summary_fig = py_mut.summary_plot(
+        figsize=(14, 8),
         title="Ejemplo del plot summary", 
         show_interactive=False
     )
@@ -53,10 +52,10 @@ def main():
     summary_fig.savefig(output_path, dpi=300, bbox_inches='tight')
     print(f"Gráfico de resumen guardado en: {output_path}")
     
+
     # 2. Top Mutated Genes (modo variants)
     print("\n2. Generando gráfico de genes más mutados (modo variants)...")
     tmg_variants_fig = py_mut.top_mutated_genes_plot(
-        title="Top 10 Genes Más Mutados (Total de Variantes)",
         mode="variants",
         count=10,
         figsize=(12, 6),
@@ -69,7 +68,6 @@ def main():
     # 3. Top Mutated Genes (modo samples)
     print("\n3. Generando gráfico de genes más mutados (modo samples)...")
     tmg_samples_fig = py_mut.top_mutated_genes_plot(
-        title="Top 10 Genes Más Mutados (Prevalencia en Muestras)",
         mode="samples",
         count=10,
         figsize=(12, 6),
@@ -79,12 +77,10 @@ def main():
     tmg_samples_fig.savefig(tmg_samples_path, dpi=300, bbox_inches='tight')
     print(f"Gráfico guardado en: {tmg_samples_path}")
     
-    # Código comentado para otras visualizaciones
-    """
+    
     # Variantes por muestra (TMB)
     print("\nGenerando gráfico de variantes por muestra (TMB)...")
     tmb_fig = py_mut.variants_per_sample_plot(
-        title="Carga Mutacional por Muestra (TMB)",
         figsize=(12, 6),
         show_interactive=False
     )
@@ -95,7 +91,6 @@ def main():
     # Variant Classification Summary
     print("\nGenerando gráfico de resumen de clasificación de variantes (Boxplot)...")
     vcs_fig = py_mut.variant_classification_summary_plot(
-        title="Resumen de Clasificación de Variantes por Muestra",
         figsize=(12, 6),
         show_interactive=False
     )
@@ -106,7 +101,6 @@ def main():
     # Clasificación de variantes
     print("\nGenerando gráfico de clasificación de variantes...")
     vc_fig = py_mut.variant_classification_plot(
-        title="Clasificación de Variantes",
         figsize=(12, 6),
         show_interactive=False
     )
@@ -117,7 +111,6 @@ def main():
     # Tipos de variantes
     print("\nGenerando gráfico de tipos de variantes...")
     vt_fig = py_mut.variant_type_plot(
-        title="Tipos de Variantes",
         figsize=(12, 6),
         show_interactive=False
     )
@@ -128,14 +121,12 @@ def main():
     # Clases de SNV
     print("\nGenerando gráfico de clases de SNV...")
     snv_fig = py_mut.snv_class_plot(
-        title="Clases de SNV",
         figsize=(12, 6),
         show_interactive=False
     )
     snv_output_path = os.path.join(os.path.dirname(__file__), 'snv_class.png')
     snv_fig.savefig(snv_output_path, dpi=300, bbox_inches='tight')
     print(f"Gráfico guardado en: {snv_output_path}")
-    """
     
     print("\nEl ejemplo de generación de gráficos ha finalizado.")
     

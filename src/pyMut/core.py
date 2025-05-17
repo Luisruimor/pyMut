@@ -2,6 +2,12 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
 from typing import List, Dict, Union, Optional, Tuple
+from .utils.constants import (
+    VARIANT_CLASSIFICATION_COLUMN, VARIANT_TYPE_COLUMN, SAMPLE_COLUMN, 
+    GENE_COLUMN, REF_COLUMN, ALT_COLUMN, FUNCOTATION_COLUMN, 
+    DEFAULT_SUMMARY_FIGSIZE, DEFAULT_PLOT_FIGSIZE, DEFAULT_PLOT_TITLE,
+    DEFAULT_TOP_GENES_COUNT, MODE_VARIANTS, VALID_PLOT_MODES
+)
 
 class PyMutation:
     """
@@ -21,12 +27,21 @@ class PyMutation:
         
         Args:
             data (pd.DataFrame): DataFrame conteniendo datos de mutaciones.
+        
+        Raises:
+            ValueError: Si el DataFrame está vacío o no es un DataFrame válido.
         """
+        if not isinstance(data, pd.DataFrame):
+            raise ValueError("El parámetro 'data' debe ser un DataFrame de pandas.")
+        
+        if data.empty:
+            raise ValueError("El DataFrame proporcionado está vacío. No hay datos para analizar.")
+        
         self.data = data
     
     def summary_plot(self, 
-                   figsize: Tuple[int, int] = (16, 12),
-                   title: str = "Resumen de Mutaciones",
+                   figsize: Tuple[int, int] = DEFAULT_SUMMARY_FIGSIZE,
+                   title: str = DEFAULT_PLOT_TITLE,
                    show_interactive: bool = False) -> plt.Figure:
         """
         Genera un gráfico de resumen con estadísticas generales de las mutaciones.
@@ -51,14 +66,14 @@ class PyMutation:
         # Preprocesar los datos para asegurar que tenemos las columnas necesarias
         processed_data = extract_variant_classifications(
             self.data, 
-            variant_column="Variant_Classification",
-            funcotation_column="FUNCOTATION"
+            variant_column=VARIANT_CLASSIFICATION_COLUMN,
+            funcotation_column=FUNCOTATION_COLUMN
         )
         
         processed_data = extract_variant_types(
             processed_data,
-            variant_column="Variant_Type",
-            funcotation_column="FUNCOTATION"
+            variant_column=VARIANT_TYPE_COLUMN,
+            funcotation_column=FUNCOTATION_COLUMN
         )
         
         # Generar el gráfico de resumen
@@ -66,7 +81,7 @@ class PyMutation:
         
         # Si se solicita mostrar interactivamente
         if show_interactive:
-            plt.show()
+            plt.show(block=False)
         
         return fig
     
@@ -109,7 +124,7 @@ class PyMutation:
         
         # Si se solicita mostrar interactivamente
         if show_interactive:
-            plt.show()
+            plt.show(block=False)
         
         return fig
     
@@ -152,7 +167,7 @@ class PyMutation:
         
         # Si se solicita mostrar interactivamente
         if show_interactive:
-            plt.show()
+            plt.show(block=False)
         
         return fig
     
@@ -190,7 +205,7 @@ class PyMutation:
         
         # Si se solicita mostrar interactivamente
         if show_interactive:
-            plt.show()
+            plt.show(block=False)
         
         return fig
 
@@ -242,7 +257,8 @@ class PyMutation:
             processed_data, 
             variant_column=variant_column,
             sample_column=sample_column,
-            ax=ax
+            ax=ax,
+            show_labels=True  # Asegurarnos de que siempre muestre las etiquetas cuando se genera individualmente
         )
         
         # Configurar título
@@ -253,7 +269,7 @@ class PyMutation:
         
         # Si se solicita mostrar interactivamente
         if show_interactive:
-            plt.show()
+            plt.show(block=False)
         
         return fig
 
@@ -314,18 +330,18 @@ class PyMutation:
         
         # Si se solicita mostrar interactivamente
         if show_interactive:
-            plt.show()
+            plt.show(block=False)
         
         return fig
 
     def top_mutated_genes_plot(self,
-                              figsize: Tuple[int, int] = (10, 8),
+                              figsize: Tuple[int, int] = DEFAULT_PLOT_FIGSIZE,
                               title: str = "Top Mutated Genes",
-                              mode: str = "variants", 
-                              variant_column: str = "Variant_Classification",
-                              gene_column: str = "Hugo_Symbol",
-                              sample_column: str = "Tumor_Sample_Barcode",
-                              count: int = 10,
+                              mode: str = MODE_VARIANTS, 
+                              variant_column: str = VARIANT_CLASSIFICATION_COLUMN,
+                              gene_column: str = GENE_COLUMN,
+                              sample_column: str = SAMPLE_COLUMN,
+                              count: int = DEFAULT_TOP_GENES_COUNT,
                               show_interactive: bool = False) -> plt.Figure:
         """
         Genera un diagrama de barras horizontal mostrando los genes más mutados y la distribución
@@ -345,14 +361,20 @@ class PyMutation:
             
         Returns:
             Figura de matplotlib con el gráfico de genes más mutados.
+        
+        Raises:
+            ValueError: Si 'count' no es un número positivo o 'mode' no es un valor válido.
         """
         from .visualizations.summary import create_top_mutated_genes_plot
         from .utils.data_processing import extract_variant_classifications
 
+        # Validar parámetros
+        if not isinstance(count, int) or count <= 0:
+            raise ValueError(f"El parámetro 'count' debe ser un número entero positivo, se recibió: {count}")
+        
         # Verificar que el modo sea válido
-        if mode not in ["variants", "samples"]:
-            print(f"Advertencia: El modo '{mode}' no está soportado. Se usará el modo 'variants'.")
-            mode = "variants"
+        if mode not in VALID_PLOT_MODES:
+            raise ValueError(f"El modo '{mode}' no es válido. Los valores permitidos son: {', '.join(VALID_PLOT_MODES)}")
 
         # Si variant_column no está en las columnas, intentar normalizarlo
         if variant_column not in self.data.columns:
@@ -376,7 +398,7 @@ class PyMutation:
         processed_data = extract_variant_classifications(
             self.data, 
             variant_column=variant_column,
-            funcotation_column="FUNCOTATION"
+            funcotation_column=FUNCOTATION_COLUMN
         )
         
         fig, ax = plt.subplots(figsize=figsize)
@@ -403,6 +425,6 @@ class PyMutation:
         
         # Si se solicita mostrar interactivamente
         if show_interactive:
-            plt.show()
+            plt.show(block=False)
         
         return fig

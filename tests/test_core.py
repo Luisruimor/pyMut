@@ -40,5 +40,66 @@ class TestPyMutation(unittest.TestCase):
         fig = self.pyMut.summary_plot()
         self.assertIsInstance(fig, plt.Figure)
 
+    def test_variant_classification_plot(self):
+        """Prueba el método variant_classification_plot."""
+        fig = self.pyMut.variant_classification_plot()
+        self.assertIsInstance(fig, plt.Figure)
+
+    def test_variant_type_plot(self):
+        """Prueba el método variant_type_plot."""
+        fig = self.pyMut.variant_type_plot()
+        self.assertIsInstance(fig, plt.Figure)
+
+    def test_snv_class_plot(self):
+        """Prueba el método snv_class_plot."""
+        fig = self.pyMut.snv_class_plot()
+        self.assertIsInstance(fig, plt.Figure)
+
+    def test_variant_classification_summary_plot(self):
+        """Prueba el método variant_classification_summary_plot."""
+        fig = self.pyMut.variant_classification_summary_plot()
+        self.assertIsInstance(fig, plt.Figure)
+
+    def test_variants_per_sample_plot(self):
+        """Prueba el método variants_per_sample_plot."""
+        fig = self.pyMut.variants_per_sample_plot()
+        self.assertIsInstance(fig, plt.Figure)
+
+    def test_top_mutated_genes_plot(self):
+        """Prueba el método top_mutated_genes_plot."""
+        # Probar el modo "variants"
+        fig = self.pyMut.top_mutated_genes_plot(mode="variants")
+        self.assertIsInstance(fig, plt.Figure)
+        
+        # Probar el modo "samples"
+        fig = self.pyMut.top_mutated_genes_plot(mode="samples")
+        self.assertIsInstance(fig, plt.Figure)
+
+    def test_validation_top_mutated_genes_plot(self):
+        """Prueba la validación de parámetros en top_mutated_genes_plot."""
+        # Verificar que se valide el parámetro 'count'
+        with self.assertRaises(ValueError):
+            self.pyMut.top_mutated_genes_plot(count=0)
+        
+        with self.assertRaises(ValueError):
+            self.pyMut.top_mutated_genes_plot(count=-5)
+        
+        # Verificar que se valide el parámetro 'mode'
+        with self.assertRaises(ValueError):
+            self.pyMut.top_mutated_genes_plot(mode="invalid_mode")
+
+    def test_empty_dataframe_initialization(self):
+        """Prueba que se valide que el DataFrame no esté vacío."""
+        with self.assertRaises(ValueError):
+            PyMutation(pd.DataFrame())
+
+    def test_non_dataframe_initialization(self):
+        """Prueba que se valide que el parámetro sea un DataFrame."""
+        with self.assertRaises(ValueError):
+            PyMutation([1, 2, 3])  # Lista en lugar de DataFrame
+        
+        with self.assertRaises(ValueError):
+            PyMutation("Not a DataFrame")  # String en lugar de DataFrame
+
 if __name__ == "__main__":
     unittest.main()
