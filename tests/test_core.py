@@ -101,5 +101,10 @@ class TestPyMutation(unittest.TestCase):
         with self.assertRaises(ValueError):
             PyMutation("Not a DataFrame")  # String en lugar de DataFrame
 
+    def test_show_interactive_plots_method_exists(self):
+        """Verifica que el método show_interactive_plots exista."""
+        self.assertTrue(hasattr(self.pyMut, 'show_interactive_plots'))
+        self.assertTrue(callable(getattr(self.pyMut, 'show_interactive_plots')))
+
 if __name__ == "__main__":
     unittest.main()

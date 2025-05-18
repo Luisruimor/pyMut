@@ -88,7 +88,9 @@ class PyMutation:
         
         # Si se solicita mostrar interactivamente
         if show_interactive:
-            plt.show(block=False)
+            # Mostrar la figura en modo bloqueante hasta que el usuario la cierre
+            plt.figure(fig.number)
+            plt.show(block=True)
         
         return fig
     
@@ -131,7 +133,9 @@ class PyMutation:
         
         # Si se solicita mostrar interactivamente
         if show_interactive:
-            plt.show(block=False)
+            # Mostrar la figura en modo bloqueante hasta que el usuario la cierre
+            plt.figure(fig.number)
+            plt.show(block=True)
         
         return fig
     
@@ -174,7 +178,9 @@ class PyMutation:
         
         # Si se solicita mostrar interactivamente
         if show_interactive:
-            plt.show(block=False)
+            # Mostrar la figura en modo bloqueante hasta que el usuario la cierre
+            plt.figure(fig.number)
+            plt.show(block=True)
         
         return fig
     
@@ -214,7 +220,9 @@ class PyMutation:
         
         # Si se solicita mostrar interactivamente
         if show_interactive:
-            plt.show(block=False)
+            # Mostrar la figura en modo bloqueante hasta que el usuario la cierre
+            plt.figure(fig.number)
+            plt.show(block=True)
         
         return fig
     
@@ -282,7 +290,9 @@ class PyMutation:
         
         # Si se solicita mostrar interactivamente
         if show_interactive:
-            plt.show(block=False)
+            # Mostrar la figura en modo bloqueante hasta que el usuario la cierre
+            plt.figure(fig.number)
+            plt.show(block=True)
         
         return fig
     
@@ -348,7 +358,9 @@ class PyMutation:
         
         # Si se solicita mostrar interactivamente
         if show_interactive:
-            plt.show(block=False)
+            # Mostrar la figura en modo bloqueante hasta que el usuario la cierre
+            plt.figure(fig.number)
+            plt.show(block=True)
         
         return fig
 
@@ -452,6 +464,31 @@ class PyMutation:
         
         # Si se solicita mostrar interactivamente
         if show_interactive:
-            plt.show(block=False)
+            # Mostrar la figura en modo bloqueante hasta que el usuario la cierre
+            plt.figure(fig.number)
+            plt.show(block=True)
         
         return fig
+    
+    def show_interactive_plots(self, figures: Optional[List[plt.Figure]] = None) -> None:
+        """
+        Mantiene las ventanas de gráficos interactivos abiertas hasta que el usuario las cierre.
+        
+        Esta función sirve para mantener en ejecución el programa cuando se utilizan 
+        gráficos interactivos con el parámetro show_interactive=True.
+        
+        Args:
+            figures: Lista opcional de figuras a mantener abiertas. Si no se proporciona,
+                    solo mantendrá las figuras actualmente abiertas.
+        """
+        if figures:
+            # Asegurar que todas las figuras estén en estado interactivo
+            plt.ion()
+            for fig in figures:
+                fig.show()
+        
+        # Mostrar mensaje informativo
+        print("Las visualizaciones permanecerán abiertas hasta que cierres todas las ventanas.")
+        
+        # Bloquear la ejecución hasta que se cierren todas las figuras
+        plt.show(block=True)
