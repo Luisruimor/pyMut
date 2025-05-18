@@ -32,10 +32,10 @@ class PyMutation:
             ValueError: Si el DataFrame está vacío o no es un DataFrame válido.
         """
         if not isinstance(data, pd.DataFrame):
-            raise ValueError("El parámetro 'data' debe ser un DataFrame de pandas.")
+            raise ValueError("The 'data' parameter must be a pandas DataFrame.")
         
         if data.empty:
-            raise ValueError("El DataFrame proporcionado está vacío. No hay datos para analizar.")
+            raise ValueError("The provided DataFrame is empty. No data to analyze.")
         
         self.data = data
     
@@ -328,7 +328,7 @@ class PyMutation:
             sample_cols = [col for col in processed_data.columns if col.startswith('TCGA-') or 
                            (isinstance(col, str) and col.count('-') >= 2)]
             if sample_cols:
-                print(f"Detectado formato ancho con {len(sample_cols)} posibles columnas de muestra.")
+                print(f"Detected wide format with {len(sample_cols)} possible sample columns.")
         
         fig, ax = plt.subplots(figsize=figsize)
         create_variant_classification_summary_plot(
@@ -443,7 +443,12 @@ class PyMutation:
             else:
                 fig.suptitle(title, fontsize=16, fontweight='bold', y=0.98)
         
-        plt.tight_layout()
+        # Usar tight_layout con un padding adicional para mejorar los márgenes
+        plt.tight_layout(pad=1.2)
+        
+        # Ajustar los márgenes para tener un aspecto más consistente entre modes
+        # Aumentar el margen izquierdo para evitar que el texto se salga
+        plt.subplots_adjust(left=0.15, right=0.9)
         
         # Si se solicita mostrar interactivamente
         if show_interactive:

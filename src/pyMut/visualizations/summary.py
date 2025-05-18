@@ -160,10 +160,10 @@ def create_snv_class_plot(data: pd.DataFrame,
         df_copy = df_copy[df_copy['SNV_Class'].str.match(r'^[A-Z]>[A-Z]$')]
     else:
         # Si no podemos generar la información, devolver un eje vacío
-        print(f"No se pueden generar las clases de SNV: faltan las columnas {ref_column} y/o {alt_column}.")
+        print(f"Cannot generate SNV classes: columns {ref_column} and/or {alt_column} are missing.")
         if ax is None:
             _, ax = plt.subplots(figsize=(8, 6))
-        ax.text(0.5, 0.5, "No hay datos disponibles para SNV Class", 
+        ax.text(0.5, 0.5, "No data available for SNV Class", 
                ha='center', va='center', fontsize=12)
         if set_title:
             ax.set_title("SNV Class", fontsize=14, fontweight='bold')
@@ -180,7 +180,7 @@ def create_snv_class_plot(data: pd.DataFrame,
     if not snv_counts:
         if ax is None:
             _, ax = plt.subplots(figsize=(8, 6))
-        ax.text(0.5, 0.5, "No hay datos disponibles para SNV Class", 
+        ax.text(0.5, 0.5, "No data available for SNV Class", 
                ha='center', va='center', fontsize=12)
         if set_title:
             ax.set_title("SNV Class", fontsize=14, fontweight='bold')
@@ -251,10 +251,10 @@ def create_variant_classification_summary_plot(data: pd.DataFrame,
     """
     # Verificar si tenemos la columna de clasificación
     if variant_column not in data.columns:
-        print(f"No se encontró la columna: {variant_column}")
+        print(f"Column not found: {variant_column}")
         if ax is None:
             _, ax = plt.subplots(figsize=(12, 6))
-        ax.text(0.5, 0.5, f"No hay datos disponibles para Variant Classification Summary\nFalta columna: {variant_column}", 
+        ax.text(0.5, 0.5, f"No data available for Variant Classification Summary\nMissing column: {variant_column}", 
                ha='center', va='center', fontsize=12)
         if set_title:
             ax.set_title("Variant Classification Summary", fontsize=14, fontweight='bold')
@@ -271,17 +271,17 @@ def create_variant_classification_summary_plot(data: pd.DataFrame,
                                 (isinstance(col, str) and col.count('-') >= 2)]
         
         if not potential_sample_cols:
-            print(f"No se encontraron columnas de muestra que parezcan identificadores")
+            print(f"No sample columns found that look like identifiers")
             if ax is None:
                 _, ax = plt.subplots(figsize=(12, 6))
-            ax.text(0.5, 0.5, "No hay datos disponibles para Variant Classification Summary\nNo se detectaron columnas de muestra", 
+            ax.text(0.5, 0.5, "No data available for Variant Classification Summary\nNo sample columns detected", 
                   ha='center', va='center', fontsize=12)
             if set_title:
                 ax.set_title("Variant Classification Summary", fontsize=14, fontweight='bold')
             ax.axis('off')
             return ax
             
-        print(f"Detectadas {len(potential_sample_cols)} columnas de muestra")
+        print(f"Detected {len(potential_sample_cols)} sample columns")
         
         # Acumular los conteos por muestra y clasificación
         sample_variant_counts = {}
@@ -305,7 +305,7 @@ def create_variant_classification_summary_plot(data: pd.DataFrame,
             else:
                 sample_format = "other"
                 
-        print(f"Formato detectado de muestras: {sample_format}")
+        print(f"Detected sample format: {sample_format}")
         
         # Para cada clasificación de variante, contar cuántas muestras tienen esa variante
         for variant_class in unique_variants:
@@ -366,10 +366,10 @@ def create_variant_classification_summary_plot(data: pd.DataFrame,
     df = pd.DataFrame.from_dict(df_data, orient='index').fillna(0)
     
     if df.empty:
-        print("No se encontraron datos para el análisis después del procesamiento.")
+        print("No data found for analysis after processing.")
         if ax is None:
             _, ax = plt.subplots(figsize=(12, 6))
-        ax.text(0.5, 0.5, "No hay datos disponibles para Variant Classification Summary\nNo se encontraron datos para analizar", 
+        ax.text(0.5, 0.5, "No data available for Variant Classification Summary\nNo data found for analysis", 
                ha='center', va='center', fontsize=12)
         if set_title:
             ax.set_title("Variant Classification Summary", fontsize=14, fontweight='bold')
@@ -583,11 +583,12 @@ def create_summary_plot(data: pd.DataFrame,
     fig.legend(handles, labels, loc='lower center', ncol=min(len(labels), 5), 
                bbox_to_anchor=(0.5, 0.02))
     
-    # Adjust spacing between subplots
-    plt.tight_layout()
+    # Adjust spacing between subplots with padding to increase margins
+    plt.tight_layout(pad=2.0)  # Aumentar el pad para mayor margen
     
-    # Increase separation between first and second row, reduce space between second row and legend
-    plt.subplots_adjust(top=0.9, bottom=0.15, hspace=0.4)
+    # Increase separation between first and second row, adjust left and right margins
+    # Aumentar left sustancialmente para evitar que el texto se salga por el margen izquierdo
+    plt.subplots_adjust(top=0.9, bottom=0.15, hspace=0.4, left=0.15, right=0.93)
     
     return fig
 
@@ -621,10 +622,10 @@ def create_variants_per_sample_plot(data: pd.DataFrame,
     """
     # Verificar si tenemos las columnas necesarias
     if variant_column not in data.columns:
-        print(f"No se encontró la columna: {variant_column}")
+        print(f"Column not found: {variant_column}")
         if ax is None:
             _, ax = plt.subplots(figsize=(10, 6))
-        ax.text(0.5, 0.5, f"No hay datos disponibles para Variants per Sample\nFalta columna: {variant_column}", 
+        ax.text(0.5, 0.5, f"No data available for Variants per Sample\nMissing column: {variant_column}", 
                ha='center', va='center', fontsize=12)
         if set_title:
             ax.set_title("Variants per Sample", fontsize=14, fontweight='bold')
@@ -641,10 +642,10 @@ def create_variants_per_sample_plot(data: pd.DataFrame,
         potential_sample_cols = [col for col in data.columns if col.startswith('TCGA-') or '|' in str(data[col].iloc[0])]
         
         if not potential_sample_cols:
-            print(f"No se encontraron columnas de muestra que empiecen con TCGA- o contengan el carácter |")
+            print(f"No sample columns found that start with TCGA- or contain the | character")
             if ax is None:
                 _, ax = plt.subplots(figsize=(10, 6))
-            ax.text(0.5, 0.5, "No hay datos disponibles para Variants per Sample\nNo se detectaron columnas de muestra", 
+            ax.text(0.5, 0.5, "No data available for Variants per Sample\nNo sample columns detected", 
                   ha='center', va='center', fontsize=12)
             if set_title:
                 ax.set_title("Variants per Sample", fontsize=14, fontweight='bold')
@@ -678,10 +679,10 @@ def create_variants_per_sample_plot(data: pd.DataFrame,
                 samples_df.append({'Sample': sample, 'Variant_Classification': var_type, 'Count': count})
         
         if not samples_df:
-            print("No se pudieron procesar las variantes por muestra")
+            print("Unable to process variants per sample")
             if ax is None:
                 _, ax = plt.subplots(figsize=(10, 6))
-            ax.text(0.5, 0.5, "No hay datos disponibles para Variants per Sample\nNo se pudieron procesar las variantes", 
+            ax.text(0.5, 0.5, "No data available for Variants per Sample\nUnable to process variants", 
                   ha='center', va='center', fontsize=12)
             if set_title:
                 ax.set_title("Variants per Sample", fontsize=14, fontweight='bold')
@@ -792,10 +793,10 @@ def create_top_mutated_genes_plot(data: pd.DataFrame,
     """
     # Verificar si tenemos las columnas necesarias
     if gene_column not in data.columns:
-        print(f"No se encontró la columna: {gene_column}")
+        print(f"Column not found: {gene_column}")
         if ax is None:
             _, ax = plt.subplots(figsize=(10, 8))
-        ax.text(0.5, 0.5, f"No hay datos disponibles para Top Mutated Genes\nFalta columna: {gene_column}", 
+        ax.text(0.5, 0.5, f"No data available for Top Mutated Genes\nMissing column: {gene_column}", 
                ha='center', va='center', fontsize=12)
         if set_title:
             ax.set_title("Top Mutated Genes", fontsize=14, fontweight='bold')
@@ -803,10 +804,10 @@ def create_top_mutated_genes_plot(data: pd.DataFrame,
         return ax
         
     if variant_column not in data.columns:
-        print(f"No se encontró la columna: {variant_column}")
+        print(f"Column not found: {variant_column}")
         if ax is None:
             _, ax = plt.subplots(figsize=(10, 8))
-        ax.text(0.5, 0.5, f"No hay datos disponibles para Top Mutated Genes\nFalta columna: {variant_column}", 
+        ax.text(0.5, 0.5, f"No data available for Top Mutated Genes\nMissing column: {variant_column}", 
                ha='center', va='center', fontsize=12)
         if set_title:
             ax.set_title("Top Mutated Genes", fontsize=14, fontweight='bold')
@@ -819,11 +820,11 @@ def create_top_mutated_genes_plot(data: pd.DataFrame,
     samples_as_columns = len(sample_cols) > 0
     
     if not samples_as_columns and sample_column not in data.columns:
-        print(f"No se encontró la columna de muestras: {sample_column}")
-        print("Tampoco se detectaron columnas de muestra con formato TCGA-*")
+        print(f"Sample column not found: {sample_column}")
+        print("No sample columns with TCGA-* format detected either")
         if ax is None:
             _, ax = plt.subplots(figsize=(10, 8))
-        ax.text(0.5, 0.5, f"No hay datos disponibles para Top Mutated Genes\nNo se detectaron muestras", 
+        ax.text(0.5, 0.5, f"No data available for Top Mutated Genes\nNo samples detected", 
                ha='center', va='center', fontsize=12)
         if set_title:
             ax.set_title("Top Mutated Genes", fontsize=14, fontweight='bold')
@@ -863,8 +864,11 @@ def create_top_mutated_genes_plot(data: pd.DataFrame,
             colors = [color_map.get(variant, plt.colormaps['tab20'](i % 20)) 
                      for i, variant in enumerate(df_plot.columns)]
         
-        # Crear gráfico de barras horizontales
+        # Crear gráfico de barras horizontales - usar exactamente el mismo ancho en ambos modos
         df_plot.plot(kind='barh', stacked=True, ax=ax, color=colors, width=0.65)
+        
+        # Configurar el mismo aspecto y posicionamiento para ambos modos
+        ax.margins(x=0.05, y=0.01)
         
         # Añadir etiquetas con el recuento total a la derecha de cada barra
         for i, gene in enumerate(df_plot.index):
@@ -882,6 +886,9 @@ def create_top_mutated_genes_plot(data: pd.DataFrame,
         ax.spines['right'].set_visible(False)
         ax.spines['left'].set_visible(False) # Ocultar línea del eje izquierdo
         ax.tick_params(axis='y', which='both', left=False, right=False, labelleft=True) # Sin ticks en eje Y, pero con etiquetas
+        
+        # Configurar los mismos márgenes exactos en ambos modos para total consistencia
+        ax.margins(x=0.05, y=0.01)
 
         # Mejorar la leyenda para el modo variants
         handles_v, labels_v = ax.get_legend_handles_labels()
@@ -970,7 +977,7 @@ def create_top_mutated_genes_plot(data: pd.DataFrame,
                 plot_data_list.append(row_for_df)
         
         if not plot_data_list:
-            ax.text(0.5, 0.5, "No hay datos disponibles para analizar (modo samples)", 
+            ax.text(0.5, 0.5, "No data available for analysis (samples mode)", 
                       ha='center', va='center', fontsize=12)
             if set_title:
                 ax.set_title(f"Top {count} Mutated Genes (Sample Prevalence)", fontsize=14, fontweight='bold')
@@ -988,7 +995,7 @@ def create_top_mutated_genes_plot(data: pd.DataFrame,
                  gene_total_affected_samples[gene] = len(all_samples_for_gene)
 
         if not gene_total_affected_samples: 
-            ax.text(0.5, 0.5, "No hay genes con muestras afectadas para mostrar (modo samples)", 
+            ax.text(0.5, 0.5, "No genes with affected samples to display (samples mode)", 
                       ha='center', va='center', fontsize=12)
             if set_title:
                 ax.set_title(f"Top {count} Mutated Genes (Sample Prevalence)", fontsize=14, fontweight='bold')
@@ -1008,7 +1015,7 @@ def create_top_mutated_genes_plot(data: pd.DataFrame,
         ordered_genes_for_plot = sorted(valid_top_genes_for_plot, key=lambda g: gene_totals_series[g])
         
         if not ordered_genes_for_plot: 
-            ax.text(0.5, 0.5, "No hay genes en top seleccionados para mostrar (modo samples)", 
+            ax.text(0.5, 0.5, "No genes in the top selection to display (samples mode)", 
                       ha='center', va='center', fontsize=12)
             if set_title:
                 ax.set_title(f"Top {count} Mutated Genes (Sample Prevalence)", fontsize=14, fontweight='bold')
@@ -1055,12 +1062,16 @@ def create_top_mutated_genes_plot(data: pd.DataFrame,
         
         df_plot_final.plot(kind='barh', stacked=True, ax=ax, color=colors_for_plot, width=0.65)
         
+        # Configurar exactamente el mismo aspecto y posicionamiento que el modo variants
+        ax.margins(x=0.05, y=0.01)
+        
         for i, gene_name_in_plot in enumerate(df_plot_final.index):
             num_unique_samples_affected = gene_totals_series[gene_name_in_plot]
             percentage = (num_unique_samples_affected / total_samples_in_dataset) * 100 if total_samples_in_dataset > 0 else 0
             bar_length = df_plot_final.loc[gene_name_in_plot].sum()
-            offset = 0.01 * ax.get_xlim()[1] if ax.get_xlim()[1] > 0 else 0.1 
-            ax.text(bar_length + offset , i, f'{percentage:.1f}%', va='center', fontsize=10)
+            # Usar el mismo cálculo de offset que en el modo variants para consistencia
+            offset = 0.01 * ax.get_xlim()[1] if ax.get_xlim()[1] > 0 else 0.1
+            ax.text(bar_length + offset, i, f'{percentage:.1f}%', va='center', fontsize=10)
         
         title_text = f"Top {count} Mutated Genes (Sample Prevalence)"
         if set_title:
@@ -1070,6 +1081,9 @@ def create_top_mutated_genes_plot(data: pd.DataFrame,
         ax.spines['right'].set_visible(False)
         ax.spines['left'].set_visible(False) # Ocultar la línea del eje izquierdo
         ax.tick_params(axis='y', which='both', left=False, right=False, labelleft=True) # Sin ticks en eje Y, pero con etiquetas
+        
+        # Configurar los mismos márgenes exactos en ambos modos para total consistencia
+        ax.margins(x=0.05, y=0.01)
 
         handles, labels = ax.get_legend_handles_labels()
         legend_elements = {label: handle for label, handle in zip(labels, handles)}

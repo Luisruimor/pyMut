@@ -29,25 +29,25 @@ def main():
     
     # Verificar si existe el archivo
     if not os.path.exists(tsv_file):
-        print(f"Error: El archivo {tsv_file} no existe.")
+        print(f"Error: The file {tsv_file} does not exist.")
         exit(1)
     
     # Leer los datos
     mutation_data = pd.read_csv(tsv_file, sep='\t')
     
-    # Crear objeto PyMutation
-    print("Creando objeto PyMutation...")
+    # Creating PyMutation object
+    print("Creating PyMutation object...")
     py_mut = PyMutation(mutation_data)
     
-    # 1. Generar el gráfico de resumen completo
-    print("\n1. Generando gráfico de resumen completo...")
+    # 1. Generate the complete summary plot
+    print("\n1. Generating complete summary plot...")
     summary_fig = py_mut.summary_plot()
     # Parámetros opcionales comentados:
     # summary_fig = py_mut.summary_plot(
          # title="Ejemplo del plot summary",     # Título personalizado
          # figsize=(16, 12),                     # Tamaño de la figura
          # max_samples=50,                       # Máximo de muestras a mostrar
-         # top_genes_count=15,                   # Número de genes en Top Mutated Genes (por defecto 10)
+         # top_genes_count=5,                    # Número de genes en Top Mutated Genes (por defecto 10)
          # show_interactive=True                 # Mostrar interactivamente
     # )
     
@@ -56,10 +56,10 @@ def main():
     summary_fig.savefig(output_path)
     # Opciones adicionales para guardar:
     # summary_fig.savefig(output_path, dpi=300, bbox_inches='tight')
-    print(f"Gráfico de resumen guardado en: {output_path}")
+    print(f"Summary plot saved in: {output_path}")
     
     # 2. Variant Classification Plot
-    print("\n2. Generando gráfico de clasificación de variantes...")
+    print("\n2. Generating variant classification plot...")
     vc_fig = py_mut.variant_classification_plot()
     # Parámetros opcionales comentados:
     # vc_fig = py_mut.variant_classification_plot(
@@ -70,10 +70,10 @@ def main():
     
     vc_output_path = os.path.join(os.path.dirname(__file__), 'variant_classification.png')
     vc_fig.savefig(vc_output_path)
-    print(f"Gráfico guardado en: {vc_output_path}")
+    print(f"Plot saved in: {vc_output_path}")
     
     # 3. Variant Type Plot
-    print("\n3. Generando gráfico de tipos de variantes...")
+    print("\n3. Generating variant types plot...")
     vt_fig = py_mut.variant_type_plot()
     # Parámetros opcionales comentados:
     # vt_fig = py_mut.variant_type_plot(
@@ -84,10 +84,10 @@ def main():
     
     vt_output_path = os.path.join(os.path.dirname(__file__), 'variant_type.png')
     vt_fig.savefig(vt_output_path)
-    print(f"Gráfico guardado en: {vt_output_path}")
+    print(f"Plot saved in: {vt_output_path}")
     
     # 4. SNV Class Plot
-    print("\n4. Generando gráfico de clases de SNV...")
+    print("\n4. Generating SNV classes plot...")
     snv_fig = py_mut.snv_class_plot()
     # Parámetros opcionales comentados:
     # snv_fig = py_mut.snv_class_plot(
@@ -100,10 +100,10 @@ def main():
     
     snv_output_path = os.path.join(os.path.dirname(__file__), 'snv_class.png')
     snv_fig.savefig(snv_output_path)
-    print(f"Gráfico guardado en: {snv_output_path}")
+    print(f"Plot saved in: {snv_output_path}")
     
     # 5. Variants per Sample Plot (TMB)
-    print("\n5. Generando gráfico de variantes por muestra (TMB)...")
+    print("\n5. Generating variants per sample plot (TMB)...")
     tmb_fig = py_mut.variants_per_sample_plot()
     # Parámetros opcionales comentados:
     # tmb_fig = py_mut.variants_per_sample_plot(
@@ -117,10 +117,10 @@ def main():
     
     tmb_output_path = os.path.join(os.path.dirname(__file__), 'variants_per_sample.png')
     tmb_fig.savefig(tmb_output_path)
-    print(f"Gráfico guardado en: {tmb_output_path}")
+    print(f"Plot saved in: {tmb_output_path}")
     
     # 6. Variant Classification Summary Plot (Boxplot)
-    print("\n6. Generando gráfico de resumen de clasificación de variantes (Boxplot)...")
+    print("\n6. Generating variant classification summary plot (Boxplot)...")
     vcs_fig = py_mut.variant_classification_summary_plot()
     # Parámetros opcionales comentados:
     # vcs_fig = py_mut.variant_classification_summary_plot(
@@ -133,10 +133,10 @@ def main():
     
     vcs_output_path = os.path.join(os.path.dirname(__file__), 'variant_classification_summary.png')
     vcs_fig.savefig(vcs_output_path)
-    print(f"Gráfico guardado en: {vcs_output_path}")
+    print(f"Plot saved in: {vcs_output_path}")
     
-    # 7a. Top Mutated Genes Plot (modo variants)
-    print("\n7a. Generando gráfico de genes más mutados (modo variants)...")
+    # 7a. Top Mutated Genes Plot (variants mode)
+    print("\n7a. Generating top mutated genes plot (variants mode)...")
     tmg_variants_fig = py_mut.top_mutated_genes_plot(mode="variants")
     # Parámetros opcionales comentados:
     # tmg_variants_fig = py_mut.top_mutated_genes_plot(
@@ -152,10 +152,10 @@ def main():
     
     tmg_variants_path = os.path.join(os.path.dirname(__file__), 'top_mutated_genes_variants.png')
     tmg_variants_fig.savefig(tmg_variants_path)
-    print(f"Gráfico guardado en: {tmg_variants_path}")
+    print(f"Plot saved in: {tmg_variants_path}")
     
-    # 7b. Top Mutated Genes Plot (modo samples)
-    print("\n7b. Generando gráfico de genes más mutados (modo samples)...")
+    # 7b. Top Mutated Genes Plot (samples mode)
+    print("\n7b. Generating top mutated genes plot (samples mode)...")
     tmg_samples_fig = py_mut.top_mutated_genes_plot(mode="samples")
     # Parámetros opcionales comentados:
     # tmg_samples_fig = py_mut.top_mutated_genes_plot(
@@ -171,9 +171,9 @@ def main():
     
     tmg_samples_path = os.path.join(os.path.dirname(__file__), 'top_mutated_genes_samples.png')
     tmg_samples_fig.savefig(tmg_samples_path)
-    print(f"Gráfico guardado en: {tmg_samples_path}")
+    print(f"Plot saved in: {tmg_samples_path}")
     
-    print("\nEl ejemplo de generación de gráficos ha finalizado.")
+    print("\nPlot generation example has finished.")
     
     # Para mostrar las visualizaciones interactivamente, descomenta las siguientes líneas:
     # plt.ion()  # Activar modo interactivo

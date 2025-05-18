@@ -63,7 +63,7 @@ def extract_variant_classifications(data: pd.DataFrame,
     if variant_column not in result.columns:
         # Si existe la columna FUNCOTATION, extraer de ahí
         if funcotation_column in result.columns:
-            print(f"La columna '{variant_column}' no se encontró. Se extraerá desde '{funcotation_column}'.")
+            print(f"Column '{variant_column}' not found. Extracting from '{funcotation_column}'.")
             # Crear la columna aplicando la función de extracción
             result[variant_column] = result[funcotation_column].apply(
                 lambda x: extract_variant_classification(x) if pd.notnull(x) else None
@@ -71,10 +71,10 @@ def extract_variant_classifications(data: pd.DataFrame,
             
             # Verificar si se obtuvieron datos válidos
             if result[variant_column].isna().all():
-                print(f"No se pudieron extraer datos de clasificación de variante desde '{funcotation_column}'.")
+                print(f"Failed to extract variant classification data from '{funcotation_column}'.")
                 result[variant_column] = "Unknown"
         else:
-            print(f"Ninguna de las columnas '{variant_column}' ni '{funcotation_column}' se encontró en el DataFrame.")
+            print(f"Neither '{variant_column}' nor '{funcotation_column}' columns were found in the DataFrame.")
             # Crear una columna con valor desconocido
             result[variant_column] = "Unknown"
             
@@ -136,7 +136,7 @@ def extract_variant_types(data: pd.DataFrame,
     if variant_column not in result.columns:
         # Si existe la columna FUNCOTATION, extraer de ahí
         if funcotation_column in result.columns:
-            print(f"La columna '{variant_column}' no se encontró. Se extraerá desde '{funcotation_column}'.")
+            print(f"Column '{variant_column}' not found. Extracting from '{funcotation_column}'.")
             # Crear la columna aplicando la función de extracción
             result[variant_column] = result[funcotation_column].apply(
                 lambda x: extract_variant_type(x) if pd.notnull(x) else None
@@ -144,10 +144,10 @@ def extract_variant_types(data: pd.DataFrame,
             
             # Verificar si se obtuvieron datos válidos
             if result[variant_column].isna().all():
-                print(f"No se pudieron extraer datos de tipos de variante desde '{funcotation_column}'.")
+                print(f"Failed to extract variant type data from '{funcotation_column}'.")
                 result[variant_column] = "Unknown"
         else:
-            print(f"Ninguna de las columnas '{variant_column}' ni '{funcotation_column}' se encontró en el DataFrame.")
+            print(f"Neither '{variant_column}' nor '{funcotation_column}' columns were found in the DataFrame.")
             # Crear una columna con valor desconocido
             result[variant_column] = "Unknown"
     
@@ -209,7 +209,7 @@ def extract_genome_changes(data: pd.DataFrame,
     if genome_change_column not in result.columns:
         # Si existe la columna FUNCOTATION, extraer de ahí
         if funcotation_column in result.columns:
-            print(f"La columna '{genome_change_column}' no se encontró. Se extraerá desde '{funcotation_column}'.")
+            print(f"Column '{genome_change_column}' not found. Extracting from '{funcotation_column}'.")
             # Crear la columna aplicando la función de extracción
             result[genome_change_column] = result[funcotation_column].apply(
                 lambda x: extract_genome_change(x) if pd.notnull(x) else None
@@ -217,10 +217,10 @@ def extract_genome_changes(data: pd.DataFrame,
             
             # Verificar si se obtuvieron datos válidos
             if result[genome_change_column].isna().all():
-                print(f"No se pudieron extraer datos de cambio genómico desde '{funcotation_column}'.")
+                print(f"Failed to extract genome change data from '{funcotation_column}'.")
                 result[genome_change_column] = "Unknown"
         else:
-            print(f"Ninguna de las columnas '{genome_change_column}' ni '{funcotation_column}' se encontró en el DataFrame.")
+            print(f"Neither '{genome_change_column}' nor '{funcotation_column}' columns were found in the DataFrame.")
             # Crear una columna con valor desconocido
             result[genome_change_column] = "Unknown"
     
@@ -246,7 +246,7 @@ def read_tsv(file_path: str) -> pd.DataFrame:
         pd.errors.ParserError: Si hay problemas al analizar el archivo.
     """
     if not os.path.exists(file_path):
-        raise FileNotFoundError(f"El archivo '{file_path}' no existe.")
+        raise FileNotFoundError(f"File '{file_path}' does not exist.")
         
     try:
         # Primero intentamos leer sin comentarios
@@ -256,8 +256,8 @@ def read_tsv(file_path: str) -> pd.DataFrame:
         try:
             data = pd.read_csv(file_path, sep='\t', comment='#', engine='python')
         except Exception as err:
-            raise ValueError(f"No se pudo leer el archivo: {str(err)}")
+            raise ValueError(f"Could not read file: {str(err)}")
     except Exception as e:
-        raise ValueError(f"Error al leer el archivo: {str(e)}")
+        raise ValueError(f"Error reading file: {str(e)}")
         
     return data
