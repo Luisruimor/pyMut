@@ -446,7 +446,8 @@ def create_variant_classification_summary_plot(data: pd.DataFrame,
 def create_summary_plot(data: pd.DataFrame,
                       figsize: Tuple[int, int] = (16, 12),
                       title: str = "Mutation Summary",
-                      max_samples: Optional[int] = 200) -> plt.Figure:
+                      max_samples: Optional[int] = 200,
+                      top_genes_count: int = 10) -> plt.Figure:
     """
     Creates a summary plot with multiple visualizations of mutation data.
     
@@ -456,6 +457,8 @@ def create_summary_plot(data: pd.DataFrame,
         title: Plot title.
         max_samples: Maximum number of samples to show in the variants per sample plot.
                     If None, all samples are shown.
+        top_genes_count: Number of genes to show in the top mutated genes plot.
+                    If there are fewer genes than this number, all will be shown.
         
     Returns:
         Figure with summary visualizations.
@@ -538,7 +541,7 @@ def create_summary_plot(data: pd.DataFrame,
         gene_column=gene_column,
         sample_column=sample_column,
         mode="variants",
-        count=10,
+        count=top_genes_count,  # Usar el parámetro configurable
         ax=axs[1, 2],
         color_map=variant_color_map,  # Use the same color map
         set_title=True
@@ -866,11 +869,11 @@ def create_top_mutated_genes_plot(data: pd.DataFrame,
         # Añadir etiquetas con el recuento total a la derecha de cada barra
         for i, gene in enumerate(df_plot.index):
             total = gene_totals[gene]
-            # Ajustar el offset para los números
-            offset_variants = max(1, 0.01 * ax.get_xlim()[1]) if ax.get_xlim()[1] > 0 else 1
+            # Ajustar el offset para los números (más pequeño para estar más cerca de las barras)
+            offset_variants = 0.01 * ax.get_xlim()[1] if ax.get_xlim()[1] > 0 else 0.1
             ax.text(total + offset_variants, i, f'{int(total)}', va='center', fontsize=10)
         
-        title_text_variants = f"Top {count} Mutated Genes (Total Variants)" # Usar count variable
+        title_text_variants = f"Top {count} Mutated Genes (variants)" # Usar count variable
         # Configuración común del título y ejes para el modo variants
         if set_title:
             ax.set_title(title_text_variants, fontsize=14, fontweight='bold') 

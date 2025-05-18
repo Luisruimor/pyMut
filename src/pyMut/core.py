@@ -43,6 +43,7 @@ class PyMutation:
                    figsize: Tuple[int, int] = DEFAULT_SUMMARY_FIGSIZE,
                    title: str = DEFAULT_PLOT_TITLE,
                    max_samples: Optional[int] = 200,
+                   top_genes_count: int = DEFAULT_TOP_GENES_COUNT,
                    show_interactive: bool = False) -> plt.Figure:
         """
         Genera un gráfico de resumen con estadísticas generales de las mutaciones.
@@ -52,12 +53,15 @@ class PyMutation:
         - Variant Type: Distribución de tipos de variantes (SNP, INS, DEL, etc.)
         - SNV Class: Distribución de clases de SNV (cambios nucleotídicos como A>G, C>T, etc.)
         - Variants per Sample: Distribución de variantes por muestra y mediana (TMB)
+        - Top Mutated Genes: Genes más frecuentemente mutados
         
         Args:
             figsize: Tamaño de la figura.
             title: Título del gráfico.
             max_samples: Número máximo de muestras a mostrar en el gráfico de variantes por muestra.
                         Si es None, se muestran todas las muestras.
+            top_genes_count: Número de genes a mostrar en el gráfico de genes más mutados.
+                        Si hay menos genes que este número, se mostrarán todos.
             show_interactive: Si es True, muestra la visualización en modo interactivo.
             
         Returns:
@@ -80,7 +84,7 @@ class PyMutation:
         )
         
         # Generar el gráfico de resumen
-        fig = create_summary_plot(processed_data, figsize, title, max_samples)
+        fig = create_summary_plot(processed_data, figsize, title, max_samples, top_genes_count)
         
         # Si se solicita mostrar interactivamente
         if show_interactive:
@@ -384,7 +388,9 @@ class PyMutation:
         from .utils.data_processing import extract_variant_classifications
 
         # Validar parámetros
-        if not isinstance(count, int) or count <= 0:
+        if not isinstance(count, int):
+            raise ValueError(f"El parámetro 'count' debe ser un número entero, se recibió: {count}")
+        if count <= 0:
             raise ValueError(f"El parámetro 'count' debe ser un número entero positivo, se recibió: {count}")
         
         # Verificar que el modo sea válido

@@ -47,6 +47,7 @@ def main():
          # title="Ejemplo del plot summary",     # Título personalizado
          # figsize=(16, 12),                     # Tamaño de la figura
          # max_samples=50,                       # Máximo de muestras a mostrar
+         # top_genes_count=15,                   # Número de genes en Top Mutated Genes (por defecto 10)
          # show_interactive=True                 # Mostrar interactivamente
     # )
     
@@ -145,7 +146,7 @@ def main():
     #     variant_column="Variant_Classification", # Columna con clasificación de variante
     #     gene_column="Hugo_Symbol",            # Columna con símbolo del gen
     #     sample_column="Tumor_Sample_Barcode", # Columna con ID de muestra
-    #     count=10,                             # Número de genes a mostrar
+    #     count=10,                             # Número de genes a mostrar (por defecto 10, muestra todos si hay menos)
     #     show_interactive=True                 # Mostrar interactivamente
     # )
     
@@ -164,7 +165,7 @@ def main():
     #     variant_column="Variant_Classification", # Columna con clasificación de variante
     #     gene_column="Hugo_Symbol",            # Columna con símbolo del gen
     #     sample_column="Tumor_Sample_Barcode", # Columna con ID de muestra
-    #     count=10,                             # Número de genes a mostrar
+    #     count=15,                             # Número de genes a mostrar
     #     show_interactive=True                 # Mostrar interactivamente
     # )
     
