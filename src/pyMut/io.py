@@ -142,6 +142,49 @@ def _parse_info_column(info_series: pd.Series) -> pd.DataFrame:
     info_df = pd.DataFrame(parsed.tolist())  # type: ignore[arg-type]
     return info_df
 
+# FUNCION DE NORMALIZACIÓN DE VARIANT CLASSIFICATION
+def normalizar_variant_classification(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Convierte a mayúsculas los valores de cualquier columna de tipo
+    'Variant Classification', independientemente del prefijo Gencode,
+    de la versión o de la capitalización.
+
+    Ejemplos de nombres que se capturan:
+        - Gencode_43_variantClassification
+        - gencode_34_variantclassification
+        - variant_classification
+        - Variant_Classification
+        - gencode_99_VariantClassification
+
+    Parámetros
+    ----------
+    df : pd.DataFrame
+        DataFrame de entrada.
+
+    Devuelve
+    --------
+    pd.DataFrame
+        El mismo DataFrame con las columnas encontradas normalizadas
+        a mayúsculas. Se devuelve la misma referencia para permitir
+        encadenado si se desea.
+    """
+    # Expresión regular:
+    #  - ^                  : inicio de cadena
+    #  - (gencode_\d+_)?    : prefijo opcional 'gencode_<num>_' (no sensible a mayúsculas)
+    #  - variant[_]?classification : cuerpo del nombre (permite 'variantclassification' o con '_')
+    #  - $                  : fin de cadena
+    patron = re.compile(r'^(gencode_\d+_)?variant[_]?classification$', flags=re.IGNORECASE)
+
+    # Localizar columnas que cumplan el patrón
+    columnas_objetivo = [col for col in df.columns if patron.match(col)]
+
+    # Convertir a mayúsculas los valores de cada columna encontrada
+    for col in columnas_objetivo:
+        # Solo tiene sentido sobre columnas de tipo objeto (strings)
+        if pd.api.types.is_string_dtype(df[col]):
+            df[col] = df[col].str.upper()
+
+    return df
 
 # ════════════════════════════════════════════════════════════════
 # FUNCIÓN PRINCIPAL: read_vcf
@@ -336,6 +379,9 @@ def read_maf(path: str | Path, fasta: str | Path | None = None) -> PyMutation:
         raise ValueError(msg)
     logger.debug("Columnas requeridas presentes.")
 
+    # Normalizar nombres de columnas de Variant Classification
+    maf = normalizar_variant_classification(maf)
+
     # ─── 4) GENERAR CAMPOS ESTILO-VCF ---------------------------------------
     maf["CHROM"] = maf["Chromosome"].astype(str).map(formatear_chr)
     maf["POS"] = maf["Start_Position"].astype("int64")
@@ -354,7 +400,6 @@ def read_maf(path: str | Path, fasta: str | Path | None = None) -> PyMutation:
     maf["ALT"] = maf["Tumor_Seq_Allele2"].fillna(maf["Tumor_Seq_Allele1"]).astype(str)
     maf["QUAL"] = "."
     maf["FILTER"] = "."
-
 
     # ─── 5) EXPANDIR MUESTRAS A COLUMNAS ------------------------------------
     samples = maf["Tumor_Sample_Barcode"].dropna().unique().tolist()
