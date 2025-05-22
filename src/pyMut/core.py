@@ -88,9 +88,7 @@ class PyMutation:
         
         # Si se solicita mostrar interactivamente
         if show_interactive:
-            # Mostrar la figura en modo bloqueante hasta que el usuario la cierre
-            plt.figure(fig.number)
-            plt.show(block=True)
+            self._show_figure_interactive(fig)
         
         return fig
     
@@ -133,9 +131,7 @@ class PyMutation:
         
         # Si se solicita mostrar interactivamente
         if show_interactive:
-            # Mostrar la figura en modo bloqueante hasta que el usuario la cierre
-            plt.figure(fig.number)
-            plt.show(block=True)
+            self._show_figure_interactive(fig)
         
         return fig
     
@@ -178,9 +174,7 @@ class PyMutation:
         
         # Si se solicita mostrar interactivamente
         if show_interactive:
-            # Mostrar la figura en modo bloqueante hasta que el usuario la cierre
-            plt.figure(fig.number)
-            plt.show(block=True)
+            self._show_figure_interactive(fig)
         
         return fig
     
@@ -220,9 +214,7 @@ class PyMutation:
         
         # Si se solicita mostrar interactivamente
         if show_interactive:
-            # Mostrar la figura en modo bloqueante hasta que el usuario la cierre
-            plt.figure(fig.number)
-            plt.show(block=True)
+            self._show_figure_interactive(fig)
         
         return fig
     
@@ -290,9 +282,7 @@ class PyMutation:
         
         # Si se solicita mostrar interactivamente
         if show_interactive:
-            # Mostrar la figura en modo bloqueante hasta que el usuario la cierre
-            plt.figure(fig.number)
-            plt.show(block=True)
+            self._show_figure_interactive(fig)
         
         return fig
     
@@ -358,9 +348,7 @@ class PyMutation:
         
         # Si se solicita mostrar interactivamente
         if show_interactive:
-            # Mostrar la figura en modo bloqueante hasta que el usuario la cierre
-            plt.figure(fig.number)
-            plt.show(block=True)
+            self._show_figure_interactive(fig)
         
         return fig
 
@@ -464,31 +452,64 @@ class PyMutation:
         
         # Si se solicita mostrar interactivamente
         if show_interactive:
-            # Mostrar la figura en modo bloqueante hasta que el usuario la cierre
-            plt.figure(fig.number)
-            plt.show(block=True)
+            self._show_figure_interactive(fig)
         
         return fig
     
-    def show_interactive_plots(self, figures: Optional[List[plt.Figure]] = None) -> None:
+    def _show_figure_interactive(self, figure: plt.Figure) -> None:
         """
-        Mantiene las ventanas de gráficos interactivos abiertas hasta que el usuario las cierre.
+        Muestra una figura específica en modo interactivo sin afectar otras figuras.
         
-        Esta función sirve para mantener en ejecución el programa cuando se utilizan 
-        gráficos interactivos con el parámetro show_interactive=True.
+        Este método privado se utiliza internamente para mostrar solo la figura específica
+        en modo interactivo cuando se usa show_interactive=True en los métodos de visualización.
         
         Args:
-            figures: Lista opcional de figuras a mantener abiertas. Si no se proporciona,
-                    solo mantendrá las figuras actualmente abiertas.
+            figure: La figura específica a mostrar en modo interactivo.
         """
-        if figures:
-            # Asegurar que todas las figuras estén en estado interactivo
-            plt.ion()
-            for fig in figures:
-                fig.show()
+        # Guardar el estado actual del modo interactivo
+        was_interactive = plt.isinteractive()
         
-        # Mostrar mensaje informativo
-        print("Las visualizaciones permanecerán abiertas hasta que cierres todas las ventanas.")
+        # Variable para controlar cuándo se cierra la ventana
+        window_closed = [False]  # Usar lista para que sea mutable en la función interna
         
-        # Bloquear la ejecución hasta que se cierren todas las figuras
-        plt.show(block=True)
+        def on_close(event):
+            """Callback que se ejecuta cuando se cierra la ventana."""
+            window_closed[0] = True
+        
+        try:
+            # Habilitar modo interactivo temporalmente solo si no estaba activo
+            if not was_interactive:
+                plt.ion()
+            
+            # Conectar el evento de cierre de la ventana
+            figure.canvas.mpl_connect('close_event', on_close)
+            
+            # Mostrar solo esta figura específica
+            figure.show()
+            
+            # Forzar el render inmediato de la figura
+            figure.canvas.draw()
+            figure.canvas.flush_events()
+            
+            # Informar al usuario
+            title_text = "Sin título"
+            if figure._suptitle and figure._suptitle.get_text():
+                title_text = figure._suptitle.get_text()
+            
+            print(f"Figura '{title_text}' mostrada en modo interactivo.")
+            print("Cierra la ventana para continuar con la ejecución del script.")
+            
+            # Esperar hasta que el usuario cierre la ventana
+            # Usar un loop que verifique la variable window_closed
+            import time
+            while not window_closed[0] and plt.fignum_exists(figure.number):
+                # Usar solo time.sleep() sin plt.pause() para evitar efectos secundarios
+                time.sleep(0.1)
+                # Permitir que matplotlib procese eventos de forma mínima
+                figure.canvas.flush_events()
+                    
+        finally:
+            # Restaurar el estado original del modo interactivo solo si lo cambiamos
+            if not was_interactive:
+                plt.ioff()  # Desactivar modo interactivo si no estaba activo antes
+

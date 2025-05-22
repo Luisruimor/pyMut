@@ -43,9 +43,7 @@ def main():
     # 1. Generate the complete summary plot
     print("\n1. Generating complete summary plot...")
     summary_fig = py_mut.summary_plot()
-    # To view this visualization interactively:
-    # py_mut.show_interactive_plots([summary_fig])
-    
+
     # Commented version with all available parameters:
     # summary_fig = py_mut.summary_plot(
     #     title="Example summary plot",     # Custom title for the plot
@@ -65,9 +63,7 @@ def main():
     # 2. Variant Classification Plot
     print("\n2. Generating variant classification plot...")
     vc_fig = py_mut.variant_classification_plot()
-    # To view this visualization interactively, uncomment:
-    # py_mut.show_interactive_plots([vc_fig])
-    
+
     # Commented version with all available parameters:
     # vc_fig = py_mut.variant_classification_plot(
     #     figsize=(12, 6),                  # Figure size in inches (width, height)
@@ -83,9 +79,7 @@ def main():
     # 3. Variant Type Plot
     print("\n3. Generating variant types plot...")
     vt_fig = py_mut.variant_type_plot()
-    # To view this visualization interactively, uncomment:
-    # py_mut.show_interactive_plots([vt_fig])
-    
+
     # Commented version with all available parameters:
     # vt_fig = py_mut.variant_type_plot(
     #     figsize=(12, 6),                  # Figure size in inches (width, height)
@@ -101,9 +95,7 @@ def main():
     # 4. SNV Class Plot
     print("\n4. Generating SNV classes plot...")
     snv_fig = py_mut.snv_class_plot()
-    # To view this visualization interactively, uncomment:
-    # py_mut.show_interactive_plots([snv_fig])
-    
+
     # Commented version with all available parameters:
     # snv_fig = py_mut.snv_class_plot(
     #     figsize=(12, 6),                  # Figure size in inches (width, height)
@@ -121,9 +113,7 @@ def main():
     # 5. Variants per Sample Plot (TMB)
     print("\n5. Generating variants per sample plot (TMB)...")
     tmb_fig = py_mut.variants_per_sample_plot()
-    # To view this visualization interactively, uncomment:
-    # py_mut.show_interactive_plots([tmb_fig])
-    
+
     # Commented version with all available parameters:
     # tmb_fig = py_mut.variants_per_sample_plot(
     #     figsize=(12, 6),                      # Figure size in inches (width, height)
@@ -142,9 +132,7 @@ def main():
     # 6. Variant Classification Summary Plot (Boxplot)
     print("\n6. Generating variant classification summary plot (Boxplot)...")
     vcs_fig = py_mut.variant_classification_summary_plot()
-    # To view this visualization interactively, uncomment:
-    # py_mut.show_interactive_plots([vcs_fig])
-    
+
     # Commented version with all available parameters:
     # vcs_fig = py_mut.variant_classification_summary_plot(
     #     figsize=(12, 6),                      # Figure size in inches (width, height)
@@ -162,8 +150,6 @@ def main():
     # 7a. Top Mutated Genes Plot (variants mode)
     print("\n7a. Generating top mutated genes plot (variants mode)...")
     tmg_variants_fig = py_mut.top_mutated_genes_plot(mode="variants")
-    # To view this visualization interactively, uncomment:
-    # py_mut.show_interactive_plots([tmg_variants_fig])
     
     # Commented version with all available parameters:
     # tmg_variants_fig = py_mut.top_mutated_genes_plot(
@@ -185,9 +171,7 @@ def main():
     # 7b. Top Mutated Genes Plot (samples mode)
     print("\n7b. Generating top mutated genes plot (samples mode)...")
     tmg_samples_fig = py_mut.top_mutated_genes_plot(mode="samples")
-    # To view this visualization interactively, uncomment:
-    # py_mut.show_interactive_plots([tmg_samples_fig])
-    
+
     # Commented version with all available parameters:
     # tmg_samples_fig = py_mut.top_mutated_genes_plot(
     #     mode="samples",                       # Counting mode (required): "variants" or "samples"
