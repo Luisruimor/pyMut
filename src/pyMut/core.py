@@ -39,6 +39,77 @@ class PyMutation:
         
         self.data = data
     
+    def save_figure(self, figure: plt.Figure, filename: str, 
+                   dpi: int = 300, bbox_inches: str = 'tight', **kwargs) -> None:
+        """
+        Guarda una figura con configuración de alta calidad por defecto.
+        
+        Este método centraliza el guardado de figuras para asegurar que todas
+        las visualizaciones se guarden con la mejor calidad posible.
+        
+        Args:
+            figure: La figura de matplotlib a guardar.
+            filename: Nombre del archivo donde guardar la figura.
+            dpi: Resolución en puntos por pulgada (300 = alta calidad).
+            bbox_inches: Ajuste de márgenes ('tight' = sin espacios innecesarios).
+            **kwargs: Parámetros adicionales para matplotlib.savefig().
+        
+        Examples:
+            >>> py_mut = PyMutation(data)
+            >>> fig = py_mut.summary_plot()
+            >>> py_mut.save_figure(fig, 'mi_resumen.png')  # Alta calidad automática
+            >>> py_mut.save_figure(fig, 'mi_resumen.pdf', dpi=600)  # Muy alta calidad
+        """
+        figure.savefig(filename, dpi=dpi, bbox_inches=bbox_inches, **kwargs)
+        print(f"📁 Figura guardada: {filename} (DPI: {dpi}, márgenes: {bbox_inches})")
+    
+    @staticmethod
+    def configure_high_quality_plots():
+        """
+        Configura matplotlib para generar gráficos de alta calidad por defecto.
+        
+        Esta función modifica la configuración global de matplotlib para que
+        TODAS las figuras se guarden automáticamente con alta calidad, sin
+        necesidad de especificar parámetros cada vez.
+        
+        Configuraciones aplicadas:
+        - DPI: 300 (alta resolución)
+        - bbox_inches: 'tight' (márgenes optimizados)
+        - Formato: PNG con compresión optimizada
+        
+        Examples:
+            >>> PyMutation.configure_high_quality_plots()  # Configurar una vez
+            >>> py_mut = PyMutation(data)
+            >>> fig = py_mut.summary_plot()
+            >>> fig.savefig('plot.png')  # ¡Automáticamente alta calidad!
+        
+        Note:
+            Esta configuración afecta a TODAS las figuras de matplotlib en la sesión.
+            Se recomienda llamar esta función al inicio del script.
+        """
+        import matplotlib as mpl
+        
+        # Configurar DPI por defecto para alta resolución
+        mpl.rcParams['figure.dpi'] = 300
+        mpl.rcParams['savefig.dpi'] = 300
+        
+        # Configurar márgenes automáticos
+        mpl.rcParams['savefig.bbox'] = 'tight'
+        
+        # Configurar formato y compresión
+        mpl.rcParams['savefig.format'] = 'png'
+        mpl.rcParams['savefig.transparent'] = False
+        
+        # Mejorar calidad de texto
+        mpl.rcParams['savefig.facecolor'] = 'white'
+        mpl.rcParams['savefig.edgecolor'] = 'none'
+        
+        print("✅ Configuración de alta calidad activada para matplotlib")
+        print("   • DPI: 300 (alta resolución)")
+        print("   • Márgenes: automáticos (tight)")
+        print("   • Formato: PNG optimizado")
+        print("   ℹ️  Ahora todas las figuras se guardarán automáticamente en alta calidad")
+    
     def summary_plot(self, 
                    figsize: Tuple[int, int] = DEFAULT_SUMMARY_FIGSIZE,
                    title: str = DEFAULT_PLOT_TITLE,
