@@ -436,9 +436,11 @@ def create_variant_classification_summary_plot(data: pd.DataFrame,
     # Añadir cuadrícula para mejor legibilidad
     ax.yaxis.grid(True, linestyle='--', alpha=0.3)
     
-    # Eliminar algunos bordes de los ejes
+    # Aplicar estilo de ejes donde las líneas no se crucen
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
+    ax.spines['left'].set_position(('outward', 5))
+    ax.spines['bottom'].set_position(('outward', 5))
     
     return ax
 
@@ -743,20 +745,34 @@ def create_variants_per_sample_plot(data: pd.DataFrame,
     # Configurar etiquetas y título, solo si set_title es True
     if set_title:
         ax.set_title("Variants per Sample", fontsize=14, fontweight='bold')
-    # Añadir la información de la mediana como subtítulo sin negrita
-    ax.text(0.5, 0.92, f"Median: {median_tmb:.1f}", transform=ax.transAxes, ha='center', fontsize=12)
+    
     ax.set_xlabel("")  # Eliminar la etiqueta del eje X "Samples"
     
     # Quitar las etiquetas del eje X para mayor claridad cuando hay muchas muestras
     ax.set_xticklabels([])
     ax.tick_params(axis='x', which='both', bottom=False)
     
-    # Ajustar leyenda con título fijo "Variant Classification"
-    ax.legend(title="Variant Classification", bbox_to_anchor=(1.05, 1), loc='upper left')
+    # Detectar automáticamente si estamos en el summary plot o en visualización individual
+    # Si el ax está en una figura con múltiples subplots, estamos en el summary plot
+    is_in_summary_plot = hasattr(ax.figure, 'axes') and len(ax.figure.axes) > 1
+    
+    if is_in_summary_plot:
+        # En el summary plot: usar leyenda limpia y agregar mediana debajo del título
+        ax.legend(title="Variant Classification", bbox_to_anchor=(1.05, 1), loc='upper left')
+        # Agregar mediana debajo del título en el summary plot
+        ax.text(0.5, 0.92, f"Median: {median_tmb:.1f}", transform=ax.transAxes, ha='center', fontsize=12)
+    else:
+        # En visualización individual: colocar mediana dentro del recuadro de la leyenda
+        # Incluir la mediana en el título de la leyenda para que aparezca dentro del recuadro
+        # Usar formato de texto enriquecido para poner "Variant Classification" y "Median:" en negrita
+        legend_title = f"$\\mathbf{{Variant Classification}}$\n\n$\\mathbf{{Median:}}$ {median_tmb:.1f}"
+        ax.legend(title=legend_title, bbox_to_anchor=(1.05, 1), loc='upper left')
     
     # Ajustar márgenes y quitar recuadros innecesarios
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
+    ax.spines['left'].set_position(('outward', 5))
+    ax.spines['bottom'].set_position(('outward', 5))
     
     return ax
 
