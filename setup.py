@@ -1,6 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-
 from setuptools import setup, find_packages
 
 with open("README.md", "r", encoding="utf-8") as fh:
@@ -8,10 +5,10 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setup(
     name="pyMut",
-    version="0.1.0",
+    version="0.1.1",
     author="Your Name",
     author_email="your.email@example.com",
-    description="Una librería Python para visualizar mutaciones genéticas",
+    description="A Python library for visualizing genetic mutations",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/yourusername/pyMut",

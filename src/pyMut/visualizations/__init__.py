@@ -1,6 +1,6 @@
 """
-Módulo de visualizaciones para pyMut.
+Visualizations module for pyMut.
 
-Este módulo contiene funciones y clases para generar visualizaciones 
-de datos de mutaciones genéticas.
+This module contains functions and classes for generating visualizations
+of genetic mutation data.
 """ 
