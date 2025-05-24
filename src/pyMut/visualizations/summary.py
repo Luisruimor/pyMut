@@ -415,11 +415,17 @@ def create_variant_classification_summary_plot(data: pd.DataFrame,
         patch.set_facecolor(color)
         patch.set_alpha(0.7)
     
-    # Configurar las etiquetas del eje X con mejor rotación y formato
-    if show_labels:
-        ax.set_xticklabels(variant_types, rotation=45, ha='right', fontsize=10)
+    # Detectar automáticamente si estamos en el summary plot o en visualización individual
+    # Si el ax está en una figura con múltiples subplots, estamos en el summary plot
+    is_in_summary_plot = hasattr(ax.figure, 'axes') and len(ax.figure.axes) > 1
+    
+    # Configurar las etiquetas del eje X según el contexto
+    if is_in_summary_plot:
+        # En el summary plot: no mostrar etiquetas para evitar superposición
+        ax.set_xticklabels([])
     else:
-        ax.set_xticklabels([])  # No mostrar etiquetas
+        # En visualización individual: siempre mostrar etiquetas rotadas 45 grados
+        ax.set_xticklabels(variant_types, rotation=45, ha='right', fontsize=10)
     
     # Ajustar los límites del eje Y
     ymin = 0
@@ -436,11 +442,19 @@ def create_variant_classification_summary_plot(data: pd.DataFrame,
     # Añadir cuadrícula para mejor legibilidad
     ax.yaxis.grid(True, linestyle='--', alpha=0.3)
     
-    # Aplicar estilo de ejes donde las líneas no se crucen
-    ax.spines['top'].set_visible(False)
-    ax.spines['right'].set_visible(False)
-    ax.spines['left'].set_position(('outward', 5))
-    ax.spines['bottom'].set_position(('outward', 5))
+    # Aplicar estilo según el contexto
+    if is_in_summary_plot:
+        # En el summary plot: aplicar estilo moderno donde las líneas no se cruzan
+        ax.spines['top'].set_visible(False)
+        ax.spines['right'].set_visible(False)
+        ax.spines['left'].set_position(('outward', 5))
+        ax.spines['bottom'].set_position(('outward', 5))
+    else:
+        # En visualización individual: usar estilo clásico original (ejes que se cruzan)
+        # Solo eliminar los bordes superior y derecho, mantener posición normal de ejes
+        ax.spines['top'].set_visible(False)
+        ax.spines['right'].set_visible(False)
+        # NO usar outward positioning - esto permite que los ejes se crucen
     
     return ax
 
