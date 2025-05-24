@@ -11,25 +11,25 @@ from .utils.constants import (
 
 class PyMutation:
     """
-    Clase principal para visualizar mutaciones genéticas a partir de datos en formato TSV.
+    Main class for visualizing genetic mutations from data in TSV format.
     
-    Esta clase proporciona métodos para generar visualizaciones de resumen de datos
-    de mutaciones genéticas, mostrando estadísticas generales como distribuciones
-    de tipos de variantes, clasificaciones y cambios de nucleótidos.
+    This class provides methods for generating summary visualizations of genetic
+    mutation data, showing general statistics such as distributions of variant
+    types, classifications, and nucleotide changes.
     
     Attributes:
-        data (pd.DataFrame): DataFrame que contiene los datos de mutaciones.
+        data (pd.DataFrame): DataFrame containing mutation data.
     """
     
     def __init__(self, data: pd.DataFrame):
         """
-        Inicializa un objeto PyMutation con un DataFrame de pandas.
+        Initialize a PyMutation object with a pandas DataFrame.
         
         Args:
-            data (pd.DataFrame): DataFrame conteniendo datos de mutaciones.
+            data (pd.DataFrame): DataFrame containing mutation data.
         
         Raises:
-            ValueError: Si el DataFrame está vacío o no es un DataFrame válido.
+            ValueError: If the DataFrame is empty or not a valid DataFrame.
         """
         if not isinstance(data, pd.DataFrame):
             raise ValueError("The 'data' parameter must be a pandas DataFrame.")
@@ -42,73 +42,73 @@ class PyMutation:
     def save_figure(self, figure: plt.Figure, filename: str, 
                    dpi: int = 300, bbox_inches: str = 'tight', **kwargs) -> None:
         """
-        Guarda una figura con configuración de alta calidad por defecto.
+        Save a figure with high-quality configuration by default.
         
-        Este método centraliza el guardado de figuras para asegurar que todas
-        las visualizaciones se guarden con la mejor calidad posible.
+        This method centralizes figure saving to ensure all visualizations
+        are saved with the best possible quality.
         
         Args:
-            figure: La figura de matplotlib a guardar.
-            filename: Nombre del archivo donde guardar la figura.
-            dpi: Resolución en puntos por pulgada (300 = alta calidad).
-            bbox_inches: Ajuste de márgenes ('tight' = sin espacios innecesarios).
-            **kwargs: Parámetros adicionales para matplotlib.savefig().
+            figure: The matplotlib figure to save.
+            filename: Filename where to save the figure.
+            dpi: Resolution in dots per inch (300 = high quality).
+            bbox_inches: Margin adjustment ('tight' = no unnecessary spaces).
+            **kwargs: Additional parameters for matplotlib.savefig().
         
         Examples:
             >>> py_mut = PyMutation(data)
             >>> fig = py_mut.summary_plot()
-            >>> py_mut.save_figure(fig, 'mi_resumen.png')  # Alta calidad automática
-            >>> py_mut.save_figure(fig, 'mi_resumen.pdf', dpi=600)  # Muy alta calidad
+            >>> py_mut.save_figure(fig, 'my_summary.png')  # Automatic high quality
+            >>> py_mut.save_figure(fig, 'my_summary.pdf', dpi=600)  # Very high quality
         """
         figure.savefig(filename, dpi=dpi, bbox_inches=bbox_inches, **kwargs)
-        print(f"📁 Figura guardada: {filename} (DPI: {dpi}, márgenes: {bbox_inches})")
+        print(f"📁 Figure saved: {filename} (DPI: {dpi}, margins: {bbox_inches})")
     
     @staticmethod
     def configure_high_quality_plots():
         """
-        Configura matplotlib para generar gráficos de alta calidad por defecto.
+        Configure matplotlib to generate high-quality plots by default.
         
-        Esta función modifica la configuración global de matplotlib para que
-        TODAS las figuras se guarden automáticamente con alta calidad, sin
-        necesidad de especificar parámetros cada vez.
+        This function modifies matplotlib's global configuration so that
+        ALL figures are automatically saved with high quality, without
+        needing to specify parameters each time.
         
-        Configuraciones aplicadas:
-        - DPI: 300 (alta resolución)
-        - bbox_inches: 'tight' (márgenes optimizados)
-        - Formato: PNG con compresión optimizada
+        Applied configurations:
+        - DPI: 300 (high resolution)
+        - bbox_inches: 'tight' (optimized margins)
+        - Format: PNG with optimized compression
         
         Examples:
-            >>> PyMutation.configure_high_quality_plots()  # Configurar una vez
+            >>> PyMutation.configure_high_quality_plots()  # Configure once
             >>> py_mut = PyMutation(data)
             >>> fig = py_mut.summary_plot()
-            >>> fig.savefig('plot.png')  # ¡Automáticamente alta calidad!
+            >>> fig.savefig('plot.png')  # Automatically high quality!
         
         Note:
-            Esta configuración afecta a TODAS las figuras de matplotlib en la sesión.
-            Se recomienda llamar esta función al inicio del script.
+            This configuration affects ALL matplotlib figures in the session.
+            It's recommended to call this function at the beginning of the script.
         """
         import matplotlib as mpl
         
-        # Configurar DPI por defecto para alta resolución
+        # Configure default DPI for high resolution
         mpl.rcParams['figure.dpi'] = 300
         mpl.rcParams['savefig.dpi'] = 300
         
-        # Configurar márgenes automáticos
+        # Configure automatic margins
         mpl.rcParams['savefig.bbox'] = 'tight'
         
-        # Configurar formato y compresión
+        # Configure format and compression
         mpl.rcParams['savefig.format'] = 'png'
         mpl.rcParams['savefig.transparent'] = False
         
-        # Mejorar calidad de texto
+        # Improve text quality
         mpl.rcParams['savefig.facecolor'] = 'white'
         mpl.rcParams['savefig.edgecolor'] = 'none'
         
-        print("✅ Configuración de alta calidad activada para matplotlib")
-        print("   • DPI: 300 (alta resolución)")
-        print("   • Márgenes: automáticos (tight)")
-        print("   • Formato: PNG optimizado")
-        print("   ℹ️  Ahora todas las figuras se guardarán automáticamente en alta calidad")
+        print("✅ High-quality configuration activated for matplotlib")
+        print("   • DPI: 300 (high resolution)")
+        print("   • Margins: automatic (tight)")
+        print("   • Format: optimized PNG")
+        print("   ℹ️  Now all figures will be automatically saved in high quality")
     
     def summary_plot(self, 
                    figsize: Tuple[int, int] = DEFAULT_SUMMARY_FIGSIZE,
@@ -117,31 +117,31 @@ class PyMutation:
                    top_genes_count: int = DEFAULT_TOP_GENES_COUNT,
                    show_interactive: bool = False) -> plt.Figure:
         """
-        Genera un gráfico de resumen con estadísticas generales de las mutaciones.
+        Generate a summary plot with general mutation statistics.
         
-        Esta visualización incluye múltiples gráficos:
-        - Variant Classification: Distribución de clasificaciones de variantes
-        - Variant Type: Distribución de tipos de variantes (SNP, INS, DEL, etc.)
-        - SNV Class: Distribución de clases de SNV (cambios nucleotídicos como A>G, C>T, etc.)
-        - Variants per Sample: Distribución de variantes por muestra y mediana (TMB)
-        - Top Mutated Genes: Genes más frecuentemente mutados
+        This visualization includes multiple plots:
+        - Variant Classification: Distribution of variant classifications
+        - Variant Type: Distribution of variant types (SNP, INS, DEL, etc.)
+        - SNV Class: Distribution of SNV classes (nucleotide changes like A>G, C>T, etc.)
+        - Variants per Sample: Distribution of variants per sample and median (TMB)
+        - Top Mutated Genes: Most frequently mutated genes
         
         Args:
-            figsize: Tamaño de la figura.
-            title: Título del gráfico.
-            max_samples: Número máximo de muestras a mostrar en el gráfico de variantes por muestra.
-                        Si es None, se muestran todas las muestras.
-            top_genes_count: Número de genes a mostrar en el gráfico de genes más mutados.
-                        Si hay menos genes que este número, se mostrarán todos.
-            show_interactive: Si es True, muestra la visualización en modo interactivo.
+            figsize: Figure size.
+            title: Plot title.
+            max_samples: Maximum number of samples to show in the variants per sample plot.
+                        If None, all samples are shown.
+            top_genes_count: Number of genes to show in the top mutated genes plot.
+                        If there are fewer genes than this number, all will be shown.
+            show_interactive: If True, display the visualization in interactive mode.
             
         Returns:
-            Figura de matplotlib con el gráfico de resumen.
+            Matplotlib figure with the summary plot.
         """
         from .visualizations.summary import create_summary_plot
         from .utils.data_processing import extract_variant_classifications, extract_variant_types
         
-        # Preprocesar los datos para asegurar que tenemos las columnas necesarias
+        # Preprocess data to ensure we have the necessary columns
         processed_data = extract_variant_classifications(
             self.data, 
             variant_column=VARIANT_CLASSIFICATION_COLUMN,
@@ -154,10 +154,10 @@ class PyMutation:
             funcotation_column=FUNCOTATION_COLUMN
         )
         
-        # Generar el gráfico de resumen
+        # Generate the summary plot
         fig = create_summary_plot(processed_data, figsize, title, max_samples, top_genes_count)
         
-        # Si se solicita mostrar interactivamente
+        # If requested to show interactively
         if show_interactive:
             self._show_figure_interactive(fig)
         
@@ -168,39 +168,39 @@ class PyMutation:
                                     title: str = "Variant Classification",
                                     show_interactive: bool = False) -> plt.Figure:
         """
-        Genera un gráfico de barras horizontal mostrando la distribución de clasificaciones de variantes.
+        Generate a horizontal bar plot showing the distribution of variant classifications.
         
         Args:
-            figsize: Tamaño de la figura.
-            title: Título del gráfico.
-            show_interactive: Si es True, muestra la visualización en modo interactivo.
+            figsize: Figure size.
+            title: Plot title.
+            show_interactive: If True, display the visualization in interactive mode.
             
         Returns:
-            Figura de matplotlib con el gráfico de clasificación de variantes.
+            Matplotlib figure with the variant classification plot.
         """
         from .visualizations.summary import create_variant_classification_plot
         from .utils.data_processing import extract_variant_classifications
         
-        # Preprocesar los datos para asegurar que tenemos la columna necesaria
+        # Preprocess data to ensure we have the necessary column
         processed_data = extract_variant_classifications(
             self.data, 
             variant_column="Variant_Classification",
             funcotation_column="FUNCOTATION"
         )
         
-        # Crear figura y ejes
+        # Create figure and axes
         fig, ax = plt.subplots(figsize=figsize)
         
-        # Generar el gráfico, pasando set_title=False para evitar título duplicado
+        # Generate the plot, passing set_title=False to avoid duplicate title
         create_variant_classification_plot(processed_data, ax=ax, set_title=False)
         
-        # Configurar título
+        # Configure title
         if title:
             fig.suptitle(title, fontsize=16, fontweight='bold')
         
         plt.tight_layout()
         
-        # Si se solicita mostrar interactivamente
+        # If requested to show interactively
         if show_interactive:
             self._show_figure_interactive(fig)
         
@@ -211,39 +211,39 @@ class PyMutation:
                           title: str = "Variant Type",
                           show_interactive: bool = False) -> plt.Figure:
         """
-        Genera un gráfico de barras horizontal mostrando la distribución de tipos de variantes.
+        Generate a horizontal bar plot showing the distribution of variant types.
         
         Args:
-            figsize: Tamaño de la figura.
-            title: Título del gráfico.
-            show_interactive: Si es True, muestra la visualización en modo interactivo.
+            figsize: Figure size.
+            title: Plot title.
+            show_interactive: If True, display the visualization in interactive mode.
             
         Returns:
-            Figura de matplotlib con el gráfico de tipos de variantes.
+            Matplotlib figure with the variant types plot.
         """
         from .visualizations.summary import create_variant_type_plot
         from .utils.data_processing import extract_variant_types
         
-        # Preprocesar los datos para asegurar que tenemos la columna necesaria
+        # Preprocess data to ensure we have the necessary column
         processed_data = extract_variant_types(
             self.data,
             variant_column="Variant_Type",
             funcotation_column="FUNCOTATION"
         )
         
-        # Crear figura y ejes
+        # Create figure and axes
         fig, ax = plt.subplots(figsize=figsize)
         
-        # Generar el gráfico, pasando set_title=False para evitar título duplicado
+        # Generate the plot, passing set_title=False to avoid duplicate title
         create_variant_type_plot(processed_data, ax=ax, set_title=False)
         
-        # Configurar título
+        # Configure title
         if title:
             fig.suptitle(title, fontsize=16, fontweight='bold')
         
         plt.tight_layout()
         
-        # Si se solicita mostrar interactivamente
+        # If requested to show interactively
         if show_interactive:
             self._show_figure_interactive(fig)
         
@@ -256,17 +256,17 @@ class PyMutation:
                         alt_column: str = "ALT",
                         show_interactive: bool = False) -> plt.Figure:
         """
-        Genera un gráfico de barras horizontal mostrando la distribución de clases de SNV.
+        Generate a horizontal bar plot showing the distribution of SNV classes.
         
         Args:
-            figsize: Tamaño de la figura.
-            title: Título del gráfico.
-            ref_column: Nombre de la columna que contiene el alelo de referencia.
-            alt_column: Nombre de la columna que contiene el alelo alternativo.
-            show_interactive: Si es True, muestra la visualización en modo interactivo.
+            figsize: Figure size.
+            title: Plot title.
+            ref_column: Name of the column containing the reference allele.
+            alt_column: Name of the column containing the alternative allele.
+            show_interactive: If True, display the visualization in interactive mode.
             
         Returns:
-            Figura de matplotlib con el gráfico de clases de SNV.
+            Matplotlib figure with the SNV classes plot.
         """
         from .visualizations.summary import create_snv_class_plot
         
@@ -276,14 +276,14 @@ class PyMutation:
             ref_column=ref_column,
             alt_column=alt_column,
             ax=ax,
-            set_title=False  # Evitar título duplicado
+            set_title=False  # Avoid duplicate title
         )
         
         if title:
             fig.suptitle(title, fontsize=16, fontweight='bold')
         plt.tight_layout()
         
-        # Si se solicita mostrar interactivamente
+        # If requested to show interactively
         if show_interactive:
             self._show_figure_interactive(fig)
         
@@ -297,36 +297,36 @@ class PyMutation:
                                  max_samples: Optional[int] = 200,
                                  show_interactive: bool = False) -> plt.Figure:
         """
-        Genera un gráfico de barras apiladas mostrando el número de variantes por muestra (TMB)
-        y su composición por tipo de variante.
+        Generate a stacked bar plot showing the number of variants per sample (TMB)
+        and their composition by variant type.
 
         Args:
-            figsize: Tamaño de la figura.
-            title: Título del gráfico.
-            variant_column: Nombre de la columna que contiene la clasificación de variante.
-            sample_column: Nombre de la columna que contiene el identificador de la muestra,
-                          o string que se usará para identificar columnas de muestra si las
-                          muestras están como columnas.
-            max_samples: Número máximo de muestras a mostrar. Si es None, se muestran todas.
-                        Si hay más muestras que este número, solo se muestran las primeras max_samples.
-            show_interactive: Si es True, muestra la visualización en modo interactivo.
+            figsize: Figure size.
+            title: Plot title.
+            variant_column: Name of the column containing the variant classification.
+            sample_column: Name of the column containing the sample identifier,
+                          or string used to identify sample columns if samples
+                          are stored as columns.
+            max_samples: Maximum number of samples to show. If None, all are shown.
+                        If there are more samples than this number, only the first max_samples are shown.
+            show_interactive: If True, display the visualization in interactive mode.
             
         Returns:
-            Figura de matplotlib con el gráfico de variantes por muestra.
+            Matplotlib figure with the variants per sample plot.
         """
         from .visualizations.summary import create_variants_per_sample_plot
         from .utils.data_processing import extract_variant_classifications
 
-        # Si variant_column no está en las columnas, intentar normalizarlo
+        # If variant_column is not in columns, try to normalize it
         if variant_column not in self.data.columns:
-            # Comprobar si hay una versión con diferente capitalización
+            # Check if there's a version with different capitalization
             column_lower = variant_column.lower()
             for col in self.data.columns:
                 if col.lower() == column_lower:
                     variant_column = col
                     break
         
-        # Asegurar que la columna de clasificación de variantes existe o se extrae
+        # Ensure the variant classification column exists or is extracted
         processed_data = extract_variant_classifications(
             self.data, 
             variant_column=variant_column,
@@ -339,11 +339,11 @@ class PyMutation:
             variant_column=variant_column,
             sample_column=sample_column,
             ax=ax,
-            set_title=False,  # Evitar título duplicado
-            max_samples=max_samples  # Pasar el límite de muestras configurado
+            set_title=False,  # Avoid duplicate title
+            max_samples=max_samples  # Pass the configured sample limit
         )
         
-        # No modificar el título si contiene la mediana
+        # Don't modify title if it contains the median
         if title and not title.startswith("Variants per Sample"):
             fig.suptitle(title, fontsize=16, fontweight='bold', y=1.02)
         elif title:
@@ -351,7 +351,7 @@ class PyMutation:
         
         plt.tight_layout()
         
-        # Si se solicita mostrar interactivamente
+        # If requested to show interactively
         if show_interactive:
             self._show_figure_interactive(fig)
         
@@ -365,37 +365,37 @@ class PyMutation:
                                            sample_column: str = "Tumor_Sample_Barcode",
                                            show_interactive: bool = False) -> plt.Figure:
         """
-        Genera un diagrama de cajas y bigotes (boxplot) que resume, para cada clasificación de variantes,
-        la distribución (entre las muestras) del número de alelos alternativos detectados.
+        Generate a box-and-whiskers plot (boxplot) that summarizes, for each variant classification,
+        the distribution (among samples) of the number of detected alternative alleles.
 
-        Este gráfico muestra la variabilidad entre muestras para cada tipo de clasificación de variante,
-        permitiendo identificar cuáles presentan más diferencias entre pacientes.
+        This plot shows the variability between samples for each type of variant classification,
+        allowing identification of which ones present more differences between patients.
 
         Args:
-            figsize: Tamaño de la figura.
-            title: Título del gráfico.
-            variant_column: Nombre de la columna que contiene la clasificación de variante.
-            sample_column: Nombre de la columna que contiene el identificador de la muestra.
-                          Si no existe, se asume que las muestras son columnas (formato ancho).
-            show_interactive: Si es True, muestra la visualización en modo interactivo.
+            figsize: Figure size.
+            title: Plot title.
+            variant_column: Name of the column containing the variant classification.
+            sample_column: Name of the column containing the sample identifier.
+                          If it doesn't exist, samples are assumed to be columns (wide format).
+            show_interactive: If True, display the visualization in interactive mode.
             
         Returns:
-            Figura de matplotlib con el gráfico de cajas y bigotes.
+            Matplotlib figure with the box-and-whiskers plot.
         """
         from .visualizations.summary import create_variant_classification_summary_plot
         from .utils.data_processing import extract_variant_classifications
 
-        # Asegurar que la columna de clasificación de variantes existe o se extrae
+        # Ensure the variant classification column exists or is extracted
         processed_data = extract_variant_classifications(
             self.data, 
             variant_column=variant_column,
             funcotation_column="FUNCOTATION"
         )
         
-        # Verificar si estamos en formato ancho (muestras como columnas)
+        # Check if we're in wide format (samples as columns)
         is_wide_format = sample_column not in processed_data.columns
         if is_wide_format:
-            # Detectar y mostrar información sobre el formato
+            # Detect and show information about the format
             sample_cols = [col for col in processed_data.columns if col.startswith('TCGA-') or 
                            (isinstance(col, str) and col.count('-') >= 2)]
             if sample_cols:
@@ -407,17 +407,17 @@ class PyMutation:
             variant_column=variant_column,
             sample_column=sample_column,
             ax=ax,
-            show_labels=True,  # Asegurarnos de que siempre muestre las etiquetas cuando se genera individualmente
-            set_title=False  # Evitar título duplicado
+            show_labels=True,  # Ensure it always shows labels when generated individually
+            set_title=False  # Avoid duplicate title
         )
         
-        # Configurar título
+        # Configure title
         if title:
             fig.suptitle(title, fontsize=16, fontweight='bold')
         
         plt.tight_layout()
         
-        # Si se solicita mostrar interactivamente
+        # If requested to show interactively
         if show_interactive:
             self._show_figure_interactive(fig)
         
@@ -434,59 +434,59 @@ class PyMutation:
                               count: int = DEFAULT_TOP_GENES_COUNT,
                               show_interactive: bool = False) -> plt.Figure:
         """
-        Genera un diagrama de barras horizontal mostrando los genes más mutados y la distribución
-        de variantes según su clasificación.
+        Generate a horizontal bar plot showing the most mutated genes and the distribution
+        of variants according to their classification.
 
         Args:
-            figsize: Tamaño de la figura.
-            title: Título del gráfico.
-            mode: Modo de conteo de mutaciones: "variants" (cuenta número total de variantes)
-                  o "samples" (cuenta número de muestras afectadas).
-            variant_column: Nombre de la columna que contiene la clasificación de variante.
-            gene_column: Nombre de la columna que contiene el símbolo del gen.
-            sample_column: Nombre de la columna que contiene el identificador de la muestra,
-                          o prefijo para identificar columnas de muestra si están como columnas.
-            count: Número de genes principales a mostrar.
-            show_interactive: Si es True, muestra la visualización en modo interactivo.
+            figsize: Figure size.
+            title: Plot title.
+            mode: Mutation counting mode: "variants" (counts total number of variants)
+                  or "samples" (counts number of affected samples).
+            variant_column: Name of the column containing the variant classification.
+            gene_column: Name of the column containing the gene symbol.
+            sample_column: Name of the column containing the sample identifier,
+                          or prefix to identify sample columns if they are columns.
+            count: Number of top genes to show.
+            show_interactive: If True, display the visualization in interactive mode.
             
         Returns:
-            Figura de matplotlib con el gráfico de genes más mutados.
+            Matplotlib figure with the top mutated genes plot.
         
         Raises:
-            ValueError: Si 'count' no es un número positivo o 'mode' no es un valor válido.
+            ValueError: If 'count' is not a positive number or 'mode' is not a valid value.
         """
         from .visualizations.summary import create_top_mutated_genes_plot
         from .utils.data_processing import extract_variant_classifications
 
-        # Validar parámetros
+        # Validate parameters
         if not isinstance(count, int):
-            raise ValueError(f"El parámetro 'count' debe ser un número entero, se recibió: {count}")
+            raise ValueError(f"The 'count' parameter must be an integer, received: {count}")
         if count <= 0:
-            raise ValueError(f"El parámetro 'count' debe ser un número entero positivo, se recibió: {count}")
+            raise ValueError(f"The 'count' parameter must be a positive integer, received: {count}")
         
-        # Verificar que el modo sea válido
+        # Check that mode is valid
         if mode not in VALID_PLOT_MODES:
-            raise ValueError(f"El modo '{mode}' no es válido. Los valores permitidos son: {', '.join(VALID_PLOT_MODES)}")
+            raise ValueError(f"Mode '{mode}' is not valid. Allowed values are: {', '.join(VALID_PLOT_MODES)}")
 
-        # Si variant_column no está en las columnas, intentar normalizarlo
+        # If variant_column is not in columns, try to normalize it
         if variant_column not in self.data.columns:
-            # Comprobar si hay una versión con diferente capitalización
+            # Check if there's a version with different capitalization
             column_lower = variant_column.lower()
             for col in self.data.columns:
                 if col.lower() == column_lower:
                     variant_column = col
                     break
                     
-        # Si gene_column no está en las columnas, intentar normalizarlo
+        # If gene_column is not in columns, try to normalize it
         if gene_column not in self.data.columns:
-            # Comprobar si hay una versión con diferente capitalización
+            # Check if there's a version with different capitalization
             column_lower = gene_column.lower()
             for col in self.data.columns:
                 if col.lower() == column_lower:
                     gene_column = col
                     break
         
-        # Asegurar que la columna de clasificación de variantes existe o se extrae
+        # Ensure the variant classification column exists or is extracted
         processed_data = extract_variant_classifications(
             self.data, 
             variant_column=variant_column,
@@ -502,10 +502,10 @@ class PyMutation:
             sample_column=sample_column,
             count=count,
             ax=ax,
-            set_title=False  # Evitar título duplicado
+            set_title=False  # Avoid duplicate title
         )
         
-        # Ajustar título personalizado basado en el modo
+        # Adjust custom title based on mode
         if title:
             if mode == "variants" and title == "Top Mutated Genes":
                 fig.suptitle("Top mutated genes (variants)", fontsize=16, fontweight='bold', y=0.98)
@@ -514,14 +514,14 @@ class PyMutation:
             else:
                 fig.suptitle(title, fontsize=16, fontweight='bold', y=0.98)
         
-        # Usar tight_layout con un padding adicional para mejorar los márgenes
+        # Use tight_layout with additional padding to improve margins
         plt.tight_layout(pad=1.2)
         
-        # Ajustar los márgenes para tener un aspecto más consistente entre modes
-        # Aumentar el margen izquierdo para evitar que el texto se salga
+        # Adjust margins for more consistent appearance between modes
+        # Increase left margin to prevent text from being cut off
         plt.subplots_adjust(left=0.15, right=0.9)
         
-        # Si se solicita mostrar interactivamente
+        # If requested to show interactively
         if show_interactive:
             self._show_figure_interactive(fig)
         
@@ -529,58 +529,58 @@ class PyMutation:
     
     def _show_figure_interactive(self, figure: plt.Figure) -> None:
         """
-        Muestra una figura específica en modo interactivo sin afectar otras figuras.
+        Display a specific figure in interactive mode without affecting other figures.
         
-        Este método privado se utiliza internamente para mostrar solo la figura específica
-        en modo interactivo cuando se usa show_interactive=True en los métodos de visualización.
+        This private method is used internally to show only the specific figure
+        in interactive mode when using show_interactive=True in visualization methods.
         
         Args:
-            figure: La figura específica a mostrar en modo interactivo.
+            figure: The specific figure to display in interactive mode.
         """
-        # Guardar el estado actual del modo interactivo
+        # Save current interactive mode state
         was_interactive = plt.isinteractive()
         
-        # Variable para controlar cuándo se cierra la ventana
-        window_closed = [False]  # Usar lista para que sea mutable en la función interna
+        # Variable to control when the window is closed
+        window_closed = [False]  # Use list to make it mutable in inner function
         
         def on_close(event):
-            """Callback que se ejecuta cuando se cierra la ventana."""
+            """Callback executed when the window is closed."""
             window_closed[0] = True
         
         try:
-            # Habilitar modo interactivo temporalmente solo si no estaba activo
+            # Enable interactive mode temporarily only if it wasn't active
             if not was_interactive:
                 plt.ion()
             
-            # Conectar el evento de cierre de la ventana
+            # Connect the window close event
             figure.canvas.mpl_connect('close_event', on_close)
             
-            # Mostrar solo esta figura específica
+            # Show only this specific figure
             figure.show()
             
-            # Forzar el render inmediato de la figura
+            # Force immediate figure render
             figure.canvas.draw()
             figure.canvas.flush_events()
             
-            # Informar al usuario
-            title_text = "Sin título"
+            # Inform the user
+            title_text = "Untitled"
             if figure._suptitle and figure._suptitle.get_text():
                 title_text = figure._suptitle.get_text()
             
-            print(f"Figura '{title_text}' mostrada en modo interactivo.")
-            print("Cierra la ventana para continuar con la ejecución del script.")
+            print(f"Figure '{title_text}' displayed in interactive mode.")
+            print("Close the window to continue with script execution.")
             
-            # Esperar hasta que el usuario cierre la ventana
-            # Usar un loop que verifique la variable window_closed
+            # Wait until user closes the window
+            # Use a loop that checks the window_closed variable
             import time
             while not window_closed[0] and plt.fignum_exists(figure.number):
-                # Usar solo time.sleep() sin plt.pause() para evitar efectos secundarios
+                # Use only time.sleep() without plt.pause() to avoid side effects
                 time.sleep(0.1)
-                # Permitir que matplotlib procese eventos de forma mínima
+                # Allow matplotlib to process events minimally
                 figure.canvas.flush_events()
                     
         finally:
-            # Restaurar el estado original del modo interactivo solo si lo cambiamos
+            # Restore original interactive mode state only if we changed it
             if not was_interactive:
-                plt.ioff()  # Desactivar modo interactivo si no estaba activo antes
+                plt.ioff()  # Disable interactive mode if it wasn't active before
 

@@ -1,41 +1,62 @@
-# pyMut
+# pyMut Documentation
 
-A Python library for visualizing genetic mutations from TSV files.
+pyMut es una librería Python para visualizar mutaciones genéticas, inspirada en herramientas como Maftools y Mutscape.
 
-## Description
-
-pyMut is a visualization tool for genetic mutation data. It allows generating summary visualizations to better understand patterns and distributions of mutations in the data.
-
-## Features
-
-- Statistical summary visualizations:
-  - Variant Classification: Distribution of variant classifications
-  - Variant Type: Distribution of variant types (SNP, INS, DEL, etc.)
-  - SNV Class: Distribution of SNV classes (nucleotide changes like A>G, C>T, etc.)
-
-## Installation
+## Instalación
 
 ```bash
 pip install pyMut
 ```
 
-## Basic Usage
+## Uso Rápido
 
 ```python
 from pyMut import PyMutation
 import pandas as pd
 
-# Load mutation data from a TSV file
-data = pd.read_csv("mutations.tsv", sep="\t")
+# Cargar datos
+data = pd.read_csv("mutations.tsv", sep='\t')
 
-# Create a PyMutation object
-pyMut = PyMutation(data)
+# Crear visualización
+py_mut = PyMutation(data)
+PyMutation.configure_high_quality_plots()
 
-# Generate a summary plot
-fig = pyMut.summary_plot()
+# Generar summary plot
+fig = py_mut.summary_plot(title="Mi Análisis")
 fig.savefig("summary.png")
 ```
 
-## Future Development
+## Documentación Disponible
 
-In the future, pyMut will be expanded with more visualizations and functionalities for a more comprehensive analysis of genetic mutations, while maintaining simplicity and ease of use.
+- **[Summary Plot](summary-plot.md)** - Visualización principal que combina múltiples análisis
+
+## Formato de Datos
+
+pyMut requiere datos con estas columnas mínimas:
+
+- `Hugo_Symbol` - Símbolo del gen
+- `Variant_Classification` - Tipo de mutación (Missense_Mutation, Silent, etc.)
+
+Opcionalmente:
+- `Tumor_Sample_Barcode` - Identificador de muestra
+- `REF` / `ALT` - Alelos de referencia y alternativo
+
+## Ejemplo con Datos de Prueba
+
+```python
+# Usar datos de ejemplo incluidos
+data = pd.read_csv("src/pyMut/data/examples/tcga_laml_converted.tsv", sep='\t')
+py_mut = PyMutation(data)
+
+# Generar todas las visualizaciones disponibles
+summary_fig = py_mut.summary_plot()
+vc_fig = py_mut.variant_classification_plot()
+tmb_fig = py_mut.variants_per_sample_plot()
+genes_fig = py_mut.top_mutated_genes_plot(mode="variants")
+```
+
+## Soporte
+
+- **GitHub**: [https://github.com/your-username/pyMut](https://github.com/your-username/pyMut)
+- **Issues**: Reporta problemas o solicita features
+- **Tests**: Ejecuta `./run_clean_tests.sh` para verificar instalación

@@ -1,8 +1,8 @@
 """
-Módulo para la generación de gráficos de resumen.
+Module for generating summary charts.
 
-Este módulo contiene funciones para crear visualizaciones de resumen
-que muestran diferentes estadísticas de los datos de mutaciones.
+This module contains functions for creating summary visualizations
+that show different statistics from mutation data.
 """
 
 import pandas as pd
@@ -19,51 +19,51 @@ def create_variant_classification_plot(data: pd.DataFrame,
                                      color_map: Optional[Dict] = None,
                                      set_title: bool = True) -> plt.Axes:
     """
-    Crea un diagrama de barras horizontal mostrando el recuento por cada tipo de clasificación de variante.
+    Create a horizontal bar chart showing the count for each type of variant classification.
     
     Args:
-        data: DataFrame con los datos de mutaciones.
-        variant_column: Nombre de la columna que contiene la clasificación de variante.
-        ax: Eje de matplotlib donde dibujar. Si es None, se crea uno nuevo.
-        color_map: Diccionario opcional que mapea las clasificaciones de variantes a colores.
-        set_title: Indica si se debe establecer el título en el gráfico.
+        data: DataFrame with mutation data.
+        variant_column: Name of the column containing the variant classification.
+        ax: Matplotlib axis to draw on. If None, a new one is created.
+        color_map: Optional dictionary mapping variant classifications to colors.
+        set_title: Whether to set the title on the plot.
         
     Returns:
-        Eje de matplotlib con la visualización.
+        Matplotlib axis with the visualization.
     """
-    # Contar las variantes por clasificación
+    # Count variants by classification
     variant_counts = data[variant_column].value_counts().to_dict()
     
-    # Ordenar los recuentos
+    # Sort counts
     variant_counts = dict(sorted(variant_counts.items(), key=lambda item: item[1]))
     
-    # Crear el eje si no se proporcionó uno
+    # Create axis if none was provided
     if ax is None:
         _, ax = plt.subplots(figsize=(8, 6))
     
-    # Colorear cada barra usando una paleta de colores
+    # Color each bar using a color palette
     if color_map:
         colors = [color_map.get(variant, plt.colormaps['tab20'](i % 20)) for i, variant in enumerate(variant_counts.keys())]
     else:
-        # Usar el colormap 'tab20'
-        cmap = plt.colormaps['tab20']  # En lugar de cm.get_cmap('tab20')
+        # Use the 'tab20' colormap
+        cmap = plt.colormaps['tab20']  # Instead of cm.get_cmap('tab20')
         colors = [cmap(i % 20) for i in range(len(variant_counts))]
     
     bars = ax.barh(list(variant_counts.keys()), list(variant_counts.values()), color=colors)
     
-    # Ajustar título y etiquetas, solo si set_title es True
+    # Adjust title and labels, only if set_title is True
     if set_title:
         ax.set_title("Variant Classification", fontsize=14, fontweight='bold')
-    ax.set_ylabel("")  # Se elimina el título del eje Y
+    ax.set_ylabel("")  # Remove Y-axis title
     
-    # Añadir etiquetas con el recuento en cada barra
+    # Add labels with count on each bar
     for bar in bars:
         ax.text(bar.get_width() + 10,
                  bar.get_y() + bar.get_height()/2,
                  f'{int(bar.get_width())}',
                  va='center', fontsize=10)
     
-    # Ajustar márgenes y quitar recuadros innecesarios
+    # Adjust margins and remove unnecessary borders
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
     ax.spines['left'].set_visible(False)
@@ -76,28 +76,28 @@ def create_variant_type_plot(data: pd.DataFrame,
                            ax: Optional[plt.Axes] = None,
                            set_title: bool = True) -> plt.Axes:
     """
-    Crea un diagrama de barras horizontal mostrando el recuento por cada tipo de variante.
+    Create a horizontal bar chart showing the count for each variant type.
     
     Args:
-        data: DataFrame con los datos de mutaciones.
-        variant_column: Nombre de la columna que contiene el tipo de variante.
-        ax: Eje de matplotlib donde dibujar. Si es None, se crea uno nuevo.
-        set_title: Indica si se debe establecer el título en el gráfico.
+        data: DataFrame with mutation data.
+        variant_column: Name of the column containing the variant type.
+        ax: Matplotlib axis to draw on. If None, a new one is created.
+        set_title: Whether to set the title on the plot.
         
     Returns:
-        Eje de matplotlib con la visualización.
+        Matplotlib axis with the visualization.
     """
-    # Contar las variantes por tipo
+    # Count variants by type
     variant_counts = data[variant_column].value_counts().to_dict()
     
-    # Ordenar los recuentos
+    # Sort counts
     variant_counts = dict(sorted(variant_counts.items(), key=lambda item: item[1]))
     
-    # Crear el eje si no se proporcionó uno
+    # Create axis if none was provided
     if ax is None:
         _, ax = plt.subplots(figsize=(8, 6))
     
-    # Colores específicos (si el número de categorías excede la lista, se utilizará un colormap)
+    # Specific colors (if number of categories exceeds the list, a colormap will be used)
     colors = ['#D3C4E7', '#FFFACD', '#87CEEB']
     if len(variant_counts) > len(colors):
         cmap = plt.colormaps['tab20']
@@ -105,25 +105,25 @@ def create_variant_type_plot(data: pd.DataFrame,
     else:
         colors = colors[:len(variant_counts)]
     
-    # Crear la gráfica de barras horizontal
+    # Create horizontal bar chart
     bars = ax.barh(list(variant_counts.keys()), list(variant_counts.values()), color=colors)
     
-    # Ajustar título y etiquetas, solo si set_title es True
+    # Adjust title and labels, only if set_title is True
     if set_title:
         ax.set_title("Variant Type", fontsize=14, fontweight='bold')
-    ax.set_ylabel("")  # Se elimina el título del eje Y
+    ax.set_ylabel("")  # Remove Y-axis title
     
-    # Etiquetas del eje Y en estilo normal (no cursiva)
-    # Se ha eliminado la configuración de estilo en cursiva
+    # Y-axis labels in normal style (not italic)
+    # Italic style configuration has been removed
     
-    # Añadir etiquetas con el recuento en cada barra
+    # Add labels with count on each bar
     for bar in bars:
         ax.text(bar.get_width() + 10,
                  bar.get_y() + bar.get_height()/2,
                  f'{int(bar.get_width())}',
                  va='center', fontsize=10)
     
-    # Ajustar márgenes y quitar recuadros innecesarios
+    # Adjust margins and remove unnecessary borders
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
     ax.spines['left'].set_visible(False)
@@ -137,29 +137,29 @@ def create_snv_class_plot(data: pd.DataFrame,
                         ax: Optional[plt.Axes] = None,
                         set_title: bool = True) -> plt.Axes:
     """
-    Crea un diagrama de barras horizontal mostrando el recuento por cada clase de SNV.
+    Create a horizontal bar chart showing the count for each SNV class.
     
     Args:
-        data: DataFrame con los datos de mutaciones.
-        ref_column: Nombre de la columna que contiene el alelo de referencia.
-        alt_column: Nombre de la columna que contiene el alelo alternativo (tumoral).
-        ax: Eje de matplotlib donde dibujar. Si es None, se crea uno nuevo.
-        set_title: Indica si se debe establecer el título en el gráfico.
+        data: DataFrame with mutation data.
+        ref_column: Name of the column containing the reference allele.
+        alt_column: Name of the column containing the alternative (tumor) allele.
+        ax: Matplotlib axis to draw on. If None, a new one is created.
+        set_title: Whether to set the title on the plot.
         
     Returns:
-        Eje de matplotlib con la visualización.
+        Matplotlib axis with the visualization.
     """
-    # Crear una copia del DataFrame para no modificar el original
+    # Create a copy of the DataFrame to not modify the original
     df_copy = data.copy()
     
-    # Verificar si podemos generar la información de SNV Class
+    # Check if we can generate SNV Class information
     if ref_column in df_copy.columns and alt_column in df_copy.columns:
-        # Generar la SNV Class combinando el alelo de referencia y el alelo alternativo
+        # Generate SNV Class by combining reference and alternative alleles
         df_copy['SNV_Class'] = df_copy[ref_column] + '>' + df_copy[alt_column]
-        # Filtrar para mantener solo los cambios de nucléotido único (un solo carácter a cada lado)
+        # Filter to keep only single nucleotide changes (one character on each side)
         df_copy = df_copy[df_copy['SNV_Class'].str.match(r'^[A-Z]>[A-Z]$')]
     else:
-        # Si no podemos generar la información, devolver un eje vacío
+        # If we can't generate the information, return an empty axis
         print(f"Cannot generate SNV classes: columns {ref_column} and/or {alt_column} are missing.")
         if ax is None:
             _, ax = plt.subplots(figsize=(8, 6))
@@ -170,13 +170,13 @@ def create_snv_class_plot(data: pd.DataFrame,
         ax.axis('off')
         return ax
     
-    # Eliminar filas sin información de SNV Class
+    # Remove rows without SNV Class information
     df_copy = df_copy[df_copy['SNV_Class'].notnull()]
     
-    # Contar las variantes por clase de SNV
+    # Count variants by SNV class
     snv_counts = df_copy['SNV_Class'].value_counts().to_dict()
     
-    # Si no hay datos, mostrar un mensaje
+    # If there's no data, show a message
     if not snv_counts:
         if ax is None:
             _, ax = plt.subplots(figsize=(8, 6))
@@ -187,14 +187,14 @@ def create_snv_class_plot(data: pd.DataFrame,
         ax.axis('off')
         return ax
     
-    # Ordenar los recuentos
+    # Sort counts
     snv_counts = dict(sorted(snv_counts.items(), key=lambda item: item[1]))
     
-    # Crear el eje si no se proporcionó uno
+    # Create axis if none was provided
     if ax is None:
         _, ax = plt.subplots(figsize=(8, 6))
     
-    # Definir colores específicos para cada clase
+    # Define specific colors for each class
     colors = ['#FF8C00', '#9ACD32', '#FFD700', '#FF4500', '#4169E1', '#1E90FF']
     if len(snv_counts) > len(colors):
         cmap = plt.colormaps['tab20']
@@ -202,22 +202,22 @@ def create_snv_class_plot(data: pd.DataFrame,
     else:
         colors = colors[:len(snv_counts)]
     
-    # Crear la gráfica de barras horizontal
+    # Create horizontal bar chart
     bars = ax.barh(list(snv_counts.keys()), list(snv_counts.values()), color=colors)
     
-    # Ajustar título y etiquetas, solo si set_title es True
+    # Adjust title and labels, only if set_title is True
     if set_title:
         ax.set_title("SNV Class", fontsize=14, fontweight='bold')
-    ax.set_ylabel("")  # Se elimina el título del eje Y
+    ax.set_ylabel("")  # Remove Y-axis title
     
-    # Añadir etiquetas con el recuento en cada barra
+    # Add labels with count on each bar
     for bar in bars:
         ax.text(bar.get_width() + 10,
                  bar.get_y() + bar.get_height()/2,
                  f'{int(bar.get_width())}',
                  va='center', fontsize=10)
     
-    # Ajustar márgenes y quitar recuadros innecesarios
+    # Adjust margins and remove unnecessary borders
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
     ax.spines['left'].set_visible(False)
@@ -233,23 +233,23 @@ def create_variant_classification_summary_plot(data: pd.DataFrame,
                                              show_labels: bool = True,
                                              set_title: bool = True) -> plt.Axes:
     """
-    Crea un diagrama de cajas y bigotes (boxplot) que resume, para cada clasificación de variantes,
-    la distribución (entre las muestras) del número de alelos alternativos detectados.
+    Create a box-and-whiskers plot (boxplot) that summarizes, for each variant classification,
+    the distribution (among samples) of the number of detected alternative alleles.
 
     Args:
-        data: DataFrame con los datos de mutaciones.
-        variant_column: Nombre de la columna que contiene la clasificación de variante.
-        sample_column: Nombre de la columna que contiene el identificador de la muestra.
-                       Si no existe, se asume que las muestras son columnas (formato ancho).
-        ax: Eje de matplotlib donde dibujar. Si es None, se crea uno nuevo.
-        color_map: Diccionario opcional que mapea las clasificaciones de variantes a colores.
-        show_labels: Si True, muestra las etiquetas de las clasificaciones en el eje X.
-        set_title: Indica si se debe establecer el título en el gráfico.
+        data: DataFrame with mutation data.
+        variant_column: Name of the column containing the variant classification.
+        sample_column: Name of the column containing the sample identifier.
+                       If it doesn't exist, samples are assumed to be columns (wide format).
+        ax: Matplotlib axis to draw on. If None, a new one is created.
+        color_map: Optional dictionary mapping variant classifications to colors.
+        show_labels: If True, shows the classification labels on the X-axis.
+        set_title: Whether to set the title on the plot.
         
     Returns:
-        Eje de matplotlib con la visualización.
+        Matplotlib axis with the visualization.
     """
-    # Verificar si tenemos la columna de clasificación
+    # Check if we have the classification column
     if variant_column not in data.columns:
         print(f"Column not found: {variant_column}")
         if ax is None:
@@ -261,12 +261,12 @@ def create_variant_classification_summary_plot(data: pd.DataFrame,
         ax.axis('off')
         return ax
     
-    # Detectar si tenemos formato largo o ancho
+    # Detect if we have long or wide format
     samples_as_columns = sample_column not in data.columns
     
     if samples_as_columns:
-        # Formato ancho: las muestras son columnas
-        # Encontrar columnas que podrían ser muestras (IDs de TCGA, etc.)
+        # Wide format: samples are columns
+        # Find columns that could be samples (TCGA IDs, etc.)
         potential_sample_cols = [col for col in data.columns if col.startswith('TCGA-') or 
                                 (isinstance(col, str) and col.count('-') >= 2)]
         
@@ -283,21 +283,21 @@ def create_variant_classification_summary_plot(data: pd.DataFrame,
             
         print(f"Detected {len(potential_sample_cols)} sample columns")
         
-        # Acumular los conteos por muestra y clasificación
+        # Accumulate counts by sample and classification
         sample_variant_counts = {}
         
-        # Obtener valores únicos de variantes para agrupar
+        # Get unique variant values for grouping
         unique_variants = data[variant_column].unique()
         unique_variants = [v for v in unique_variants if pd.notna(v) and v != "Unknown"]
         
-        # Primero determinar el formato de los valores en las columnas de muestra
-        # Revisamos algunas filas para ver si son del tipo "A|B"
+        # First determine the format of values in sample columns
+        # Check some rows to see if they are of type "A|B"
         sample_col = potential_sample_cols[0]
         sample_format = "unknown"
-        sample_values = data[sample_col].dropna().values[:10]  # Tomar algunas muestras
+        sample_values = data[sample_col].dropna().values[:10]  # Take some samples
         
         if len(sample_values) > 0:
-            # Verificar si hay valores en formato "A|B" o "A/B"
+            # Check if there are values in "A|B" or "A/B" format
             if any('|' in str(x) for x in sample_values):
                 sample_format = "pipe_separated"
             elif any('/' in str(x) for x in sample_values):
@@ -307,28 +307,28 @@ def create_variant_classification_summary_plot(data: pd.DataFrame,
                 
         print(f"Detected sample format: {sample_format}")
         
-        # Para cada clasificación de variante, contar cuántas muestras tienen esa variante
+        # For each variant classification, count how many samples have that variant
         for variant_class in unique_variants:
-            # Filtrar filas con esta clasificación de variante
+            # Filter rows with this variant classification
             variant_subset = data[data[variant_column] == variant_class]
             
-            # Para cada muestra, contar cuántas variantes de este tipo tiene
+            # For each sample, count how many variants of this type it has
             for sample in potential_sample_cols:
-                # Contar según el formato detectado
+                # Count according to detected format
                 if sample_format == "pipe_separated":
-                    # Para formato "A|B", contar cuando A y B son diferentes (alelo variante)
+                    # For "A|B" format, count when A and B are different (variant allele)
                     sample_count = variant_subset[sample].apply(
                         lambda x: 1 if (isinstance(x, str) and '|' in x and 
                                        x.split('|')[0] != x.split('|')[1]) else 0
                     ).sum()
                 elif sample_format == "slash_separated":
-                    # Similar para formato "A/B"
+                    # Similar for "A/B" format
                     sample_count = variant_subset[sample].apply(
                         lambda x: 1 if (isinstance(x, str) and '/' in x and 
                                        x.split('/')[0] != x.split('/')[1]) else 0
                     ).sum()
                 else:
-                    # Para otros formatos, asumimos que valores distintos de "0", "0/0" u "0|0" indican variante
+                    # For other formats, assume values other than "0", "0/0" or "0|0" indicate variant
                     sample_count = variant_subset[sample].apply(
                         lambda x: 1 if (x != 0 and x != '0' and x != '0/0' and 
                                        x != '0|0' and not pd.isnull(x)) else 0
@@ -340,11 +340,11 @@ def create_variant_classification_summary_plot(data: pd.DataFrame,
                 if sample_count > 0:
                     sample_variant_counts[sample][variant_class] = sample_count
     else:
-        # Formato largo: hay una columna específica para la muestra
-        # Acumular los conteos por muestra y clasificación
+        # Long format: there is a specific column for the sample
+        # Accumulate counts by sample and classification
         sample_variant_counts = {}
         
-        # Procesar el DataFrame para contar por muestra y variante
+        # Process DataFrame to count by sample and variant
         for _, row in data.iterrows():
             sample = row[sample_column]
             variant_class = row[variant_column]
@@ -358,10 +358,10 @@ def create_variant_classification_summary_plot(data: pd.DataFrame,
             if variant_class not in sample_variant_counts[sample]:
                 sample_variant_counts[sample][variant_class] = 0
                 
-            # Incrementar el contador (asumiendo 1 alelo alternativo por variante)
+            # Increment counter (assuming 1 alternative allele per variant)
             sample_variant_counts[sample][variant_class] += 1
     
-    # Convertir el diccionario a DataFrame (filas: muestras, columnas: variant classifications)
+    # Convert dictionary to DataFrame (rows: samples, columns: variant classifications)
     df_data = {sample: dict(variants) for sample, variants in sample_variant_counts.items()}
     df = pd.DataFrame.from_dict(df_data, orient='index').fillna(0)
     
@@ -376,85 +376,85 @@ def create_variant_classification_summary_plot(data: pd.DataFrame,
         ax.axis('off')
         return ax
     
-    # (Opcional) Reordenar las columnas según la suma total (de mayor a menor)
+    # (Optional) Reorder columns by total sum (highest to lowest)
     col_order = df.sum(axis=0).sort_values(ascending=False).index.tolist()
     df = df[col_order]
     
-    # Eliminar columnas con suma total 0
+    # Remove columns with total sum 0
     df = df.loc[:, df.sum() > 0]
     
-    # Preparar los datos para el boxplot: cada columna (variant classification) es una serie de conteos por muestra
+    # Prepare data for boxplot: each column (variant classification) is a series of counts per sample
     variant_types = df.columns.tolist()
     data_to_plot = [df[vt].values for vt in variant_types]
     
-    # Crear el eje si no se proporcionó uno
+    # Create axis if none was provided
     if ax is None:
         _, ax = plt.subplots(figsize=(12, 6))
     
-    # Dibujar el boxplot con configuración mejorada
+    # Draw boxplot with improved configuration
     bp = ax.boxplot(data_to_plot, 
-                    patch_artist=True,  # Rellenar las cajas con color
+                    patch_artist=True,  # Fill boxes with color
                     medianprops=dict(color="red", linewidth=1.5),
                     boxprops=dict(linewidth=1.5),
                     whiskerprops=dict(linewidth=1.5),
                     capprops=dict(linewidth=1.5),
                     flierprops=dict(marker='o', markerfacecolor='gray', markersize=4, alpha=0.5),
-                    showfliers=True,  # Mostrar outliers
+                    showfliers=True,  # Show outliers
                     widths=0.7)
     
-    # Colorear cada caja usando una paleta de colores o el mapa de colores proporcionado
+    # Color each box using a color palette or the provided color map
     if color_map:
         colors = [color_map.get(vt, plt.colormaps['tab20'](i % 20)) for i, vt in enumerate(variant_types)]
     else:
-        # Usar un colormap de alta diferenciación para las cajas
+        # Use a high-differentiation colormap for boxes
         cmap = plt.colormaps['tab20']
         colors = [cmap(i % 20) for i in range(len(variant_types))]
     
-    # Aplicar colores a cada caja
+    # Apply colors to each box
     for patch, color in zip(bp['boxes'], colors):
         patch.set_facecolor(color)
         patch.set_alpha(0.7)
     
-    # Detectar automáticamente si estamos en el summary plot o en visualización individual
-    # Si el ax está en una figura con múltiples subplots, estamos en el summary plot
+    # Automatically detect if we're in summary plot or individual visualization
+    # If ax is in a figure with multiple subplots, we're in summary plot
     is_in_summary_plot = hasattr(ax.figure, 'axes') and len(ax.figure.axes) > 1
     
-    # Configurar las etiquetas del eje X según el contexto
+    # Configure X-axis labels according to context
     if is_in_summary_plot:
-        # En el summary plot: no mostrar etiquetas para evitar superposición
+        # In summary plot: don't show labels to avoid overlap
         ax.set_xticklabels([])
     else:
-        # En visualización individual: siempre mostrar etiquetas rotadas 45 grados
+        # In individual visualization: always show labels rotated 45 degrees
         ax.set_xticklabels(variant_types, rotation=45, ha='right', fontsize=10)
     
-    # Ajustar los límites del eje Y
+    # Adjust Y-axis limits
     ymin = 0
     ymax = max(max(d) if len(d) > 0 else 0 for d in data_to_plot) * 1.1
-    if ymax == 0:  # Por si no hay datos positivos
+    if ymax == 0:  # In case there's no positive data
         ymax = 1
     ax.set_ylim(ymin, ymax)
     
-    # Mejorar la presentación visual
-    # Añadir título más descriptivo, solo si set_title es True
+    # Improve visual presentation
+    # Add more descriptive title, only if set_title is True
     if set_title:
         ax.set_title("Variant Classification Summary", fontsize=14, fontweight='bold')
     
-    # Añadir cuadrícula para mejor legibilidad
+    # Add grid for better readability
     ax.yaxis.grid(True, linestyle='--', alpha=0.3)
     
-    # Aplicar estilo según el contexto
+    # Apply styling according to context
     if is_in_summary_plot:
-        # En el summary plot: aplicar estilo moderno donde las líneas no se cruzan
+        # In summary plot: apply modern style where lines don't cross
         ax.spines['top'].set_visible(False)
         ax.spines['right'].set_visible(False)
         ax.spines['left'].set_position(('outward', 5))
         ax.spines['bottom'].set_position(('outward', 5))
     else:
-        # En visualización individual: usar estilo clásico original (ejes que se cruzan)
-        # Solo eliminar los bordes superior y derecho, mantener posición normal de ejes
+        # In individual visualization: use original classic style (axes that cross)
+        # Only remove top and right borders, keep normal axis position
         ax.spines['top'].set_visible(False)
         ax.spines['right'].set_visible(False)
-        # NO usar outward positioning - esto permite que los ejes se crucen
+        # DO NOT use outward positioning - this allows axes to cross
     
     return ax
 
@@ -480,7 +480,7 @@ def create_summary_plot(data: pd.DataFrame,
         Figure with summary visualizations.
     """
     # Create a figure with multiple subplots, making the charts wider
-    fig, axs = plt.subplots(2, 3, figsize=figsize, gridspec_kw={'width_ratios': [1.5, 1.5, 1.5], 'height_ratios': [1, 1.2]})
+    fig, axs = plt.subplots(2, 3, figsize=figsize, gridspec_kw={'width_ratios': [1.5, 1.5, 1.5], 'height_ratios': [1, 1]})
     fig.suptitle(title, fontsize=16)
     
     # Detect column names respecting original capitalization
@@ -514,7 +514,7 @@ def create_summary_plot(data: pd.DataFrame,
         variant_column=variant_classification_col, 
         ax=axs[0, 0],
         color_map=variant_color_map,  # Pass the color map
-        set_title=True  # Establecer título para el resumen
+        set_title=True  # Set title for summary
     )
     
     # Create the variant type plot
@@ -557,7 +557,7 @@ def create_summary_plot(data: pd.DataFrame,
         gene_column=gene_column,
         sample_column=sample_column,
         mode="variants",
-        count=top_genes_count,  # Usar el parámetro configurable
+        count=top_genes_count,  # Use the configurable parameter
         ax=axs[1, 2],
         color_map=variant_color_map,  # Use the same color map
         set_title=True
@@ -600,10 +600,10 @@ def create_summary_plot(data: pd.DataFrame,
                bbox_to_anchor=(0.5, 0.02))
     
     # Adjust spacing between subplots with padding to increase margins
-    plt.tight_layout(pad=2.0)  # Aumentar el pad para mayor margen
+    plt.tight_layout(pad=2.0)  # Increase pad for larger margin
     
     # Increase separation between first and second row, adjust left and right margins
-    # Aumentar left sustancialmente para evitar que el texto se salga por el margen izquierdo
+    # Increase left substantially to prevent text from going off the left margin
     plt.subplots_adjust(top=0.9, bottom=0.15, hspace=0.4, left=0.15, right=0.93)
     
     return fig
@@ -617,26 +617,26 @@ def create_variants_per_sample_plot(data: pd.DataFrame,
                                    set_title: bool = True,
                                    max_samples: Optional[int] = 200) -> plt.Axes:
     """
-    Crea un gráfico de barras apiladas mostrando el número de variantes por muestra (TMB)
-    y su composición por tipo de variante.
+    Create a stacked bar plot showing the number of variants per sample (TMB)
+    and their composition by variant type.
 
     Args:
-        data: DataFrame con los datos de mutaciones. Puede tener las muestras como columnas
-              o una columna específica con los identificadores de muestra.
-        variant_column: Nombre de la columna que contiene la clasificación de variante.
-        sample_column: Nombre de la columna que contiene el identificador de la muestra,
-                      o string que se usará para identificar columnas de muestra si las 
-                      muestras están como columnas.
-        ax: Eje de matplotlib donde dibujar. Si es None, se crea uno nuevo.
-        color_map: Diccionario opcional que mapea las clasificaciones de variantes a colores.
-        set_title: Indica si se debe establecer el título en el gráfico.
-        max_samples: Número máximo de muestras a mostrar. Si es None, se muestran todas.
-                    Si hay más muestras que este número, solo se muestran las primeras max_samples.
+        data: DataFrame with mutation data. Can have samples as columns
+              or a specific column with sample identifiers.
+        variant_column: Name of the column containing the variant classification.
+        sample_column: Name of the column containing the sample identifier,
+                      or string used to identify sample columns if samples
+                      are stored as columns.
+        ax: Matplotlib axis to draw on. If None, a new one is created.
+        color_map: Optional dictionary mapping variant classifications to colors.
+        set_title: Whether to set the title on the plot.
+        max_samples: Maximum number of samples to show. If None, all are shown.
+                    If there are more samples than this number, only the first max_samples are shown.
         
     Returns:
-        Eje de matplotlib con la visualización.
+        Matplotlib axis with the visualization.
     """
-    # Verificar si tenemos las columnas necesarias
+    # Check if we have the necessary columns
     if variant_column not in data.columns:
         print(f"Column not found: {variant_column}")
         if ax is None:
@@ -648,13 +648,13 @@ def create_variants_per_sample_plot(data: pd.DataFrame,
         ax.axis('off')
         return ax
     
-    # Detectar el formato de los datos
-    # Si sample_column existe como columna, asumimos formato "largo"
-    # Si no, asumimos formato "ancho" donde las muestras son columnas
+    # Detect data format
+    # If sample_column exists as a column, assume "long" format
+    # If not, assume "wide" format where samples are columns
     samples_as_columns = sample_column not in data.columns
     
     if samples_as_columns:
-        # Encontrar columnas que podrían ser muestras (IDs de TCGA, etc.)
+        # Find columns that could be samples (TCGA IDs, etc.)
         potential_sample_cols = [col for col in data.columns if col.startswith('TCGA-') or '|' in str(data[col].iloc[0])]
         
         if not potential_sample_cols:
@@ -668,16 +668,16 @@ def create_variants_per_sample_plot(data: pd.DataFrame,
             ax.axis('off')
             return ax
         
-        # Convertir el formato ancho a largo para conteo
-        # Primero, contar variantes por tipo para cada muestra
+        # Convert format "wide" to "long" for counting
+        # First, count variants by type for each sample
         variant_counts = {}
         
-        # Agrupar por Variant_Classification
+        # Group by Variant_Classification
         for variant_type in data[variant_column].unique():
             variant_subset = data[data[variant_column] == variant_type]
             
             for sample_col in potential_sample_cols:
-                # Si la columna de muestra contiene los genotipos en formato REF|ALT
+                # If the sample column contains the genotypes in REF|ALT format
                 sample_variants = variant_subset[sample_col].apply(
                     lambda x: 1 if '|' in str(x) and str(x).split('|')[0] != str(x).split('|')[1] else 0
                 ).sum()
@@ -688,7 +688,7 @@ def create_variants_per_sample_plot(data: pd.DataFrame,
                 if sample_variants > 0:
                     variant_counts[sample_col][variant_type] = sample_variants
         
-        # Crear DataFrame a partir del diccionario
+        # Create DataFrame from dictionary
         samples_df = []
         for sample, variants in variant_counts.items():
             for var_type, count in variants.items():
@@ -709,80 +709,80 @@ def create_variants_per_sample_plot(data: pd.DataFrame,
         variant_counts = processed_df.pivot(index='Sample', columns='Variant_Classification', values='Count').fillna(0)
         
     else:
-        # Formato "largo" donde hay una columna con la muestra
-        # Contar variantes por muestra y por clasificación
+        # "long" format where there is a specific column for the sample
+        # Count variants by sample and classification
         variant_counts = data.groupby([sample_column, variant_column]).size().unstack(fill_value=0)
     
-    # Calcular el total de variantes por muestra y ordenar de mayor a menor
+    # Calculate total variants per sample and sort from highest to lowest
     variant_counts['total'] = variant_counts.sum(axis=1)
     variant_counts = variant_counts.sort_values('total', ascending=False)
     
-    # Limitar el número de muestras si se especifica max_samples
+    # Limit the number of samples if max_samples is specified
     if max_samples is not None and len(variant_counts) > max_samples:
         variant_counts = variant_counts.iloc[:max_samples]
     
-    # Calcular la mediana de variantes por muestra
+    # Calculate median variants per sample
     median_tmb = variant_counts['total'].median()
     
-    # Eliminar la columna de total para la visualización
+    # Remove total column for visualization
     if 'total' in variant_counts.columns:
         variant_counts = variant_counts.drop('total', axis=1)
     
-    # Crear el eje si no se proporcionó uno
+    # Create axis if none was provided
     if ax is None:
         _, ax = plt.subplots(figsize=(10, 6))
     
-    # Generar colores para las diferentes clasificaciones de variantes
+    # Generate colors for different variant classifications
     if color_map is not None:
-        # Si se proporcionan colores específicos, usarlos para las variantes correspondientes
+        # If specific colors are provided, use them for corresponding variants
         colors = []
         for variant in variant_counts.columns:
-            # Buscar el color en el mapa de colores para esta variante exacta
+            # Find color in color map for this exact variant
             if variant in color_map:
                 colors.append(color_map[variant])
             else:
-                # Si no se encuentra el color exacto, usar uno predeterminado
-                # Usar plt.colormaps en lugar de cm.get_cmap
+                # If exact color not found, use a default one
+                # Use plt.colormaps instead of cm.get_cmap
                 colors.append(plt.colormaps['tab20'](len(colors) % 20))
     else:
-        # Usar el mapa de colores predeterminado
-        # Usar plt.colormaps en lugar de cm.get_cmap
+        # Use default colormap
+        # Use plt.colormaps instead of cm.get_cmap
         cmap = plt.colormaps['tab20']
         colors = [cmap(i % cmap.N) for i in range(len(variant_counts.columns))]
     
-    # Crear la gráfica de barras apiladas
+    # Create stacked bar plot
     variant_counts.plot(kind='bar', stacked=True, ax=ax, color=colors, width=0.8)
     
-    # Añadir una línea horizontal para la mediana
+    # Add horizontal line for median
     ax.axhline(y=median_tmb, color='red', linestyle='--', linewidth=1)
     
-    # Configurar etiquetas y título, solo si set_title es True
+    # Configure labels and title, only if set_title is True
     if set_title:
         ax.set_title("Variants per Sample", fontsize=14, fontweight='bold')
     
-    ax.set_xlabel("")  # Eliminar la etiqueta del eje X "Samples"
+    ax.set_xlabel("")  # Remove X-axis label "Samples"
     
-    # Quitar las etiquetas del eje X para mayor claridad cuando hay muchas muestras
+    # Remove X-axis labels for better clarity when there are many samples
     ax.set_xticklabels([])
     ax.tick_params(axis='x', which='both', bottom=False)
     
-    # Detectar automáticamente si estamos en el summary plot o en visualización individual
-    # Si el ax está en una figura con múltiples subplots, estamos en el summary plot
+    # Automatically detect if we're in summary plot or individual visualization
+    # If ax is in a figure with multiple subplots, we're in summary plot
     is_in_summary_plot = hasattr(ax.figure, 'axes') and len(ax.figure.axes) > 1
     
     if is_in_summary_plot:
-        # En el summary plot: usar leyenda limpia y agregar mediana debajo del título
+        # In summary plot: use clean legend and add median below title
         ax.legend(title="Variant Classification", bbox_to_anchor=(1.05, 1), loc='upper left')
-        # Agregar mediana debajo del título en el summary plot
+        # Add median below title in summary plot
         ax.text(0.5, 0.92, f"Median: {median_tmb:.1f}", transform=ax.transAxes, ha='center', fontsize=12)
     else:
-        # En visualización individual: colocar mediana dentro del recuadro de la leyenda
-        # Incluir la mediana en el título de la leyenda para que aparezca dentro del recuadro
-        # Usar formato de texto enriquecido para poner "Variant Classification" y "Median:" en negrita
+        # In individual visualization: place median inside legend box
+        # Include median in legend title for it to appear inside the box
+        # Use rich text formatting to put "Variant Classification" and "Median:" in bold
         legend_title = f"$\\mathbf{{Variant Classification}}$\n\n$\\mathbf{{Median:}}$ {median_tmb:.1f}"
         ax.legend(title=legend_title, bbox_to_anchor=(1.05, 1), loc='upper left')
     
-    # Ajustar márgenes y quitar recuadros innecesarios
+    # Adjust margins and remove unnecessary borders
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
     ax.spines['left'].set_position(('outward', 5))
@@ -801,27 +801,27 @@ def create_top_mutated_genes_plot(data: pd.DataFrame,
                                color_map: Optional[Dict] = None,
                                set_title: bool = True) -> plt.Axes:
     """
-    Crea un diagrama de barras horizontal mostrando los genes más mutados y la distribución
-    de variantes según su clasificación.
+    Create a horizontal bar plot showing the most mutated genes and distribution
+    of variants according to their classification.
 
     Args:
-        data: DataFrame con los datos de mutaciones.
-        mode: Modo de conteo de mutaciones: "variants" (cuenta número total de variantes)
-              o "samples" (cuenta número de muestras afectadas).
-        variant_column: Nombre de la columna que contiene la clasificación de variante.
-        gene_column: Nombre de la columna que contiene el símbolo del gen.
-        sample_column: Nombre de la columna que contiene el identificador de la muestra,
-                      o prefijo que se usará para identificar columnas de muestra si las
-                      muestras están como columnas.
-        count: Número de genes principales a mostrar.
-        ax: Eje de matplotlib donde dibujar. Si es None, se crea uno nuevo.
-        color_map: Diccionario opcional que mapea las clasificaciones de variantes a colores.
-        set_title: Indica si se debe establecer el título en el gráfico.
+        data: DataFrame with mutation data.
+        mode: Mutation counting mode: "variants" (counts total number of variants)
+              or "samples" (counts number of affected samples).
+        variant_column: Name of the column containing the variant classification.
+        gene_column: Name of the column containing the gene symbol.
+        sample_column: Name of the column containing the sample identifier,
+                      or prefix used to identify sample columns if samples
+                      are stored as columns.
+        count: Number of top genes to show.
+        ax: Matplotlib axis to draw on. If None, a new one is created.
+        color_map: Optional dictionary mapping variant classifications to colors.
+        set_title: Whether to set the title on the plot.
         
     Returns:
-        Eje de matplotlib con la visualización.
+        Matplotlib axis with the visualization.
     """
-    # Verificar si tenemos las columnas necesarias
+    # Check if we have the necessary columns
     if gene_column not in data.columns:
         print(f"Column not found: {gene_column}")
         if ax is None:
@@ -844,8 +844,8 @@ def create_top_mutated_genes_plot(data: pd.DataFrame,
         ax.axis('off')
         return ax
     
-    # Detectar si las muestras están como columnas (formato ancho)
-    # Buscar columnas que puedan ser muestras (por ejemplo, empiezan con TCGA-)
+    # Detect if samples are stored as columns (wide format)
+    # Search for columns that could be samples (e.g., start with TCGA-)
     sample_cols = [col for col in data.columns if str(col).startswith("TCGA-")]
     samples_as_columns = len(sample_cols) > 0
     
@@ -861,66 +861,66 @@ def create_top_mutated_genes_plot(data: pd.DataFrame,
         ax.axis('off')
         return ax
     
-    # Crear el eje si no se proporcionó uno
+    # Create axis if none was provided
     if ax is None:
         _, ax = plt.subplots(figsize=(10, 8))
     
-    # Filtrar filas con valores faltantes o "Unknown"
+    # Filter rows with missing or "Unknown" values
     data_filtered = data[(data[gene_column].notna()) & (data[variant_column].notna())]
     data_filtered = data_filtered[(data_filtered[gene_column] != "Unknown") & 
                                    (data_filtered[variant_column] != "Unknown")]
     
     if mode == "variants":
-        # MODO "variants" - Contar el número total de variantes
-        # Contar variantes por gen y tipo de variante
+        # MODE "variants" - Count total number of variants
+        # Count variants by gen and variant type
         gene_variant_counts = data_filtered.groupby([gene_column, variant_column]).size().unstack(fill_value=0)
         
-        # Calcular el total para cada gen y ordenar
+        # Calculate total for each gen and sort
         gene_totals = gene_variant_counts.sum(axis=1).sort_values(ascending=False)
         top_genes = gene_totals.index[:count].tolist()
         
-        # Seleccionar solo los top genes
+        # Select only top genes
         df_top = gene_variant_counts.loc[top_genes]
         
-        # Ordenarlos manualmente de menor a mayor para visualización
+        # Manually sort them from lowest to highest for visualization
         ordered_genes = sorted(top_genes, key=lambda g: gene_totals[g])
         df_plot = df_top.loc[ordered_genes]
         
-        # Asignar colores para cada tipo de variante
+        # Assign colors for each variant type
         if color_map is None:
-            cmap = plt.colormaps['tab20']  # En lugar de cm.get_cmap
+            cmap = plt.colormaps['tab20']  # Instead of cm.get_cmap
             colors = [cmap(i % 20) for i in range(len(df_plot.columns))]
         else:
             colors = [color_map.get(variant, plt.colormaps['tab20'](i % 20)) 
                      for i, variant in enumerate(df_plot.columns)]
         
-        # Crear gráfico de barras horizontales - usar exactamente el mismo ancho en ambos modos
+        # Create horizontal bar plot - use exactly the same width in both modes
         df_plot.plot(kind='barh', stacked=True, ax=ax, color=colors, width=0.65)
         
-        # Configurar el mismo aspecto y posicionamiento para ambos modos
+        # Configure the same aspect and positioning for both modes
         ax.margins(x=0.05, y=0.01)
         
-        # Añadir etiquetas con el recuento total a la derecha de cada barra
+        # Add labels with total count to the right of each bar
         for i, gene in enumerate(df_plot.index):
             total = gene_totals[gene]
-            # Ajustar el offset para los números (más pequeño para estar más cerca de las barras)
+            # Adjust offset for numbers (smaller for being closer to bars)
             offset_variants = 0.01 * ax.get_xlim()[1] if ax.get_xlim()[1] > 0 else 0.1
             ax.text(total + offset_variants, i, f'{int(total)}', va='center', fontsize=10)
         
-        title_text_variants = f"Top {count} Mutated Genes (variants)" # Usar count variable
-        # Configuración común del título y ejes para el modo variants
+        title_text_variants = f"Top {count} Mutated Genes (variants)" # Use count variable
+        # Common title and axis configuration for variants mode
         if set_title:
             ax.set_title(title_text_variants, fontsize=14, fontweight='bold') 
-        ax.set_ylabel("")  # Eliminar la etiqueta del eje Y
+        ax.set_ylabel("")  # Remove Y-axis label
         ax.spines['top'].set_visible(False)
         ax.spines['right'].set_visible(False)
-        ax.spines['left'].set_visible(False) # Ocultar línea del eje izquierdo
-        ax.tick_params(axis='y', which='both', left=False, right=False, labelleft=True) # Sin ticks en eje Y, pero con etiquetas
+        ax.spines['left'].set_visible(False) # Hide left axis line
+        ax.tick_params(axis='y', which='both', left=False, right=False, labelleft=True) # No ticks on Y axis, but with labels
         
-        # Configurar los mismos márgenes exactos en ambos modos para total consistencia
+        # Configure the same exact margins in both modes for total consistency
         ax.margins(x=0.05, y=0.01)
 
-        # Mejorar la leyenda para el modo variants
+        # Improve legend for variants mode
         handles_v, labels_v = ax.get_legend_handles_labels()
         by_label_v = dict(zip(labels_v, handles_v))
         
@@ -942,23 +942,23 @@ def create_top_mutated_genes_plot(data: pd.DataFrame,
         return ax
     
     else:  # mode == "samples"
-        # MODO "samples" - Contar el número de muestras afectadas por gen y tipo de variante
+        # MODE "samples" - Count number of affected samples by gen and variant type
         
         # gene_variant_sample_counts: Dict[str (gene), Dict[str (variant_type), Set[str (sample_id)]]]
         gene_variant_sample_counts = {}
 
-        # Iterar sobre cada gen único presente en los datos filtrados
+        # Iterate over each unique gen present in filtered data
         for gene_iter_val in data_filtered[gene_column].unique():
             if pd.isna(gene_iter_val) or gene_iter_val == "Unknown":
                 continue
             
             gene_variant_sample_counts[gene_iter_val] = {}
-            # Filtrar el DataFrame para obtener solo las filas correspondientes al gen actual
+            # Filter DataFrame to get only rows corresponding to current gen
             gene_data_for_current_gene = data_filtered[data_filtered[gene_column] == gene_iter_val]
 
-            if samples_as_columns:  # Formato ancho: las muestras son columnas TCGA-*
+            if samples_as_columns:  # Wide format: samples are columns TCGA-*
                 for sample_col_name in sample_cols:
-                    # Para cada fila (variante específica) del gen actual
+                    # For each row (specific variant) of current gen
                     for _, row_series in gene_data_for_current_gene.iterrows():
                         sample_genotype_value = str(row_series[sample_col_name]).strip().upper()
                         actual_variant_type = row_series[variant_column]
@@ -983,7 +983,7 @@ def create_top_mutated_genes_plot(data: pd.DataFrame,
                                 gene_variant_sample_counts[gene_iter_val][actual_variant_type] = set()
                             gene_variant_sample_counts[gene_iter_val][actual_variant_type].add(sample_col_name)
             
-            else:  # Formato largo: hay una columna 'sample_column'
+            else:  # "long" format: there is a 'sample_column' column
                 for _, row_series in gene_data_for_current_gene.iterrows():
                     actual_sample_id = row_series[sample_column]
                     actual_variant_type = row_series[variant_column]
@@ -1054,31 +1054,31 @@ def create_top_mutated_genes_plot(data: pd.DataFrame,
 
         df_plot_final = df_top_plot.loc[ordered_genes_for_plot]
 
-        # NORMALIZACIÓN: Modificar df_plot_final para que la suma total de cada fila (gen) sea igual 
-        # al número total de muestras únicas afectadas por ese gen
+        # NORMALIZATION: Modify df_plot_final to make total sum of each row (gen) equal 
+        # to total number of unique samples affected by that gen
         normalized_df_plot = pd.DataFrame(index=df_plot_final.index, columns=df_plot_final.columns)
         
         for gene in df_plot_final.index:
-            # Número total de muestras únicas afectadas por este gen (para el 100% de la barra)
+            # Total number of unique samples affected by this gen (for 100% of the bar)
             total_unique_samples = gene_totals_series[gene]
             
-            # Valores actuales (sin normalizar) por tipo de variante para este gen
+            # Actual values (unnormalized) by variant type for this gen
             current_values = df_plot_final.loc[gene]
             
-            # Suma actual de los valores por tipo de variante
+            # Actual sum of values by variant type
             current_sum = current_values.sum()
             
-            if current_sum > 0:  # Evitar división por cero
-                # Factor de normalización: cuánto representa cada unidad actual respecto al total de muestras únicas
+            if current_sum > 0:  # Avoid division by zero
+                # Normalization factor: how much each current unit represents relative to total unique samples
                 normalization_factor = total_unique_samples / current_sum
                 
-                # Calcular nuevos valores normalizados: los valores actuales * factor de normalización
+                # Calculate new normalized values: current values * normalization factor
                 normalized_values = current_values * normalization_factor
                 
-                # Asignar los valores normalizados a la fila correspondiente al gen actual
+                # Assign normalized values to row corresponding to current gen
                 normalized_df_plot.loc[gene] = normalized_values
         
-        # Reemplazar df_plot_final con la versión normalizada
+        # Replace df_plot_final with normalized version
         df_plot_final = normalized_df_plot.fillna(0)
 
         variant_types_in_plot = df_plot_final.columns.tolist()
@@ -1092,32 +1092,32 @@ def create_top_mutated_genes_plot(data: pd.DataFrame,
         
         df_plot_final.plot(kind='barh', stacked=True, ax=ax, color=colors_for_plot, width=0.65)
         
-        # Configurar exactamente el mismo aspecto y posicionamiento que el modo variants
+        # Configure exactly the same aspect and positioning as variants mode
         ax.margins(x=0.05, y=0.01)
         
         for i, gene_name_in_plot in enumerate(df_plot_final.index):
             num_unique_samples_affected = gene_totals_series[gene_name_in_plot]
             percentage = (num_unique_samples_affected / total_samples_in_dataset) * 100 if total_samples_in_dataset > 0 else 0
             bar_length = df_plot_final.loc[gene_name_in_plot].sum()
-            # Usar el mismo cálculo de offset que en el modo variants para consistencia
+            # Use same offset calculation as variants mode for consistency
             offset = 0.01 * ax.get_xlim()[1] if ax.get_xlim()[1] > 0 else 0.1
             ax.text(bar_length + offset, i, f'{percentage:.1f}%', va='center', fontsize=10)
         
         title_text = f"Top {count} Mutated Genes (Sample Prevalence)"
         if set_title:
             ax.set_title(title_text, fontsize=14, fontweight='bold') 
-        ax.set_ylabel("")  # Eliminar la etiqueta del eje Y "Genes"
+        ax.set_ylabel("")  # Remove Y-axis label "Genes"
         ax.spines['top'].set_visible(False)
         ax.spines['right'].set_visible(False)
-        ax.spines['left'].set_visible(False) # Ocultar la línea del eje izquierdo
-        ax.tick_params(axis='y', which='both', left=False, right=False, labelleft=True) # Sin ticks en eje Y, pero con etiquetas
+        ax.spines['left'].set_visible(False) # Hide left axis line
+        ax.tick_params(axis='y', which='both', left=False, right=False, labelleft=True) # No ticks on Y axis, but with labels
         
-        # Configurar los mismos márgenes exactos en ambos modos para total consistencia
+        # Configure the same exact margins in both modes for total consistency
         ax.margins(x=0.05, y=0.01)
 
         handles, labels = ax.get_legend_handles_labels()
         legend_elements = {label: handle for label, handle in zip(labels, handles)}
-        # Asegurar que valid_handles y valid_labels se basen en las columnas de df_plot_final que realmente están en la leyenda
+        # Ensure valid_handles and valid_labels are based on df_plot_final columns that are actually in legend
         valid_handles = [legend_elements[label] for label in df_plot_final.columns if label in legend_elements]
         valid_labels = [label for label in df_plot_final.columns if label in legend_elements]
 
@@ -1125,7 +1125,7 @@ def create_top_mutated_genes_plot(data: pd.DataFrame,
         if valid_labels: 
             num_legend_items = len(valid_labels)
             ncol_legend = min(num_legend_items, 4) 
-            # Ajuste más robusto para vertical_offset
+            # More robust adjustment for vertical_offset
             base_offset = -0.20 
             row_offset_factor = 0.06
             num_legend_rows = (num_legend_items + ncol_legend - 1) // ncol_legend

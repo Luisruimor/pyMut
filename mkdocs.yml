@@ -1,37 +1,59 @@
-site_name: pyMut
-site_description: Una librería Python para visualizar mutaciones genéticas
-site_author: Your Name
+site_name: pyMut Documentation
+site_description: Python library for genetic mutation visualization
+site_author: pyMut Development Team
 
-repo_name: yourusername/pyMut
-repo_url: https://github.com/yourusername/pyMut
+# Repository
+repo_name: your-username/pyMut
+repo_url: https://github.com/your-username/pyMut
 
+# Configuration
 theme:
   name: material
+  language: en
   palette:
-    primary: indigo
-    accent: indigo
+    - scheme: default
+      primary: blue
+      accent: blue
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: blue
+      accent: blue
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - content.code.copy
+    - navigation.instant
+    - navigation.tracking
+    - search.highlight
+    - search.suggest
   icon:
     repo: fontawesome/brands/github
 
-nav:
-  - Inicio: index.md
-  - Guía de Usuario:
-      - Instalación: user-guide/installation.md
-      - Uso Básico: user-guide/basic-usage.md
-      - Ejemplos: user-guide/examples.md
-  - API:
-      - PyMutation: api/core.md
-      - Visualizaciones: api/visualizations.md
-      - Utilidades: api/utils.md
-  - Contribuir: contributing.md
-
-markdown_extensions:
-  - admonition
-  - codehilite
-  - footnotes
-  - pymdownx.highlight
-  - pymdownx.superfences
-  
+# Plugins
 plugins:
   - search
-  - mkdocstrings:
+
+# Extensions
+markdown_extensions:
+  - admonition
+  - attr_list
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+
+# Page tree
+nav:
+  - Home: index.md
+  - Summary Plot: summary-plot.md
+
+# Copyright
+copyright: Copyright &copy; 2024 pyMut Development Team

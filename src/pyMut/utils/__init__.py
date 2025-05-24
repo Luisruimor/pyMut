@@ -1,6 +1,6 @@
 """
-Módulo de utilidades para pyMut.
+Utilities module for pyMut.
 
-Este módulo contiene funciones de utilidad para el procesamiento y manipulación
-de datos de mutaciones genéticas.
+This module contains utility functions for processing and manipulating
+genetic mutation data.
 """ 

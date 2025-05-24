@@ -1,8 +1,8 @@
 """
-Módulo para el procesamiento de datos de mutaciones.
+Module for processing mutation data.
 
-Este módulo contiene funciones para procesar y transformar datos de mutaciones
-genéticas para su posterior visualización en gráficos de resumen.
+This module contains functions for processing and transforming genetic
+mutation data for subsequent visualization in summary charts.
 """
 
 import pandas as pd
@@ -13,27 +13,27 @@ import os
 
 def extract_variant_classification(funcotation_str):
     """
-    Recibe una cadena del campo FUNCOTATION y extrae el valor de la clasificación de variante,
-    que se asume es el sexto campo (índice 5) de la cadena separada por "|".
+    Receives a string from the FUNCOTATION field and extracts the variant classification value,
+    which is assumed to be the sixth field (index 5) of the pipe-separated string.
     
     Args:
-        funcotation_str: Cadena del campo FUNCOTATION.
+        funcotation_str: String from the FUNCOTATION field.
         
     Returns:
-        Clasificación de la variante extraída o None si no se puede extraer.
+        Extracted variant classification or None if it cannot be extracted.
     """
-    # Asegurarse de trabajar con una cadena (en caso de que sea otro tipo)
+    # Ensure we're working with a string (in case it's another type)
     funcotation_str = str(funcotation_str).strip()
     
-    # Si la cadena incluye un prefijo como "FUNCOTATION=", eliminarlo
+    # If the string includes a prefix like "FUNCOTATION=", remove it
     if funcotation_str.startswith("FUNCOTATION="):
         funcotation_str = funcotation_str[len("FUNCOTATION="):].strip()
         
-    # Quitar los corchetes inicial y final, si están presentes
+    # Remove initial and final brackets, if present
     if funcotation_str.startswith('[') and funcotation_str.endswith(']'):
         funcotation_str = funcotation_str[1:-1]
     
-    # Separar la cadena por "|" y extraer el sexto elemento (índice 5)
+    # Split the string by "|" and extract the sixth element (index 5)
     fields = funcotation_str.split('|')
     if len(fields) > 5:
         return fields[5].strip()
@@ -45,40 +45,40 @@ def extract_variant_classifications(data: pd.DataFrame,
                                   variant_column: str = "Variant_Classification",
                                   funcotation_column: str = "FUNCOTATION") -> pd.DataFrame:
     """
-    Extrae la clasificación de variante desde el campo FUNCOTATION si no existe una columna
-    específica para ello.
+    Extract variant classification from the FUNCOTATION field if there is no specific
+    column for it.
     
     Args:
-        data: DataFrame con los datos de mutaciones.
-        variant_column: Nombre de la columna que debe contener la clasificación de variante.
-        funcotation_column: Nombre de la columna que contiene la cadena FUNCOTATION.
+        data: DataFrame with mutation data.
+        variant_column: Name of the column that should contain the variant classification.
+        funcotation_column: Name of the column containing the FUNCOTATION string.
         
     Returns:
-        DataFrame con la columna de clasificación de variante añadida o sin cambios si ya existía.
+        DataFrame with the variant classification column added or unchanged if it already existed.
     """
-    # Crear una copia para no modificar el original
+    # Create a copy to not modify the original
     result = data.copy()
     
-    # Verificar si la columna de clasificación ya existe
+    # Check if the classification column already exists
     if variant_column not in result.columns:
-        # Si existe la columna FUNCOTATION, extraer de ahí
+        # If the FUNCOTATION column exists, extract from there
         if funcotation_column in result.columns:
             print(f"Column '{variant_column}' not found. Extracting from '{funcotation_column}'.")
-            # Crear la columna aplicando la función de extracción
+            # Create the column by applying the extraction function
             result[variant_column] = result[funcotation_column].apply(
                 lambda x: extract_variant_classification(x) if pd.notnull(x) else None
             )
             
-            # Verificar si se obtuvieron datos válidos
+            # Check if valid data was obtained
             if result[variant_column].isna().all():
                 print(f"Failed to extract variant classification data from '{funcotation_column}'.")
                 result[variant_column] = "Unknown"
         else:
             print(f"Neither '{variant_column}' nor '{funcotation_column}' columns were found in the DataFrame.")
-            # Crear una columna con valor desconocido
+            # Create a column with unknown value
             result[variant_column] = "Unknown"
             
-    # Rellenar los valores NaN con "Unknown"
+    # Fill NaN values with "Unknown"
     result[variant_column] = result[variant_column].fillna("Unknown")
     
     return result
@@ -86,27 +86,27 @@ def extract_variant_classifications(data: pd.DataFrame,
 
 def extract_variant_type(funcotation_str):
     """
-    Recibe una cadena del campo FUNCOTATION y extrae el valor del tipo de variante,
-    que se asume es el octavo campo (índice 7) de la cadena separada por "|".
+    Receives a string from the FUNCOTATION field and extracts the variant type value,
+    which is assumed to be the eighth field (index 7) of the pipe-separated string.
     
     Args:
-        funcotation_str: Cadena del campo FUNCOTATION.
+        funcotation_str: String from the FUNCOTATION field.
         
     Returns:
-        Tipo de variante extraído o None si no se puede extraer.
+        Extracted variant type or None if it cannot be extracted.
     """
-    # Asegurarse de trabajar con una cadena (en caso de que sea otro tipo)
+    # Ensure we're working with a string (in case it's another type)
     funcotation_str = str(funcotation_str).strip()
     
-    # Si la cadena incluye un prefijo como "FUNCOTATION=", eliminarlo
+    # If the string includes a prefix like "FUNCOTATION=", remove it
     if funcotation_str.startswith("FUNCOTATION="):
         funcotation_str = funcotation_str[len("FUNCOTATION="):].strip()
         
-    # Quitar los corchetes inicial y final, si están presentes
+    # Remove initial and final brackets, if present
     if funcotation_str.startswith('[') and funcotation_str.endswith(']'):
         funcotation_str = funcotation_str[1:-1]
     
-    # Separar la cadena por "|" y extraer el octavo elemento (índice 7)
+    # Split the string by "|" and extract the eighth element (index 7)
     fields = funcotation_str.split('|')
     if len(fields) > 7:
         return fields[7].strip()
@@ -118,40 +118,40 @@ def extract_variant_types(data: pd.DataFrame,
                        variant_column: str = "Variant_Type",
                        funcotation_column: str = "FUNCOTATION") -> pd.DataFrame:
     """
-    Extrae el tipo de variante desde el campo FUNCOTATION si no existe una columna
-    específica para ello.
+    Extract variant type from the FUNCOTATION field if there is no specific
+    column for it.
     
     Args:
-        data: DataFrame con los datos de mutaciones.
-        variant_column: Nombre de la columna que debe contener el tipo de variante.
-        funcotation_column: Nombre de la columna que contiene la cadena FUNCOTATION.
+        data: DataFrame with mutation data.
+        variant_column: Name of the column that should contain the variant type.
+        funcotation_column: Name of the column containing the FUNCOTATION string.
         
     Returns:
-        DataFrame con la columna de tipo de variante añadida o sin cambios si ya existía.
+        DataFrame with the variant type column added or unchanged if it already existed.
     """
-    # Crear una copia para no modificar el original
+    # Create a copy to not modify the original
     result = data.copy()
     
-    # Verificar si la columna de tipo de variante ya existe
+    # Check if the variant type column already exists
     if variant_column not in result.columns:
-        # Si existe la columna FUNCOTATION, extraer de ahí
+        # If the FUNCOTATION column exists, extract from there
         if funcotation_column in result.columns:
             print(f"Column '{variant_column}' not found. Extracting from '{funcotation_column}'.")
-            # Crear la columna aplicando la función de extracción
+            # Create the column by applying the extraction function
             result[variant_column] = result[funcotation_column].apply(
                 lambda x: extract_variant_type(x) if pd.notnull(x) else None
             )
             
-            # Verificar si se obtuvieron datos válidos
+            # Check if valid data was obtained
             if result[variant_column].isna().all():
                 print(f"Failed to extract variant type data from '{funcotation_column}'.")
                 result[variant_column] = "Unknown"
         else:
             print(f"Neither '{variant_column}' nor '{funcotation_column}' columns were found in the DataFrame.")
-            # Crear una columna con valor desconocido
+            # Create a column with unknown value
             result[variant_column] = "Unknown"
     
-    # Rellenar los valores NaN con "Unknown"
+    # Fill NaN values with "Unknown"
     result[variant_column] = result[variant_column].fillna("Unknown")
     
     return result
@@ -159,27 +159,27 @@ def extract_variant_types(data: pd.DataFrame,
 
 def extract_genome_change(funcotation_str):
     """
-    Recibe una cadena del campo FUNCOTATION y extrae el valor del cambio genómico,
-    que se asume es el duodécimo campo (índice 11) de la cadena separada por "|".
+    Receives a string from the FUNCOTATION field and extracts the genomic change value,
+    which is assumed to be the twelfth field (index 11) of the pipe-separated string.
     
     Args:
-        funcotation_str: Cadena del campo FUNCOTATION.
+        funcotation_str: String from the FUNCOTATION field.
         
     Returns:
-        Cambio genómico extraído o None si no se puede extraer.
+        Extracted genomic change or None if it cannot be extracted.
     """
-    # Convertir a cadena y quitar espacios en blanco
+    # Convert to string and remove whitespace
     funcotation_str = str(funcotation_str).strip()
     
-    # Eliminar el posible prefijo "FUNCOTATION="
+    # Remove possible "FUNCOTATION=" prefix
     if funcotation_str.startswith("FUNCOTATION="):
         funcotation_str = funcotation_str[len("FUNCOTATION="):].strip()
         
-    # Quitar los corchetes de apertura y cierre si están presentes
+    # Remove opening and closing brackets if present
     if funcotation_str.startswith('[') and funcotation_str.endswith(']'):
         funcotation_str = funcotation_str[1:-1]
     
-    # Separar la cadena por "|" y extraer el campo correspondiente (índice 11)
+    # Split the string by "|" and extract the corresponding field (index 11)
     fields = funcotation_str.split('|')
     if len(fields) > 11:
         return fields[11].strip()
@@ -191,40 +191,40 @@ def extract_genome_changes(data: pd.DataFrame,
                         genome_change_column: str = "Genome_Change",
                         funcotation_column: str = "FUNCOTATION") -> pd.DataFrame:
     """
-    Extrae el cambio genómico desde el campo FUNCOTATION si no existe una columna
-    específica para ello.
+    Extract genomic change from the FUNCOTATION field if there is no specific
+    column for it.
     
     Args:
-        data: DataFrame con los datos de mutaciones.
-        genome_change_column: Nombre de la columna que debe contener el cambio genómico.
-        funcotation_column: Nombre de la columna que contiene la cadena FUNCOTATION.
+        data: DataFrame with mutation data.
+        genome_change_column: Name of the column that should contain the genomic change.
+        funcotation_column: Name of the column containing the FUNCOTATION string.
         
     Returns:
-        DataFrame con la columna de cambio genómico añadida o sin cambios si ya existía.
+        DataFrame with the genomic change column added or unchanged if it already existed.
     """
-    # Crear una copia para no modificar el original
+    # Create a copy to not modify the original
     result = data.copy()
     
-    # Verificar si la columna de cambio genómico ya existe
+    # Check if the genomic change column already exists
     if genome_change_column not in result.columns:
-        # Si existe la columna FUNCOTATION, extraer de ahí
+        # If the FUNCOTATION column exists, extract from there
         if funcotation_column in result.columns:
             print(f"Column '{genome_change_column}' not found. Extracting from '{funcotation_column}'.")
-            # Crear la columna aplicando la función de extracción
+            # Create the column by applying the extraction function
             result[genome_change_column] = result[funcotation_column].apply(
                 lambda x: extract_genome_change(x) if pd.notnull(x) else None
             )
             
-            # Verificar si se obtuvieron datos válidos
+            # Check if valid data was obtained
             if result[genome_change_column].isna().all():
                 print(f"Failed to extract genome change data from '{funcotation_column}'.")
                 result[genome_change_column] = "Unknown"
         else:
             print(f"Neither '{genome_change_column}' nor '{funcotation_column}' columns were found in the DataFrame.")
-            # Crear una columna con valor desconocido
+            # Create a column with unknown value
             result[genome_change_column] = "Unknown"
     
-    # Rellenar los valores NaN con "Unknown"
+    # Fill NaN values with "Unknown"
     result[genome_change_column] = result[genome_change_column].fillna("Unknown")
     
     return result
@@ -232,27 +232,27 @@ def extract_genome_changes(data: pd.DataFrame,
 
 def read_tsv(file_path: str) -> pd.DataFrame:
     """
-    Lee un archivo TSV y devuelve un DataFrame con los datos de mutaciones.
+    Read a TSV file and return a DataFrame with mutation data.
     
     Args:
-        file_path: Ruta al archivo TSV.
+        file_path: Path to the TSV file.
         
     Returns:
-        DataFrame con los datos de mutaciones.
+        DataFrame with mutation data.
     
     Raises:
-        FileNotFoundError: Si el archivo no existe.
-        pd.errors.EmptyDataError: Si el archivo está vacío.
-        pd.errors.ParserError: Si hay problemas al analizar el archivo.
+        FileNotFoundError: If the file does not exist.
+        pd.errors.EmptyDataError: If the file is empty.
+        pd.errors.ParserError: If there are problems parsing the file.
     """
     if not os.path.exists(file_path):
         raise FileNotFoundError(f"File '{file_path}' does not exist.")
         
     try:
-        # Primero intentamos leer sin comentarios
+        # First try to read without comments
         data = pd.read_csv(file_path, sep='\t')
     except (pd.errors.ParserError, pd.errors.EmptyDataError) as e:
-        # Si falla por un error de análisis, intentamos con el parámetro comment
+        # If it fails due to a parsing error, try with the comment parameter
         try:
             data = pd.read_csv(file_path, sep='\t', comment='#', engine='python')
         except Exception as err:
