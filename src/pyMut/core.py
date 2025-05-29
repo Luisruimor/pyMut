@@ -1,12 +1,31 @@
-import pandas as pd
+"""
+PyMutation core module.
+
+Este módulo contiene la clase principal PyMutation que sirve como API principal
+para la librería pyMut. Proporciona métodos para generar todos los tipos de
+visualizaciones a partir de datos de mutación.
+"""
+
+from typing import Tuple, Optional
 import matplotlib.pyplot as plt
-import numpy as np
-from typing import List, Dict, Union, Optional, Tuple
+import pandas as pd
+
+from .visualizations.summary import (
+    create_variant_classification_plot,
+    create_variant_type_plot, 
+    create_snv_class_plot,
+    create_variants_per_sample_plot,
+    create_variant_classification_summary_plot,
+    create_top_mutated_genes_plot,
+    create_summary_plot
+)
+from .visualizations.oncoplot import create_oncoplot_plot
 from .utils.constants import (
-    VARIANT_CLASSIFICATION_COLUMN, VARIANT_TYPE_COLUMN, SAMPLE_COLUMN, 
-    GENE_COLUMN, REF_COLUMN, ALT_COLUMN, FUNCOTATION_COLUMN, 
-    DEFAULT_SUMMARY_FIGSIZE, DEFAULT_PLOT_FIGSIZE, DEFAULT_PLOT_TITLE,
-    DEFAULT_TOP_GENES_COUNT, MODE_VARIANTS, VALID_PLOT_MODES
+    DEFAULT_PLOT_FIGSIZE, DEFAULT_SUMMARY_FIGSIZE, DEFAULT_PLOT_TITLE,
+    DEFAULT_TOP_GENES_COUNT, GENE_COLUMN, VARIANT_CLASSIFICATION_COLUMN,
+    SAMPLE_COLUMN, REF_COLUMN, ALT_COLUMN, MODE_VARIANTS, MODE_SAMPLES,
+    DEFAULT_ONCOPLOT_FIGSIZE, DEFAULT_ONCOPLOT_TOP_GENES, DEFAULT_ONCOPLOT_MAX_SAMPLES,
+    FUNCOTATION_COLUMN, VARIANT_TYPE_COLUMN, VALID_PLOT_MODES
 )
 
 class PyMutation:
@@ -138,7 +157,6 @@ class PyMutation:
         Returns:
             Matplotlib figure with the summary plot.
         """
-        from .visualizations.summary import create_summary_plot
         from .utils.data_processing import extract_variant_classifications, extract_variant_types
         
         # Preprocess data to ensure we have the necessary columns
@@ -178,7 +196,6 @@ class PyMutation:
         Returns:
             Matplotlib figure with the variant classification plot.
         """
-        from .visualizations.summary import create_variant_classification_plot
         from .utils.data_processing import extract_variant_classifications
         
         # Preprocess data to ensure we have the necessary column
@@ -221,7 +238,6 @@ class PyMutation:
         Returns:
             Matplotlib figure with the variant types plot.
         """
-        from .visualizations.summary import create_variant_type_plot
         from .utils.data_processing import extract_variant_types
         
         # Preprocess data to ensure we have the necessary column
@@ -268,9 +284,10 @@ class PyMutation:
         Returns:
             Matplotlib figure with the SNV classes plot.
         """
-        from .visualizations.summary import create_snv_class_plot
-        
+        # Create figure and axes
         fig, ax = plt.subplots(figsize=figsize)
+        
+        # Generate the plot, passing set_title=False to avoid duplicate title
         create_snv_class_plot(
             self.data, 
             ref_column=ref_column,
@@ -279,8 +296,10 @@ class PyMutation:
             set_title=False  # Avoid duplicate title
         )
         
+        # Configure title
         if title:
             fig.suptitle(title, fontsize=16, fontweight='bold')
+        
         plt.tight_layout()
         
         # If requested to show interactively
@@ -314,7 +333,6 @@ class PyMutation:
         Returns:
             Matplotlib figure with the variants per sample plot.
         """
-        from .visualizations.summary import create_variants_per_sample_plot
         from .utils.data_processing import extract_variant_classifications
 
         # If variant_column is not in columns, try to normalize it
@@ -382,7 +400,6 @@ class PyMutation:
         Returns:
             Matplotlib figure with the box-and-whiskers plot.
         """
-        from .visualizations.summary import create_variant_classification_summary_plot
         from .utils.data_processing import extract_variant_classifications
 
         # Ensure the variant classification column exists or is extracted
@@ -455,7 +472,6 @@ class PyMutation:
         Raises:
             ValueError: If 'count' is not a positive number or 'mode' is not a valid value.
         """
-        from .visualizations.summary import create_top_mutated_genes_plot
         from .utils.data_processing import extract_variant_classifications
 
         # Validate parameters
@@ -526,6 +542,120 @@ class PyMutation:
             self._show_figure_interactive(fig)
         
         return fig
+    
+    def oncoplot(self,
+                 figsize: Optional[Tuple[int, int]] = None,
+                 title: str = "Oncoplot",
+                 gene_column: str = GENE_COLUMN,
+                 variant_column: str = VARIANT_CLASSIFICATION_COLUMN,
+                 ref_column: str = REF_COLUMN,
+                 alt_column: str = ALT_COLUMN,
+                 top_genes_count: int = None,
+                 max_samples: int = None,
+                 show_interactive: bool = False) -> plt.Figure:
+        """
+        Genera un oncoplot mostrando patrones de mutación en un heatmap.
+        
+        El oncoplot es una visualización fundamental en genómica del cáncer que muestra
+        los patrones de mutación a través de muestras y genes en formato heatmap.
+        
+        Características:
+        - Detección automática de columnas de muestra (TCGA y formato .GT)
+        - Soporte para múltiples formatos de genotipo (A|G, A/G, etc.)
+        - Detección de Multi_Hit para muestras con múltiples mutaciones
+        - Esquemas de colores estándar para tipos de mutación
+        - Ordenamiento inteligente de genes por frecuencia de mutación
+        - Ordenamiento de muestras por carga mutacional
+        
+        Args:
+            figsize: Tamaño de la figura (ancho, alto) en pulgadas.
+                    Si es None, usa DEFAULT_ONCOPLOT_FIGSIZE.
+            title: Título para la visualización.
+            gene_column: Nombre de la columna que contiene símbolos de genes.
+            variant_column: Nombre de la columna que contiene clasificaciones de variantes.
+            ref_column: Nombre de la columna que contiene alelos de referencia.
+            alt_column: Nombre de la columna que contiene alelos alternativos.
+            top_genes_count: Número de genes más mutados a mostrar.
+                           Si es None, usa DEFAULT_ONCOPLOT_TOP_GENES.
+            max_samples: Número máximo de muestras a mostrar.
+                        Si es None, usa DEFAULT_ONCOPLOT_MAX_SAMPLES.
+            show_interactive: Si True, muestra la figura interactivamente.
+            
+        Returns:
+            plt.Figure: Objeto Figure de matplotlib con el oncoplot.
+            
+        Raises:
+            ValueError: Si faltan columnas requeridas, no hay datos de mutación,
+                       o hay problemas con el formato de datos.
+            
+        Examples:
+            Uso básico:
+            >>> py_mut = PyMutation(data)
+            >>> fig = py_mut.oncoplot()
+            >>> fig.savefig('oncoplot.png')
+            
+            Con parámetros personalizados:
+            >>> fig = py_mut.oncoplot(
+            ...     title="Oncoplot de Muestras TCGA",
+            ...     top_genes_count=20,
+            ...     max_samples=100
+            ... )
+            
+            Modo interactivo:
+            >>> fig = py_mut.oncoplot(show_interactive=True)
+            
+        Note:
+            - El método detecta automáticamente columnas de muestra usando patrones
+              comunes como 'TCGA-*' y '*.GT'
+            - Los genes se ordenan por frecuencia de mutación (más mutados arriba)
+            - Las muestras se ordenan por carga mutacional total
+            - Los colores siguen estándares de genómica del cáncer
+            - Se maneja automáticamente la detección de Multi_Hit
+        """
+        # Validar parámetros de entrada
+        if top_genes_count is None:
+            top_genes_count = DEFAULT_ONCOPLOT_TOP_GENES
+        if max_samples is None:
+            max_samples = DEFAULT_ONCOPLOT_MAX_SAMPLES
+        if figsize is None:
+            figsize = DEFAULT_ONCOPLOT_FIGSIZE
+            
+        # Validación de parámetros
+        if top_genes_count <= 0:
+            raise ValueError("top_genes_count debe ser un entero positivo")
+        if max_samples <= 0:
+            raise ValueError("max_samples debe ser un entero positivo")
+        if len(figsize) != 2 or any(x <= 0 for x in figsize):
+            raise ValueError("figsize debe ser una tupla de dos números positivos")
+            
+        # Validar columnas requeridas
+        required_columns = [gene_column, variant_column, ref_column, alt_column]
+        missing_columns = [col for col in required_columns if col not in self.data.columns]
+        if missing_columns:
+            raise ValueError(f"Faltan las siguientes columnas requeridas: {missing_columns}")
+        
+        try:
+            # Generar el oncoplot
+            fig = create_oncoplot_plot(
+                data=self.data,
+                gene_column=gene_column,
+                variant_column=variant_column,
+                ref_column=ref_column,
+                alt_column=alt_column,
+                top_genes_count=top_genes_count,
+                max_samples=max_samples,
+                figsize=figsize,
+                title=title
+            )
+            
+            # Mostrar interactivamente si se solicita
+            if show_interactive:
+                self._show_figure_interactive(fig)
+            
+            return fig
+            
+        except Exception as e:
+            raise ValueError(f"Error al generar oncoplot: {str(e)}")
     
     def _show_figure_interactive(self, figure: plt.Figure) -> None:
         """
