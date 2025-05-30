@@ -131,3 +131,4 @@ src/pyMut/data/examples/tcga_laml_converted_reduced.tsv
 .cursorproject.yml
 
 *.png
+data
