@@ -1,4 +1,5 @@
 from .core import PyMutation
-from .version import VERSION as __version__
+from .io import read_vcf,read_maf
+from .version import __version__
 
-__all__ = ['PyMutation']
+__all__ = ['PyMutation','read_vcf','read_maf']

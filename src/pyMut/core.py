@@ -1,4 +1,6 @@
+from typing import List, Optional
 import pandas as pd
+from datetime import datetime
 import matplotlib.pyplot as plt
 import numpy as np
 from typing import List, Dict, Union, Optional, Tuple
@@ -9,35 +11,32 @@ from .utils.constants import (
     DEFAULT_TOP_GENES_COUNT, MODE_VARIANTS, VALID_PLOT_MODES
 )
 
+class MutationMetadata:
+    """
+    Clase para almacenar metadatos de mutaciones.
+
+    Atributos:
+        source_format (str): Formato de origen (VCF, MAF, etc.).
+        file_path (str): Ruta del archivo de origen.
+        loaded_at (datetime): Fecha y hora de carga.
+        filters (List[str]): Filtros aplicados al archivo.
+        fasta (str): Ruta del archivo FASTA.
+        notes (Optional[str]): Notas adicionales.
+    """
+    def __init__(self, source_format: str, file_path: str,
+                 filters: List[str],fasta: str, notes: Optional[str] = None):
+        self.source_format = source_format
+        self.file_path = file_path
+        self.loaded_at = datetime.now()
+        self.filters = filters
+        self.notes = notes
+        self.fasta = fasta
+
+
 class PyMutation:
-    """
-    Main class for visualizing genetic mutations from data in TSV format.
-    
-    This class provides methods for generating summary visualizations of genetic
-    mutation data, showing general statistics such as distributions of variant
-    types, classifications, and nucleotide changes.
-    
-    Attributes:
-        data (pd.DataFrame): DataFrame containing mutation data.
-    """
-    
-    def __init__(self, data: pd.DataFrame):
-        """
-        Initialize a PyMutation object with a pandas DataFrame.
-        
-        Args:
-            data (pd.DataFrame): DataFrame containing mutation data.
-        
-        Raises:
-            ValueError: If the DataFrame is empty or not a valid DataFrame.
-        """
-        if not isinstance(data, pd.DataFrame):
-            raise ValueError("The 'data' parameter must be a pandas DataFrame.")
-        
-        if data.empty:
-            raise ValueError("The provided DataFrame is empty. No data to analyze.")
-        
+    def __init__(self, data: pd.DataFrame, metadata: MutationMetadata):
         self.data = data
+        self.metadata = metadata
     
     def save_figure(self, figure: plt.Figure, filename: str, 
                    dpi: int = 300, bbox_inches: str = 'tight', **kwargs) -> None:
