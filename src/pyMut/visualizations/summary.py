@@ -11,9 +11,11 @@ import matplotlib.cm as cm
 import numpy as np
 import re
 from typing import List, Dict, Union, Optional, Tuple, Any
+from src.pyMut import PyMutation
 
 
-def create_variant_classification_plot(data: pd.DataFrame,
+
+def create_variant_classification_plot(py_mut: PyMutation,
                                      variant_column: str = "Variant_Classification",
                                      ax: Optional[plt.Axes] = None,
                                      color_map: Optional[Dict] = None,
@@ -22,7 +24,7 @@ def create_variant_classification_plot(data: pd.DataFrame,
     Create a horizontal bar chart showing the count for each type of variant classification.
     
     Args:
-        data: DataFrame with mutation data.
+        py_mut: PyMutation object with mutation data.
         variant_column: Name of the column containing the variant classification.
         ax: Matplotlib axis to draw on. If None, a new one is created.
         color_map: Optional dictionary mapping variant classifications to colors.
@@ -31,6 +33,8 @@ def create_variant_classification_plot(data: pd.DataFrame,
     Returns:
         Matplotlib axis with the visualization.
     """
+    data = py_mut.data
+
     # Count variants by classification
     variant_counts = data[variant_column].value_counts().to_dict()
     
@@ -71,7 +75,7 @@ def create_variant_classification_plot(data: pd.DataFrame,
     return ax
 
 
-def create_variant_type_plot(data: pd.DataFrame,
+def create_variant_type_plot(py_mut: PyMutation,
                            variant_column: str = "Variant_Type",
                            ax: Optional[plt.Axes] = None,
                            set_title: bool = True) -> plt.Axes:
@@ -79,7 +83,7 @@ def create_variant_type_plot(data: pd.DataFrame,
     Create a horizontal bar chart showing the count for each variant type.
     
     Args:
-        data: DataFrame with mutation data.
+        py_mut: PyMutation object with mutation data.
         variant_column: Name of the column containing the variant type.
         ax: Matplotlib axis to draw on. If None, a new one is created.
         set_title: Whether to set the title on the plot.
@@ -87,6 +91,9 @@ def create_variant_type_plot(data: pd.DataFrame,
     Returns:
         Matplotlib axis with the visualization.
     """
+
+    data = py_mut.data
+
     # Count variants by type
     variant_counts = data[variant_column].value_counts().to_dict()
     
@@ -131,7 +138,7 @@ def create_variant_type_plot(data: pd.DataFrame,
     return ax
 
 
-def create_snv_class_plot(data: pd.DataFrame,
+def create_snv_class_plot(py_mut: PyMutation,
                         ref_column: str = "REF",
                         alt_column: str = "ALT",
                         ax: Optional[plt.Axes] = None,
@@ -140,7 +147,7 @@ def create_snv_class_plot(data: pd.DataFrame,
     Create a horizontal bar chart showing the count for each SNV class.
     
     Args:
-        data: DataFrame with mutation data.
+        py_mut: PyMutation object with mutation data.
         ref_column: Name of the column containing the reference allele.
         alt_column: Name of the column containing the alternative (tumor) allele.
         ax: Matplotlib axis to draw on. If None, a new one is created.
@@ -149,6 +156,8 @@ def create_snv_class_plot(data: pd.DataFrame,
     Returns:
         Matplotlib axis with the visualization.
     """
+    data = py_mut.data
+
     # Create a copy of the DataFrame to not modify the original
     df_copy = data.copy()
     
@@ -225,7 +234,7 @@ def create_snv_class_plot(data: pd.DataFrame,
     return ax
 
 
-def create_variant_classification_summary_plot(data: pd.DataFrame,
+def create_variant_classification_summary_plot(py_mut: PyMutation,
                                              variant_column: str = "Variant_Classification",
                                              sample_column: str = "Tumor_Sample_Barcode",
                                              ax: Optional[plt.Axes] = None,
@@ -237,7 +246,7 @@ def create_variant_classification_summary_plot(data: pd.DataFrame,
     the distribution (among samples) of the number of detected alternative alleles.
 
     Args:
-        data: DataFrame with mutation data.
+        py_mut: PyMutation object with mutation data.
         variant_column: Name of the column containing the variant classification.
         sample_column: Name of the column containing the sample identifier.
                        If it doesn't exist, samples are assumed to be columns (wide format).
@@ -249,6 +258,8 @@ def create_variant_classification_summary_plot(data: pd.DataFrame,
     Returns:
         Matplotlib axis with the visualization.
     """
+    data = py_mut.data
+
     # Check if we have the classification column
     if variant_column not in data.columns:
         print(f"Column not found: {variant_column}")
@@ -459,7 +470,7 @@ def create_variant_classification_summary_plot(data: pd.DataFrame,
     return ax
 
 
-def create_summary_plot(data: pd.DataFrame,
+def create_summary_plot(py_mut: PyMutation,
                       figsize: Tuple[int, int] = (16, 12),
                       title: str = "Mutation Summary",
                       max_samples: Optional[int] = 200,
@@ -468,7 +479,7 @@ def create_summary_plot(data: pd.DataFrame,
     Creates a summary plot with multiple visualizations of mutation data.
     
     Args:
-        data: DataFrame with mutation data.
+        py_mut: PyMutation object with mutation data.
         figsize: Figure size.
         title: Plot title.
         max_samples: Maximum number of samples to show in the variants per sample plot.
@@ -479,6 +490,8 @@ def create_summary_plot(data: pd.DataFrame,
     Returns:
         Figure with summary visualizations.
     """
+    data = py_mut.data
+
     # Create a figure with multiple subplots, making the charts wider
     fig, axs = plt.subplots(2, 3, figsize=figsize, gridspec_kw={'width_ratios': [1.5, 1.5, 1.5], 'height_ratios': [1, 1]})
     fig.suptitle(title, fontsize=16)
@@ -609,7 +622,7 @@ def create_summary_plot(data: pd.DataFrame,
     return fig
 
 
-def create_variants_per_sample_plot(data: pd.DataFrame,
+def create_variants_per_sample_plot(py_mut: PyMutation,
                                    variant_column: str = "Variant_Classification",
                                    sample_column: str = "Tumor_Sample_Barcode",
                                    ax: Optional[plt.Axes] = None,
@@ -621,8 +634,7 @@ def create_variants_per_sample_plot(data: pd.DataFrame,
     and their composition by variant type.
 
     Args:
-        data: DataFrame with mutation data. Can have samples as columns
-              or a specific column with sample identifiers.
+        py_mut: PyMutation object with mutation data.
         variant_column: Name of the column containing the variant classification.
         sample_column: Name of the column containing the sample identifier,
                       or string used to identify sample columns if samples
@@ -636,6 +648,8 @@ def create_variants_per_sample_plot(data: pd.DataFrame,
     Returns:
         Matplotlib axis with the visualization.
     """
+    data = py_mut.data
+
     # Check if we have the necessary columns
     if variant_column not in data.columns:
         print(f"Column not found: {variant_column}")
@@ -791,7 +805,7 @@ def create_variants_per_sample_plot(data: pd.DataFrame,
     return ax
 
 
-def create_top_mutated_genes_plot(data: pd.DataFrame,
+def create_top_mutated_genes_plot(py_mut: PyMutation,
                                mode: str = "variants",
                                variant_column: str = "Variant_Classification",
                                gene_column: str = "Hugo_Symbol",
@@ -805,7 +819,7 @@ def create_top_mutated_genes_plot(data: pd.DataFrame,
     of variants according to their classification.
 
     Args:
-        data: DataFrame with mutation data.
+        py_mut: PyMutation object with mutation data.
         mode: Mutation counting mode: "variants" (counts total number of variants)
               or "samples" (counts number of affected samples).
         variant_column: Name of the column containing the variant classification.
@@ -821,6 +835,8 @@ def create_top_mutated_genes_plot(data: pd.DataFrame,
     Returns:
         Matplotlib axis with the visualization.
     """
+    data = py_mut.data
+
     # Check if we have the necessary columns
     if gene_column not in data.columns:
         print(f"Column not found: {gene_column}")
