@@ -606,8 +606,8 @@ def create_oncoplot_plot(data: pd.DataFrame,
                 df_percentage.plot(kind='barh', stacked=True, ax=ax_genes, 
                                  color=stacked_colors, width=0.65)
                 
-                # Configurar panel genes - SIN etiquetas de genes pero CON porcentajes
-                ax_genes.set_xlabel('Muestras (%)', fontsize=10)
+                # Configurar panel genes - SIN etiquetas de genes y SIN etiqueta en X
+                ax_genes.set_xlabel('')  # ELIMINAR la etiqueta "Muestras (%)" del eje X  
                 ax_genes.set_ylabel('')  # Sin etiqueta Y
                 
                 # Calcular límite X basado en los datos
@@ -618,23 +618,50 @@ def create_oncoplot_plot(data: pd.DataFrame,
                 # ELIMINAR etiquetas de genes del eje Y  
                 ax_genes.set_yticklabels([''] * len(top_genes))  # Etiquetas vacías
                 
-                # AÑADIR porcentajes al final de las barras (como en summary.py)
-                # Calcular porcentajes basados en el total de muestras del dataset completo
-                total_samples = len(sorted_samples)  # Usar muestras seleccionadas como denominador
+                # CORREGIR PORCENTAJES: usar exactamente la misma lógica que summary.py
+                # Detectar columnas de muestra igual que en summary.py
+                sample_cols_for_percentage = [col for col in data.columns if str(col).startswith("TCGA-")]
+                total_samples_in_dataset = len(sample_cols_for_percentage)  # Igual que en summary.py
                 
                 for i, gene in enumerate(df_percentage.index):
-                    # Calcular el porcentaje real: número de muestras afectadas / total de muestras
-                    gene_in_original_order = top_genes[len(top_genes) - 1 - i]  # Revertir el orden invertido
+                    # Revertir el orden invertido para obtener el gen correcto
+                    gene_in_original_order = top_genes[len(top_genes) - 1 - i]  
                     
-                    # Contar cuántas muestras tienen este gen mutado (cualquier tipo de variante)
-                    gene_row = plot_matrix.loc[gene_in_original_order]
-                    affected_samples = (gene_row != 'None').sum()
-                    real_percentage = (affected_samples / total_samples) * 100
+                    # USAR LA MISMA LÓGICA QUE SUMMARY.PY:
+                    # Contar muestras únicas afectadas por este gen usando los datos originales
+                    gene_data_filtered = data[data[gene_column] == gene_in_original_order]
+                    
+                    # Contar muestras únicas afectadas (igual que en summary.py)
+                    affected_samples_set = set()
+                    
+                    for sample_col_name in sample_cols_for_percentage:
+                        for _, row_series in gene_data_filtered.iterrows():
+                            sample_genotype_value = str(row_series[sample_col_name]).strip().upper()
+                            
+                            is_mutation_present = False
+                            if '|' in sample_genotype_value:
+                                alleles = sample_genotype_value.split('|')
+                                if len(alleles) >= 2 and alleles[0] != alleles[1]: 
+                                    is_mutation_present = True
+                            elif '/' in sample_genotype_value: 
+                                alleles = sample_genotype_value.split('/')
+                                if len(alleles) >= 2 and alleles[0] != alleles[1]:
+                                    is_mutation_present = True
+                            elif sample_genotype_value not in ["", ".", "0", "0/0", "0|0"] and not pd.isna(row_series[sample_col_name]):
+                                is_mutation_present = True
+                            
+                            if is_mutation_present:
+                                affected_samples_set.add(sample_col_name)
+                    
+                    # Calcular porcentaje exactamente igual que summary.py
+                    num_unique_samples_affected = len(affected_samples_set)
+                    real_percentage = (num_unique_samples_affected / total_samples_in_dataset) * 100 if total_samples_in_dataset > 0 else 0
                     
                     if real_percentage > 0:
                         # Calcular offset para el texto
+                        bar_length = df_percentage.loc[gene].sum()
                         offset = max_percentage * 0.02
-                        ax_genes.text(real_percentage + offset, i, f'{real_percentage:.1f}%', 
+                        ax_genes.text(bar_length + offset, i, f'{real_percentage:.1f}%', 
                                     va='center', fontsize=9)
                 
                 # Remover leyenda del panel lateral (se muestra abajo)
@@ -711,7 +738,8 @@ def create_oncoplot_plot(data: pd.DataFrame,
         if ax is not None:  # Solo poner título si no hay panel TMB
             ax_main.set_title(title, fontsize=16, fontweight='bold', pad=20)
         
-        ax_main.set_xlabel(f'Muestras (n={len(sorted_samples)})', fontsize=12)
+        # ELIMINAR la etiqueta del eje X para evitar solapamiento con el TMB
+        # ax_main.set_xlabel(f'Muestras (n={len(sorted_samples)})', fontsize=12)  # Comentado
         ax_main.set_ylabel('Genes', fontsize=12)
         
         # Configurar ticks y labels
