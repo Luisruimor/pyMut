@@ -461,13 +461,13 @@ def create_oncoplot_plot(data: pd.DataFrame,
             fig = plt.figure(figsize=figsize)
             
             # Definir grid layout: 3 filas x 2 columnas
-            # height_ratios: [1, 10, 1.5] = TMB pequeño arriba, heatmap grande, leyenda con más espacio abajo
+            # height_ratios: [2.5, 10, 1.5] = TMB más alto arriba, heatmap grande, leyenda con espacio abajo
             # width_ratios: [10, 1] = heatmap ancho, panel genes lateral estrecho
             gs = fig.add_gridspec(3, 2, 
-                                height_ratios=[1, 10, 1.5], 
+                                height_ratios=[2.5, 10, 1.5], 
                                 width_ratios=[10, 1],
-                                hspace=0.2, 
-                                wspace=0.05)
+                                hspace=0.05, 
+                                wspace=0.02)
             
             # Crear subplots según el grid
             ax_tmb = fig.add_subplot(gs[0, 0])      # Panel TMB (arriba izquierda)
@@ -476,21 +476,68 @@ def create_oncoplot_plot(data: pd.DataFrame,
             ax_legend = fig.add_subplot(gs[2, :])   # Panel leyenda (abajo, span completo)
             
             # === PANEL TMB (SUPERIOR) ===
-            bars = ax_tmb.bar(range(len(sorted_samples)), sorted_tmb_display, 
-                             color='steelblue', alpha=0.7, width=0.8)
+            # Calcular TMB usando la misma lógica que variants_per_sample_plot
+            # Usar las mismas columnas de muestra que se detectaron para el heatmap
+            detected_sample_columns = mutation_matrix.columns.tolist()
             
-            # Línea de mediana en TMB
-            ax_tmb.axhline(y=median_tmb, color='red', linestyle='--', 
-                          linewidth=1.5, alpha=0.8, label=f'Mediana: {median_tmb:.1f}')
+            # Usar la misma lógica que variants_per_sample_plot
+            variant_counts_tmb = {}
             
-            # Configurar panel TMB
-            ax_tmb.set_ylabel('TMB', fontsize=10)
-            ax_tmb.set_xlim(-0.5, len(sorted_samples) - 0.5)
-            ax_tmb.tick_params(axis='x', which='both', bottom=False, labelbottom=False)
-            ax_tmb.spines['top'].set_visible(False)
-            ax_tmb.spines['right'].set_visible(False)
-            ax_tmb.spines['bottom'].set_visible(False)
-            ax_tmb.grid(axis='y', alpha=0.3)
+            # Agrupar por Variant_Classification (igual que en summary.py)
+            for variant_type in data[variant_column].unique():
+                variant_subset = data[data[variant_column] == variant_type]
+                
+                for sample_col in detected_sample_columns:
+                    # Contar mutaciones usando la misma lógica que summary.py
+                    sample_variants = variant_subset[sample_col].apply(
+                        lambda x: 1 if '|' in str(x) and str(x).split('|')[0] != str(x).split('|')[1] else 0
+                    ).sum()
+                    
+                    if sample_col not in variant_counts_tmb:
+                        variant_counts_tmb[sample_col] = {}
+                    
+                    if sample_variants > 0:
+                        variant_counts_tmb[sample_col][variant_type] = sample_variants
+            
+            # Crear DataFrame para TMB (igual que en summary.py)
+            samples_df_tmb = []
+            for sample, variants in variant_counts_tmb.items():
+                for var_type, count in variants.items():
+                    samples_df_tmb.append({'Sample': sample, 'Variant_Classification': var_type, 'Count': count})
+            
+            if samples_df_tmb:
+                processed_df_tmb = pd.DataFrame(samples_df_tmb)
+                tmb_df = processed_df_tmb.pivot(index='Sample', columns='Variant_Classification', values='Count').fillna(0)
+                
+                # Filtrar a las muestras seleccionadas y ordenarlas como en el heatmap
+                tmb_df = tmb_df.loc[tmb_df.index.intersection(sorted_samples)]
+                tmb_df = tmb_df.reindex(sorted_samples, fill_value=0)
+                
+                # Preparar colores para TMB (mismo mapeo que el heatmap)
+                tmb_colors = [color_mapping.get(vt, [0.7, 0.7, 0.7]) for vt in tmb_df.columns]
+                
+                # Crear barras apiladas para TMB
+                tmb_df.plot(kind='bar', stacked=True, ax=ax_tmb, color=tmb_colors, width=0.8, legend=False)
+                
+                # Configurar panel TMB
+                ax_tmb.set_ylabel('TMB', fontsize=10)
+                ax_tmb.set_xlim(-0.5, len(sorted_samples) - 0.5)
+                
+                # Los límites Y se ajustan automáticamente según los datos
+                max_tmb = tmb_df.sum(axis=1).max() if not tmb_df.empty else 10
+                ax_tmb.set_ylim(0, max_tmb * 1.1)
+                
+                ax_tmb.tick_params(axis='x', which='both', bottom=False, labelbottom=False)
+                ax_tmb.spines['top'].set_visible(False)
+                ax_tmb.spines['right'].set_visible(False)
+                ax_tmb.spines['bottom'].set_visible(False)
+                ax_tmb.grid(axis='y', alpha=0.3)
+            else:
+                # Si no hay datos TMB, mostrar mensaje
+                ax_tmb.text(0.5, 0.5, 'TMB no disponible', ha='center', va='center', fontsize=10)
+                ax_tmb.set_xlim(0, 1)
+                ax_tmb.set_ylim(0, 1)
+                ax_tmb.axis('off')
             
             # === PANEL GENES LATERAL (DERECHO) ===
             # Crear panel lateral personalizado con barras apiladas y colores sincronizados
@@ -559,7 +606,7 @@ def create_oncoplot_plot(data: pd.DataFrame,
                 df_percentage.plot(kind='barh', stacked=True, ax=ax_genes, 
                                  color=stacked_colors, width=0.65)
                 
-                # Configurar panel genes - SIN etiquetas de genes y SIN porcentajes
+                # Configurar panel genes - SIN etiquetas de genes pero CON porcentajes
                 ax_genes.set_xlabel('Muestras (%)', fontsize=10)
                 ax_genes.set_ylabel('')  # Sin etiqueta Y
                 
@@ -571,8 +618,24 @@ def create_oncoplot_plot(data: pd.DataFrame,
                 # ELIMINAR etiquetas de genes del eje Y  
                 ax_genes.set_yticklabels([''] * len(top_genes))  # Etiquetas vacías
                 
-                # ELIMINAR texto de porcentajes al final de las barras
-                # (No agregamos texto con porcentajes)
+                # AÑADIR porcentajes al final de las barras (como en summary.py)
+                # Calcular porcentajes basados en el total de muestras del dataset completo
+                total_samples = len(sorted_samples)  # Usar muestras seleccionadas como denominador
+                
+                for i, gene in enumerate(df_percentage.index):
+                    # Calcular el porcentaje real: número de muestras afectadas / total de muestras
+                    gene_in_original_order = top_genes[len(top_genes) - 1 - i]  # Revertir el orden invertido
+                    
+                    # Contar cuántas muestras tienen este gen mutado (cualquier tipo de variante)
+                    gene_row = plot_matrix.loc[gene_in_original_order]
+                    affected_samples = (gene_row != 'None').sum()
+                    real_percentage = (affected_samples / total_samples) * 100
+                    
+                    if real_percentage > 0:
+                        # Calcular offset para el texto
+                        offset = max_percentage * 0.02
+                        ax_genes.text(real_percentage + offset, i, f'{real_percentage:.1f}%', 
+                                    va='center', fontsize=9)
                 
                 # Remover leyenda del panel lateral (se muestra abajo)
                 legend = ax_genes.get_legend()

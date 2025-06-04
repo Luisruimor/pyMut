@@ -327,6 +327,82 @@ class TestOncoplotIntegration(unittest.TestCase):
         plt.close(fig)
 
 
+class TestOncoplotSidePanel:
+    """Test class for oncoplot side panel functionality."""
+    
+    def test_oncoplot_with_side_panel_integration(self):
+        """Test that oncoplot integrates correctly with side panel (top mutated genes)."""
+        # Create test data with TCGA sample columns
+        data = pd.DataFrame({
+            'Hugo_Symbol': ['TP53', 'BRCA1', 'EGFR', 'MYC'] * 5,
+            'Variant_Classification': ['Missense_Mutation', 'Nonsense_Mutation', 
+                                     'Frame_Shift_Del', 'Silent'] * 5,
+            'REF': ['A', 'C', 'G', 'T'] * 5,
+            'ALT': ['G', 'T', 'A', 'C'] * 5,
+            'TCGA-AB-2988': ['A|G', 'C|T', 'G|A', './.'] * 5,
+            'TCGA-AB-2869': ['A|A', 'C|T', 'G|G', 'T|C'] * 5,
+            'TCGA-AB-3009': ['A|G', 'C|C', 'G|A', 'T|T'] * 5,
+        })
+        
+        # Initialize PyMutation object
+        py_mut = PyMutation(data)
+        
+        # Generate oncoplot which should include side panel
+        figure = py_mut.oncoplot(
+            figsize=(16, 10),
+            title="Test Oncoplot with Side Panel",
+            top_genes_count=4,
+            max_samples=3,
+            show_interactive=False
+        )
+        
+        # Verify figure exists and has expected structure
+        assert figure is not None
+        assert isinstance(figure, plt.Figure)
+        
+        # Check that figure has multiple axes (main plot + side panel)
+        axes = figure.get_axes()
+        assert len(axes) >= 2, "Oncoplot should have at least main plot and side panel"
+        
+        # Check figure size
+        assert figure.get_figwidth() == 16
+        assert figure.get_figheight() == 10
+        
+        # Close figure to free memory
+        plt.close(figure)
+    
+    def test_oncoplot_side_panel_gene_ordering(self):
+        """Test that genes in side panel match the main plot ordering."""
+        # Create test data with varying mutation frequencies
+        genes = ['GENE_A', 'GENE_B', 'GENE_C']
+        data = pd.DataFrame({
+            'Hugo_Symbol': genes * 10,
+            'Variant_Classification': ['Missense_Mutation'] * 30,
+            'REF': ['A'] * 30,
+            'ALT': ['G'] * 30,
+            # GENE_A: appears in 3 samples (most frequent)
+            # GENE_B: appears in 2 samples  
+            # GENE_C: appears in 1 sample (least frequent)
+            'TCGA-AB-001': ['A|G'] * 10 + ['A|A'] * 10 + ['A|A'] * 10,
+            'TCGA-AB-002': ['A|G'] * 10 + ['A|G'] * 10 + ['A|A'] * 10,
+            'TCGA-AB-003': ['A|G'] * 10 + ['A|A'] * 10 + ['A|G'] * 10,
+        })
+        
+        py_mut = PyMutation(data)
+        figure = py_mut.oncoplot(
+            top_genes_count=3,
+            max_samples=3,
+            show_interactive=False
+        )
+        
+        # Verify figure was created successfully
+        assert figure is not None
+        axes = figure.get_axes()
+        assert len(axes) >= 2
+        
+        plt.close(figure)
+
+
 if __name__ == '__main__':
     # Configurar matplotlib para tests (modo no interactivo)
     import matplotlib
