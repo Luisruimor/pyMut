@@ -1,4 +1,4 @@
-site_name: pyMut Documentation
+site_name: pyMut
 site_description: Python library for genetic mutation visualization
 site_author: pyMut Development Team
 docs_dir: docs
@@ -58,7 +58,11 @@ markdown_extensions:
 # Page tree
 nav:
   - Home: index.md
-  - Summary Plot: summary-plot.md
+  - Installation: installation.md
+  - Quickstart: quickstart.md
+  - Api:
+      - Visualization API:
+          - Summary Plot: api/summary_plot.md
   - Example Usage:
       - Variant Classification Plot: examples/maf_to_variant_classification.ipynb
 
