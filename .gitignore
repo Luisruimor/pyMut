@@ -138,3 +138,6 @@ src/pyMut/data/examples/sample_mutations.tsv
 
 *.png
 data
+*.pdf
+
+examples/oncoplot_outputs/
