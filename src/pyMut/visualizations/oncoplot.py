@@ -1,24 +1,23 @@
 """
-Funciones para crear oncoplots (también conocidos como waterfall plots).
+Functions for creating oncoplots (also known as waterfall plots).
 
-Este módulo contiene las funciones necesarias para generar oncoplots, que son
-visualizaciones heatmap que muestran patrones de mutación a través de muestras
-y genes. Los oncoplots son fundamentales en la genómica del cáncer para
-visualizar paisajes mutacionales.
+This module contains the necessary functions to generate oncoplots, which are
+heatmap visualizations showing mutation patterns across samples and genes.
+Oncoplots are fundamental in cancer genomics for visualizing mutational landscapes.
 
-La función principal es `create_oncoplot_plot()` que puede manejar:
-- Detección automática de columnas de muestra (formato TCGA y .GT)
-- Múltiples formatos de genotipo (A|G, A/G, etc.)
-- Detección de Multi_Hit para muestras con múltiples tipos de mutación
-- Esquemas de colores personalizables para clasificaciones de variantes
-- Parámetros configurables para genes principales y muestras máximas
+The main function is `create_oncoplot_plot()` which can handle:
+- Automatic detection of sample columns (TCGA and .GT format)
+- Multiple genotype formats (A|G, A/G, etc.)
+- Multi_Hit detection for samples with multiple mutation types
+- Customizable color schemes for variant classifications
+- Configurable parameters for top genes and maximum samples
 
-Funciones principales:
-- is_mutated(): Determina si un genotipo representa una mutación
-- detect_sample_columns(): Detecta automáticamente columnas de muestra en el DataFrame
-- create_variant_color_mapping(): Crea mapeo de colores para tipos de variantes
-- process_mutation_matrix(): Procesa datos de mutación en formato de matriz
-- create_oncoplot_plot(): Función principal para crear el oncoplot
+Main functions:
+- is_mutated(): Determines if a genotype represents a mutation
+- detect_sample_columns(): Automatically detects sample columns in the DataFrame
+- create_variant_color_mapping(): Creates color mapping for variant types
+- process_mutation_matrix(): Processes mutation data into matrix format
+- create_oncoplot_plot(): Main function to create the oncoplot
 """
 
 import warnings
@@ -50,7 +49,7 @@ def is_mutated(genotype: str, ref: str, alt: str) -> bool:
     
     Args:
         genotype: Valor del genotipo de la muestra
-        ref: Alelo de referencia  
+        ref: Alelo de referencia
         alt: Alelo alternativo
         
     Returns:
@@ -62,7 +61,7 @@ def is_mutated(genotype: str, ref: str, alt: str) -> bool:
         >>> is_mutated("G|G", "A", "G")  # True (homocigoto alternativo)
         >>> is_mutated("./.", "A", "G")  # False
     """
-    # Verificar valores nulos o vacíos
+    # Check for null or empty values
     if pd.isna(genotype) or pd.isna(ref) or pd.isna(alt):
         return False
         
@@ -70,42 +69,42 @@ def is_mutated(genotype: str, ref: str, alt: str) -> bool:
     ref_str = str(ref).strip()
     alt_str = str(alt).strip()
     
-    # Casos que claramente NO son mutaciones
+    # Cases that are clearly NOT mutations
     no_mutation_values = {"", ".", "0", "0/0", "0|0", "./.", ".|.", "NA", "NaN"}
     if genotype_str.upper() in no_mutation_values:
         return False
     
-    # Separadores comunes para genotipos
+    # Common genotype separators
     separators = ['|', '/', ':', ';', ',']
-    alleles = [genotype_str]  # Por defecto, tratar como un solo alelo
+    alleles = [genotype_str]  # Default: treat as single allele
     
-    # Intentar dividir por separadores comunes
+    # Try to split by common separators
     for sep in separators:
         if sep in genotype_str:
             alleles = genotype_str.split(sep)
             break
     
-    # Verificar si algún alelo coincide con el alternativo
-    # Esto detecta tanto heterocigotos (A|G) como homocigotos alternativos (G|G)
+    # Check if any allele matches the alternative
+    # This detects both heterozygotes (A|G) and homozygous alternatives (G|G)
     return alt_str in alleles
 
 def detect_sample_columns(data: pd.DataFrame) -> List[str]:
     """
-    Detecta automáticamente las columnas que representan muestras en el DataFrame.
+    Automatically detects columns representing samples in the DataFrame.
     
-    Busca patrones comunes de nomenclatura de muestras:
-    - Formato TCGA: columnas que empiezan con "TCGA-"
-    - Formato GT: columnas que terminan con ".GT"
-    - Otros patrones de muestras según convenciones estándar
+    Searches for common sample naming patterns:
+    - TCGA format: columns starting with "TCGA-"
+    - GT format: columns ending with ".GT"
+    - Other sample patterns according to standard conventions
     
     Args:
-        data: DataFrame con datos de mutación
+        data: DataFrame with mutation data
         
     Returns:
-        List[str]: Lista de nombres de columnas identificadas como muestras
+        List[str]: List of column names identified as samples
         
     Raises:
-        ValueError: Si no se detectan columnas de muestras
+        ValueError: If no sample columns are detected
         
     Examples:
         >>> columns = ["Hugo_Symbol", "TCGA-AB-2988", "TCGA-AB-2869", "Variant_Classification"]
@@ -114,38 +113,38 @@ def detect_sample_columns(data: pd.DataFrame) -> List[str]:
     """
     sample_columns = []
     
-    # Detectar formato TCGA (más común)
+    # Detect TCGA format (most common)
     tcga_cols = [col for col in data.columns if str(col).startswith("TCGA-")]
     sample_columns.extend(tcga_cols)
     
-    # Detectar formato .GT (genotype)
+    # Detect .GT format (genotype)
     gt_cols = [col for col in data.columns if str(col).endswith(".GT")]
     sample_columns.extend(gt_cols)
     
-    # Eliminar duplicados manteniendo orden
+    # Remove duplicates while maintaining order
     sample_columns = list(dict.fromkeys(sample_columns))
     
     if not sample_columns:
         raise ValueError(
-            "No se pudieron detectar columnas de muestra automáticamente. "
-            "Asegúrese de que las columnas sigan formatos estándar como 'TCGA-*' o '*.GT', "
-            "o especifique las columnas manualmente."
+            "Could not automatically detect sample columns. "
+            "Please ensure columns follow standard formats like 'TCGA-*' or '*.GT', "
+            "or specify columns manually."
         )
-        
+    
     return sample_columns
 
 def create_variant_color_mapping(variants: Set[str]) -> Dict[str, np.ndarray]:
     """
-    Crea un mapeo de colores consistente para tipos de variantes.
+    Creates a consistent color mapping for variant types.
     
-    Asigna colores específicos a tipos de variantes conocidos y colores 
-    automáticos para variantes no reconocidas.
+    Assigns specific colors to known variant types and automatic colors
+    for unrecognized variants.
     
     Args:
-        variants: Conjunto de tipos de variantes únicos
+        variants: Set of unique variant types
         
     Returns:
-        Dict[str, np.ndarray]: Diccionario mapeando variante -> color RGB
+        Dict[str, np.ndarray]: Dictionary mapping variant -> RGB color
         
     Examples:
         >>> variants = {"Missense_Mutation", "Nonsense_Mutation", "None"}
@@ -153,39 +152,39 @@ def create_variant_color_mapping(variants: Set[str]) -> Dict[str, np.ndarray]:
         >>> len(mapping) == 3
         True
     """
-    # Definir colores específicos para tipos de variantes conocidos
+    # Define specific colors for known variant types
     predefined_colors = {
-        'Missense_Mutation': np.array([0.0, 0.8, 0.0]),        # Verde
-        'Nonsense_Mutation': np.array([1.0, 0.0, 0.0]),        # Rojo
+        'Missense_Mutation': np.array([0.0, 0.8, 0.0]),        # Green
+        'Nonsense_Mutation': np.array([1.0, 0.0, 0.0]),        # Red
         'Frame_Shift_Del': np.array([0.8, 0.0, 0.8]),          # Magenta
-        'Frame_Shift_Ins': np.array([0.6, 0.0, 0.6]),          # Magenta oscuro
-        'In_Frame_Del': np.array([0.0, 0.8, 0.8]),             # Cian
-        'In_Frame_Ins': np.array([0.0, 0.6, 0.6]),             # Cian oscuro
-        'Splice_Site': np.array([1.0, 0.5, 0.0]),              # Naranja
-        'Translation_Start_Site': np.array([0.8, 0.8, 0.0]),   # Amarillo
-        'Nonstop_Mutation': np.array([0.5, 0.0, 1.0]),         # Azul violeta
-        'Silent': np.array([0.7, 0.7, 0.7]),                   # Gris
-        'Multi_Hit': np.array([0.0, 0.0, 0.0]),                # Negro
-        'None': np.array([0.95, 0.95, 0.95])                   # Gris muy claro
+        'Frame_Shift_Ins': np.array([0.6, 0.0, 0.6]),          # Dark magenta
+        'In_Frame_Del': np.array([0.0, 0.8, 0.8]),             # Cyan
+        'In_Frame_Ins': np.array([0.0, 0.6, 0.6]),             # Dark cyan
+        'Splice_Site': np.array([1.0, 0.5, 0.0]),              # Orange
+        'Translation_Start_Site': np.array([0.8, 0.8, 0.0]),   # Yellow
+        'Nonstop_Mutation': np.array([0.5, 0.0, 1.0]),         # Blue violet
+        'Silent': np.array([0.7, 0.7, 0.7]),                   # Gray
+        'Multi_Hit': np.array([0.0, 0.0, 0.0]),                # Black
+        'None': np.array([0.95, 0.95, 0.95])                   # Very light gray
     }
     
     color_mapping = {}
     
-    # Usar colores predefinidos cuando estén disponibles
+    # Use predefined colors when available
     for variant in variants:
         if variant in predefined_colors:
             color_mapping[variant] = predefined_colors[variant]
     
-    # Asignar colores automáticos para variantes no reconocidas
+    # Assign automatic colors for unrecognized variants
     unassigned_variants = [v for v in variants if v not in color_mapping]
     
     if unassigned_variants:
-        # Generar colores automáticos usando una paleta
+        # Generate automatic colors using a palette
         n_colors = len(unassigned_variants)
         auto_colors = plt.cm.tab20(np.linspace(0, 1, n_colors))
         
         for i, variant in enumerate(unassigned_variants):
-            color_mapping[variant] = auto_colors[i][:3]  # Solo RGB, sin alpha
+            color_mapping[variant] = auto_colors[i][:3]  # RGB only, no alpha
     
     return color_mapping
 
@@ -196,27 +195,27 @@ def process_mutation_matrix(data: pd.DataFrame,
                            alt_column: str = ALT_COLUMN,
                            sample_columns: Optional[List[str]] = None) -> Tuple[pd.DataFrame, Dict[str, int]]:
     """
-    Procesa datos de mutación para crear una matriz genes x muestras.
+    Processes mutation data to create a genes x samples matrix.
     
-    Transforma datos de mutación en formato largo o ancho a una matriz optimizada
-    para visualización oncoplot. Detecta automáticamente múltiples mutaciones 
-    (Multi_Hit) y maneja diferentes formatos de genotipo.
+    Transforms mutation data in long or wide format into an optimized matrix
+    for oncoplot visualization. Automatically detects multiple mutations
+    (Multi_Hit) and handles different genotype formats.
     
     Args:
-        data: DataFrame con datos de mutación
-        gene_column: Nombre de la columna de genes  
-        variant_column: Nombre de la columna de clasificación de variantes
-        ref_column: Nombre de la columna de alelo de referencia
-        alt_column: Nombre de la columna de alelo alternativo
-        sample_columns: Lista opcional de columnas de muestras (autodetecta si None)
+        data: DataFrame with mutation data
+        gene_column: Name of the gene column
+        variant_column: Name of the variant classification column
+        ref_column: Name of the reference allele column
+        alt_column: Name of the alternative allele column
+        sample_columns: Optional list of sample columns (auto-detects if None)
         
     Returns:
         Tuple[pd.DataFrame, Dict[str, int]]: 
-            - Matriz de mutaciones (genes x muestras)
-            - Diccionario con conteos de mutaciones por gen
+            - Mutation matrix (genes x samples)
+            - Dictionary with mutation counts per gene
             
     Raises:
-        ValueError: Si faltan columnas requeridas o no hay datos válidos
+        ValueError: If required columns are missing or no valid data
         
     Examples:
         >>> matrix, counts = process_mutation_matrix(mutation_data)
@@ -225,60 +224,60 @@ def process_mutation_matrix(data: pd.DataFrame,
         >>> "Multi_Hit" in matrix.values
         True
     """
-    # Validar columnas requeridas
+    # Validate required columns
     required_columns = [gene_column, variant_column]
     missing_columns = [col for col in required_columns if col not in data.columns]
     
     if missing_columns:
-        raise ValueError(f"Faltan columnas requeridas: {missing_columns}")
+        raise ValueError(f"Missing required columns: {missing_columns}")
     
-    # Detectar columnas de muestras si no se proporcionaron
+    # Detect sample columns if not provided
     if sample_columns is None:
         try:
             sample_columns = detect_sample_columns(data)
         except ValueError as e:
-            # Si no se pueden detectar automáticamente, mostrar warning pero continuar
-            print(f"Advertencia: {e}")
-            print(f"Columnas disponibles: {list(data.columns)}")
-            # Intentar identificar columnas que podrían ser muestras
+            # If cannot detect automatically, show warning but continue
+            print(f"Warning: {e}")
+            print(f"Available columns: {list(data.columns)}")
+            # Try to identify columns that could be samples
             excluded_cols = {gene_column, variant_column, ref_column, alt_column, 'Tumor_Sample_Barcode'}
             potential_samples = [col for col in data.columns if col not in excluded_cols]
             if potential_samples:
-                print(f"Usando columnas potenciales como muestras: {potential_samples}")
+                print(f"Using potential columns as samples: {potential_samples}")
                 sample_columns = potential_samples
             else:
-                raise ValueError("No se detectaron columnas de muestras válidas")
+                raise ValueError("No valid sample columns detected")
         
     if not sample_columns:
-        raise ValueError("No se detectaron columnas de muestras válidas")
+        raise ValueError("No valid sample columns detected")
     
-    print(f"Procesando {len(sample_columns)} muestras y datos de {len(data)} variantes...")
+    print(f"Processing {len(sample_columns)} samples and data from {len(data)} variants...")
     
-    # Crear matriz base: genes x muestras, inicializada con 'None'
+    # Create base matrix: genes x samples, initialized with 'None'
     unique_genes = data[gene_column].dropna().unique()
     unique_genes = [gene for gene in unique_genes if str(gene) != 'nan' and str(gene).strip() != '']
     
     if not unique_genes:
-        raise ValueError("No se encontraron genes válidos en los datos")
+        raise ValueError("No valid genes found in the data")
     
-    # Crear DataFrame con 'None' como valor por defecto
+    # Create DataFrame with 'None' as default value
     mutation_matrix = pd.DataFrame(
         'None',
         index=unique_genes,
         columns=sample_columns
     )
     
-    # Verificar que existen las columnas REF y ALT si están especificadas
+    # Check if REF and ALT columns exist if specified
     has_ref_alt = (ref_column in data.columns and alt_column in data.columns)
     
-    # Procesar cada fila de datos de mutación
+    # Process each mutation data row
     mutation_counts = {gene: 0 for gene in unique_genes}
     
     for _, row in data.iterrows():
         gene = row[gene_column]
         variant_type = row[variant_column]
         
-        # Saltar filas con valores faltantes
+        # Skip rows with missing values
         if pd.isna(gene) or pd.isna(variant_type):
             continue
             
@@ -288,26 +287,26 @@ def process_mutation_matrix(data: pd.DataFrame,
         if gene_str == '' or variant_str == '' or gene_str not in unique_genes:
             continue
         
-        # Obtener alelos de referencia y alternativo si están disponibles
+        # Get reference and alternative alleles if available
         ref_allele = row[ref_column] if has_ref_alt else None
         alt_allele = row[alt_column] if has_ref_alt else None
         
-        # Procesar cada muestra para esta variante
+        # Process each sample for this variant
         for sample_col in sample_columns:
             if sample_col not in data.columns:
                 continue
                 
             genotype = row[sample_col]
             
-            # Determinar si hay mutación en esta muestra
+            # Determine if there's a mutation in this sample
             has_mutation = False
             
             if has_ref_alt and not pd.isna(ref_allele) and not pd.isna(alt_allele):
-                # Usar información REF/ALT para determinar mutación
+                # Use REF/ALT information to determine mutation
                 has_mutation = is_mutated(genotype, ref_allele, alt_allele)
             else:
-                # Usar heurística basada en genotype solamente
-                # Para casos sin REF/ALT, considerar que valores no-vacíos/no-missing son mutaciones
+                # Use heuristic based on genotype only
+                # For cases without REF/ALT, consider non-empty/non-missing values as mutations
                 if not pd.isna(genotype):
                     genotype_str = str(genotype).strip()
                     no_mutation_values = {"", ".", "0", "0/0", "0|0", "./.", ".|.", "NA", "NaN", "None"}
@@ -317,16 +316,16 @@ def process_mutation_matrix(data: pd.DataFrame,
                 current_value = mutation_matrix.loc[gene_str, sample_col]
                 
                 if current_value == 'None':
-                    # Primera mutación en esta celda
+                    # First mutation in this cell
                     mutation_matrix.loc[gene_str, sample_col] = variant_str
                     mutation_counts[gene_str] += 1
                 elif current_value != variant_str:
-                    # Multiple mutaciones diferentes -> Multi_Hit
+                    # Multiple different mutations -> Multi_Hit
                     mutation_matrix.loc[gene_str, sample_col] = 'Multi_Hit'
-                # Si es la misma variante, no hacer nada (evitar duplicados)
+                # If it's the same variant, do nothing (avoid duplicates)
     
-    print(f"Matriz procesada: {mutation_matrix.shape[0]} genes x {mutation_matrix.shape[1]} muestras")
-    print(f"Genes con mutaciones: {sum(1 for count in mutation_counts.values() if count > 0)}")
+    print(f"Processed matrix: {mutation_matrix.shape[0]} genes x {mutation_matrix.shape[1]} samples")
+    print(f"Genes with mutations: {sum(1 for count in mutation_counts.values() if count > 0)}")
     
     return mutation_matrix, mutation_counts
 
@@ -341,154 +340,193 @@ def create_oncoplot_plot(data: pd.DataFrame,
                          title: str = "Oncoplot",
                          ax: Optional[plt.Axes] = None) -> plt.Figure:
     """
-    Crea un oncoplot completo con panel TMB superior y panel lateral de genes.
+    Creates a complete oncoplot with upper TMB panel and side gene panel.
     
-    Genera una visualización comprehensiva tipo oncoplot que incluye:
-    - Panel superior: TMB (Tumor Mutation Burden) por muestra
-    - Panel principal: Heatmap de mutaciones (genes x muestras)
-    - Panel lateral derecho: Top genes mutados en modo "samples"
-    - Leyenda: Tipos de clasificación de variantes
-    - Algoritmo de ordenamiento waterfall/cascada para efecto visual
+    Generates a comprehensive oncoplot visualization that includes:
+    - Upper panel: TMB (Tumor Mutation Burden) per sample
+    - Main panel: Mutation heatmap (genes x samples)
+    - Right side panel: Top mutated genes in "samples" mode
+    - Legend: Variant classification types
+    - Waterfall/cascade sorting algorithm for visual effect
     
     Args:
-        data: DataFrame con datos de mutación
-        gene_column: Nombre de la columna de genes (por defecto 'Hugo_Symbol')
-        variant_column: Nombre de la columna de clasificación de variantes
-        ref_column: Nombre de la columna de alelo de referencia
-        alt_column: Nombre de la columna de alelo alternativo  
-        top_genes_count: Número de genes más mutados a mostrar (por defecto 30)
-        max_samples: Número máximo de muestras a mostrar (por defecto 180)
-        figsize: Tamaño de la figura (ancho, alto) en pulgadas
-        title: Título para el gráfico
-        ax: Ejes matplotlib existentes (opcional, para modo simple sin paneles)
+        data: DataFrame with mutation data
+        gene_column: Name of the gene column (default 'Hugo_Symbol')
+        variant_column: Name of the variant classification column
+        ref_column: Name of the reference allele column
+        alt_column: Name of the alternative allele column
+        top_genes_count: Number of top mutated genes to show (default 30)
+        max_samples: Maximum number of samples to show (default 180)
+        figsize: Figure size (width, height) in inches
+        title: Title for the plot
+        ax: Existing matplotlib axes (optional, for simple mode without panels)
         
     Returns:
-        plt.Figure: Objeto Figure de matplotlib con el oncoplot completo
+        plt.Figure: matplotlib Figure object with the complete oncoplot
         
     Raises:
-        ValueError: Si faltan columnas requeridas o no hay datos para visualizar
+        ValueError: If required columns are missing or no data to visualize
         
     Examples:
         >>> fig = create_oncoplot_plot(mutation_data, top_genes_count=20)
-        >>> fig.savefig('oncoplot_completo.png', dpi=300, bbox_inches='tight')
+        >>> fig.savefig('complete_oncoplot.png', dpi=300, bbox_inches='tight')
     """
     try:
-        # Procesar datos en matriz de mutación
+        # Process data into mutation matrix
         mutation_matrix, mutation_counts = process_mutation_matrix(
             data, gene_column, variant_column, ref_column, alt_column
         )
-        
+    
         if mutation_matrix.empty:
-            raise ValueError("No hay datos de mutación para visualizar")
+            raise ValueError("No mutation data to visualize")
         
-        # CALCULAR TMB USANDO TODOS LOS GENES (ANTES DEL FILTRADO)
-        # Esto debe coincidir con el cálculo de variants_per_sample
+        # CALCULATE TMB USING ALL GENES (BEFORE FILTERING)
+        # This must match the calculation in variants_per_sample
         all_genes_tmb = (mutation_matrix != 'None').sum(axis=0)
         median_tmb_all = np.median(all_genes_tmb)
         
-        # Seleccionar top genes más mutados
+        # Select top mutated genes
         top_genes = sorted(mutation_counts.items(), key=lambda x: x[1], reverse=True)
         top_genes = [gene for gene, count in top_genes[:top_genes_count] if count > 0]
         
         if not top_genes:
-            raise ValueError("No se encontraron genes con mutaciones")
+            raise ValueError("No genes with mutations found")
         
-        # Filtrar matriz a top genes
+        # Filter matrix to top genes
         plot_matrix = mutation_matrix.loc[top_genes].copy()
         
-        # ALGORITMO CLÁSICO DE WATERFALL/CASCADA PARA ONCOPLOTS
-        # Inspirado en maftools y cBioPortal - crear efecto cascada real
+        # ========================================================================
+        # STANDARD WATERFALL/CASCADE ALGORITHM (MAFTOOLS/COMPLEXHEATMAP)
+        # ========================================================================
+        # This algorithm reproduces the standard behavior of oncoplots:
+        # 1. Sort genes by mutation frequency (most mutated at top)
+        # 2. Sort samples lexicographically by mutation pattern
+        # 3. Creates the characteristic cascade visual effect
         
-        # 1. Calcular score de cascada para cada muestra
-        # El efecto cascada clásico usa TMB + patrones específicos de mutación
-        def waterfall_score(sample):
-            # TMB total (factor principal)
-            tmb = all_genes_tmb[sample]
-            
-            # Score adicional basado en mutaciones en top genes (con peso descendente)
-            mutation_score = 0
-            for i, gene in enumerate(top_genes):
-                if plot_matrix.loc[gene, sample] != 'None':
-                    # Peso descendente: primer gen más peso, último gen menos peso
-                    weight = len(top_genes) - i
-                    mutation_score += weight
-            
-            # Score final: TMB * 100 + patrón de mutaciones
-            # Esto asegura que muestras con TMB similar se ordenen por patrones
-            return tmb * 100 + mutation_score
+        print("Applying standard cascade algorithm (maftools)...")
         
-        # 2. Ordenar muestras por score cascada (descendente)
-        sorted_samples = sorted(plot_matrix.columns, 
-                              key=waterfall_score, 
-                              reverse=True)
+        # STEP 1: Convert categorical matrix to numeric for the algorithm
+        unique_variants = set()
+        for row in plot_matrix.values.flatten():
+            unique_variants.add(row)
         
-        # 3. Limitar número de muestras si es necesario
-        if len(sorted_samples) > max_samples:
+        unique_values = sorted(unique_variants)
+        value_to_num = {value: i for i, value in enumerate(unique_values)}
+        
+        # Convert to numeric matrix (0 = 'None', >0 = mutation)
+        numeric_matrix = plot_matrix.applymap(lambda x: value_to_num[x])
+        waterfall_matrix = numeric_matrix.copy()
+        
+        # STEP 2: Sort genes by frequency (as in maftools)
+        # Count zeros per gene (samples NOT mutated)
+        # Check that 'None' exists in the mapping
+        if 'None' in value_to_num:
+            gene_zero_counts = (waterfall_matrix == value_to_num['None']).sum(axis=1)
+        else:
+            # If no 'None', use minimum value (representing non-mutation)
+            min_value = min(value_to_num.values())
+            gene_zero_counts = (waterfall_matrix == min_value).sum(axis=1)
+        
+        # Sort genes: fewer zeros first (most frequent at top)
+        sorted_genes = gene_zero_counts.sort_values(ascending=True).index.tolist()
+        waterfall_matrix = waterfall_matrix.loc[sorted_genes]
+        
+        # STEP 3: Implement the cascade/waterfall algorithm as in maftools
+        # This is the standard algorithm used by maftools, ComplexHeatmap, etc.
+        # Sorts samples lexicographically by mutation pattern
+        
+        # Create binary matrix for sorting (0 = not mutated, 1 = mutated)
+        binary_matrix = plot_matrix.copy()
+        for gene in sorted_genes:
+            for sample in plot_matrix.columns:
+                if plot_matrix.loc[gene, sample] == 'None':
+                    binary_matrix.loc[gene, sample] = 0
+                else:
+                    binary_matrix.loc[gene, sample] = 1
+        
+        # STANDARD ALGORITHM: Sort samples using all genes as criteria
+        # This reproduces the behavior of maftools and ComplexHeatmap
+        # The sorting is lexicographic: first by most frequent gene,
+        # then by second most frequent gene, etc.
+        sorted_samples = binary_matrix.T.sort_values(
+            by=sorted_genes,  # Use genes already sorted by frequency
+            ascending=False   # Descending so samples with more mutations appear first
+        ).index.tolist()
+        
+        # STEP 4: Limit number of samples if necessary
+        if max_samples and len(sorted_samples) > max_samples:
+            waterfall_matrix = waterfall_matrix.iloc[:, :max_samples]
             sorted_samples = sorted_samples[:max_samples]
-            
-        # 4. Reordenar matriz con muestras ordenadas
-        plot_matrix = plot_matrix[sorted_samples]
         
-        # 5. Obtener TMB para visualización
-        # TMB para heatmap: ordenado según el efecto cascada  
+        # STEP 5: Apply cascade ordering to original matrix for plotting
+        plot_matrix = plot_matrix.loc[sorted_genes, sorted_samples]
+        
+        # Show cascade algorithm information
+        print(f"Cascade applied:")
+        print(f"  - Genes sorted by frequency: {len(sorted_genes)}")
+        print(f"  - Samples sorted by cascade algorithm: {len(sorted_samples)}")
+        print(f"  - Final samples shown: {plot_matrix.shape[1]}")
+        
+        # 6. Get TMB for visualization
+        # TMB for heatmap: sorted according to cascade effect
         sorted_tmb_heatmap = [all_genes_tmb[sample] for sample in sorted_samples]
         median_tmb = np.median(sorted_tmb_heatmap)
         
-        # TMB para panel superior: usar orden natural/alfabético de las muestras seleccionadas
-        # Esto hace que el TMB no esté ordenado por carga mutacional
-        tmb_display_order = sorted(sorted_samples)  # Orden alfabético
-        sorted_tmb_display = [all_genes_tmb[sample] for sample in tmb_display_order]
+        # TMB for upper panel: MUST use same cascade order as heatmap
+        # This ensures TMB shows the characteristic descending pattern
+        tmb_display_order = sorted_samples  # Same order as heatmap
+        sorted_tmb_display = sorted_tmb_heatmap  # Already in correct order
         
-        # Crear mapeo de colores
+        # Create color mapping
         unique_variants = set()
         for row in plot_matrix.values.flatten():
             unique_variants.add(row)
         
         color_mapping = create_variant_color_mapping(unique_variants)
         
-        # Convertir valores categóricos a numéricos para heatmap
+        # Convert categorical values to numeric for heatmap
         unique_values = sorted(unique_variants)
         value_to_num = {value: i for i, value in enumerate(unique_values)}
         
         numeric_matrix = plot_matrix.applymap(lambda x: value_to_num[x])
         
-        # Configurar figura y subplots
+        # Configure figure and subplots
         if figsize is None:
             figsize = DEFAULT_ONCOPLOT_FIGSIZE
             
         if ax is None:
-            # Crear figura completa con grid: TMB arriba, oncoplot principal, genes lateral derecho
+            # Create complete figure with grid: TMB above, main oncoplot, genes on right side
             fig = plt.figure(figsize=figsize)
             
-            # Definir grid layout: 3 filas x 2 columnas
-            # height_ratios: [2.5, 10, 1.5] = TMB más alto arriba, heatmap grande, leyenda con espacio abajo
-            # width_ratios: [10, 1] = heatmap ancho, panel genes lateral estrecho
+            # Define grid layout: 3 rows x 2 columns
+            # height_ratios: [2.5, 10, 1.5] = taller TMB above, large heatmap, legend with space below
+            # width_ratios: [10, 1] = wide heatmap, narrow gene panel
             gs = fig.add_gridspec(3, 2, 
                                 height_ratios=[2.5, 10, 1.5], 
                                 width_ratios=[10, 1],
                                 hspace=0.05, 
                                 wspace=0.02)
             
-            # Crear subplots según el grid
-            ax_tmb = fig.add_subplot(gs[0, 0])      # Panel TMB (arriba izquierda)
-            ax_main = fig.add_subplot(gs[1, 0])     # Panel principal heatmap (centro izquierda)
-            ax_genes = fig.add_subplot(gs[1, 1])    # Panel genes (centro derecha)
-            ax_legend = fig.add_subplot(gs[2, :])   # Panel leyenda (abajo, span completo)
+            # Create subplots according to grid
+            ax_tmb = fig.add_subplot(gs[0, 0])      # TMB panel (top left)
+            ax_main = fig.add_subplot(gs[1, 0])     # Main heatmap panel (center left)
+            ax_genes = fig.add_subplot(gs[1, 1])    # Gene panel (center right)
+            ax_legend = fig.add_subplot(gs[2, :])   # Legend panel (bottom, full span)
             
-            # === PANEL TMB (SUPERIOR) ===
-            # Calcular TMB usando la misma lógica que variants_per_sample_plot
-            # Usar las mismas columnas de muestra que se detectaron para el heatmap
+            # === TMB PANEL (UPPER) ===
+            # Calculate TMB using same logic as variants_per_sample_plot
+            # Use same sample columns detected for heatmap
             detected_sample_columns = mutation_matrix.columns.tolist()
             
-            # Usar la misma lógica que variants_per_sample_plot
+            # Use same logic as variants_per_sample_plot
             variant_counts_tmb = {}
             
-            # Agrupar por Variant_Classification (igual que en summary.py)
+            # Group by Variant_Classification (same as in summary.py)
             for variant_type in data[variant_column].unique():
                 variant_subset = data[data[variant_column] == variant_type]
                 
                 for sample_col in detected_sample_columns:
-                    # Contar mutaciones usando la misma lógica que summary.py
+                    # Count mutations using same logic as summary.py
                     sample_variants = variant_subset[sample_col].apply(
                         lambda x: 1 if '|' in str(x) and str(x).split('|')[0] != str(x).split('|')[1] else 0
                     ).sum()
@@ -499,7 +537,7 @@ def create_oncoplot_plot(data: pd.DataFrame,
                     if sample_variants > 0:
                         variant_counts_tmb[sample_col][variant_type] = sample_variants
             
-            # Crear DataFrame para TMB (igual que en summary.py)
+            # Create DataFrame for TMB (same as in summary.py)
             samples_df_tmb = []
             for sample, variants in variant_counts_tmb.items():
                 for var_type, count in variants.items():
@@ -509,63 +547,65 @@ def create_oncoplot_plot(data: pd.DataFrame,
                 processed_df_tmb = pd.DataFrame(samples_df_tmb)
                 tmb_df = processed_df_tmb.pivot(index='Sample', columns='Variant_Classification', values='Count').fillna(0)
                 
-                # Filtrar a las muestras seleccionadas y ordenarlas como en el heatmap
+                # Filter to selected samples and order as in heatmap
                 tmb_df = tmb_df.loc[tmb_df.index.intersection(sorted_samples)]
                 tmb_df = tmb_df.reindex(sorted_samples, fill_value=0)
                 
-                # Preparar colores para TMB (mismo mapeo que el heatmap)
+                # Prepare colors for TMB (same mapping as heatmap)
                 tmb_colors = [color_mapping.get(vt, [0.7, 0.7, 0.7]) for vt in tmb_df.columns]
                 
-                # Crear barras apiladas para TMB
+                # Create stacked bars for TMB
                 tmb_df.plot(kind='bar', stacked=True, ax=ax_tmb, color=tmb_colors, width=0.8, legend=False)
                 
-                # Configurar panel TMB
+                # Configure TMB panel
                 ax_tmb.set_ylabel('TMB', fontsize=10)
                 ax_tmb.set_xlim(-0.5, len(sorted_samples) - 0.5)
                 
-                # Los límites Y se ajustan automáticamente según los datos
+                # Y limits adjust automatically based on data
                 max_tmb = tmb_df.sum(axis=1).max() if not tmb_df.empty else 10
                 ax_tmb.set_ylim(0, max_tmb * 1.1)
                 
                 ax_tmb.tick_params(axis='x', which='both', bottom=False, labelbottom=False)
+                # REMOVE "Sample" label from X axis of TMB panel
+                ax_tmb.set_xlabel('')
                 ax_tmb.spines['top'].set_visible(False)
                 ax_tmb.spines['right'].set_visible(False)
                 ax_tmb.spines['bottom'].set_visible(False)
                 ax_tmb.grid(axis='y', alpha=0.3)
             else:
-                # Si no hay datos TMB, mostrar mensaje
-                ax_tmb.text(0.5, 0.5, 'TMB no disponible', ha='center', va='center', fontsize=10)
+                # If no TMB data, show message
+                ax_tmb.text(0.5, 0.5, 'TMB not available', ha='center', va='center', fontsize=10)
                 ax_tmb.set_xlim(0, 1)
                 ax_tmb.set_ylim(0, 1)
                 ax_tmb.axis('off')
             
-            # === PANEL GENES LATERAL (DERECHO) ===
-            # Crear panel lateral personalizado con barras apiladas y colores sincronizados
+            # === GENE PANEL (RIGHT SIDE) ===
+            # Create custom side panel with stacked bars and synchronized colors
             try:
-                # Calcular conteos de variantes por gen usando la matriz procesada
+                # Calculate variant counts per gene using processed matrix
                 gene_variant_counts = {}
                 
-                # Para cada gen, contar cuántas muestras tienen cada tipo de variante
-                for gene in top_genes:
+                # For each gene, count how many samples have each variant type
+                for gene in sorted_genes:  # Use cascade order
                     gene_variant_counts[gene] = {}
                     gene_row = plot_matrix.loc[gene]
                     
-                    # Contar cada tipo de variante (excluyendo 'None')
+                    # Count each variant type (excluding 'None')
                     for variant_type in gene_row.value_counts().index:
                         if variant_type != 'None':
                             count = gene_row.value_counts()[variant_type]
                             gene_variant_counts[gene][variant_type] = count
                 
-                # Crear DataFrame para barras apiladas
+                # Create DataFrame for stacked bars
                 variant_types = set()
                 for gene_variants in gene_variant_counts.values():
                     variant_types.update(gene_variants.keys())
                 
                 variant_types = sorted(list(variant_types))
                 
-                # Construir DataFrame con genes como índice y tipos de variantes como columnas
+                # Build DataFrame with genes as index and variant types as columns
                 stacked_data = []
-                for gene in top_genes:
+                for gene in sorted_genes:  # Use cascade order
                     row_data = {'gene': gene}
                     for variant_type in variant_types:
                         row_data[variant_type] = gene_variant_counts[gene].get(variant_type, 0)
@@ -573,65 +613,65 @@ def create_oncoplot_plot(data: pd.DataFrame,
                 
                 df_stacked = pd.DataFrame(stacked_data).set_index('gene')
                 
-                # INVERTIR el orden para que coincida con el heatmap (arriba hacia abajo)
-                # El heatmap muestra genes en el orden top_genes (de arriba hacia abajo)
-                # Las barras horizontales se plotean de abajo hacia arriba por defecto
-                # Por lo tanto, invertimos el DataFrame para que coincidan visualmente
-                df_stacked = df_stacked.iloc[::-1]  # Invertir el orden de las filas
+                # REVERSE order to match heatmap (top to bottom)
+                # Heatmap shows genes in sorted_genes order (top to bottom)
+                # Horizontal bars plot from bottom to top by default
+                # Therefore, we reverse the DataFrame to match visually
+                df_stacked = df_stacked.iloc[::-1]  # Reverse row order
                 
-                # Calcular totales y porcentajes para cada gen
+                # Calculate totals and percentages for each gene
                 gene_totals = df_stacked.sum(axis=1)
                 total_samples = len(plot_matrix.columns)
                 
-                # Normalizar para mostrar prevalencia en muestras (como porcentaje del total de muestras)
+                # Normalize to show sample prevalence (as percentage of total samples)
                 df_percentage = df_stacked.copy()
                 for gene in df_percentage.index:
                     total_affected = gene_totals[gene]
                     percentage = (total_affected / total_samples) * 100
-                    # Escalar cada variante proporcionalmente para que la suma sea el porcentaje total
+                    # Scale each variant proportionally so sum equals total percentage
                     if total_affected > 0:
                         scaling_factor = percentage / total_affected
                         df_percentage.loc[gene] = df_percentage.loc[gene] * scaling_factor
                 
-                # Crear mapeo de colores sincronizado con el heatmap principal
+                # Create color mapping synchronized with main heatmap
                 stacked_colors = []
                 for variant_type in variant_types:
                     if variant_type in color_mapping:
                         stacked_colors.append(color_mapping[variant_type])
                     else:
-                        # Color por defecto si no está en el mapeo
+                        # Default color if not in mapping
                         stacked_colors.append([0.7, 0.7, 0.7])
                 
-                # Crear barras apiladas horizontales
+                # Create horizontal stacked bars
                 df_percentage.plot(kind='barh', stacked=True, ax=ax_genes, 
                                  color=stacked_colors, width=0.65)
                 
-                # Configurar panel genes - SIN etiquetas de genes y SIN etiqueta en X
-                ax_genes.set_xlabel('')  # ELIMINAR la etiqueta "Muestras (%)" del eje X  
-                ax_genes.set_ylabel('')  # Sin etiqueta Y
+                # Configure gene panel - NO gene labels and NO X label
+                ax_genes.set_xlabel('')  # REMOVE "Samples (%)" label from X axis
+                ax_genes.set_ylabel('')  # No Y label
                 
-                # Calcular límite X basado en los datos
+                # Calculate X limit based on data
                 max_percentage = df_percentage.sum(axis=1).max() if not df_percentage.empty else 50
                 ax_genes.set_xlim(0, max_percentage * 1.1)
-                ax_genes.set_ylim(-0.5, len(top_genes) - 0.5)
+                ax_genes.set_ylim(-0.5, len(sorted_genes) - 0.5)
                 
-                # ELIMINAR etiquetas de genes del eje Y  
-                ax_genes.set_yticklabels([''] * len(top_genes))  # Etiquetas vacías
+                # REMOVE gene labels from Y axis
+                ax_genes.set_yticklabels([''] * len(sorted_genes))  # Empty labels
                 
-                # CORREGIR PORCENTAJES: usar exactamente la misma lógica que summary.py
-                # Detectar columnas de muestra igual que en summary.py
+                # FIX PERCENTAGES: use exact same logic as summary.py
+                # Detect sample columns same as in summary.py
                 sample_cols_for_percentage = [col for col in data.columns if str(col).startswith("TCGA-")]
-                total_samples_in_dataset = len(sample_cols_for_percentage)  # Igual que en summary.py
+                total_samples_in_dataset = len(sample_cols_for_percentage)  # Same as in summary.py
                 
                 for i, gene in enumerate(df_percentage.index):
-                    # Revertir el orden invertido para obtener el gen correcto
-                    gene_in_original_order = top_genes[len(top_genes) - 1 - i]  
+                    # Reverse the inverted order to get correct gene
+                    gene_in_original_order = sorted_genes[len(sorted_genes) - 1 - i]  
                     
-                    # USAR LA MISMA LÓGICA QUE SUMMARY.PY:
-                    # Contar muestras únicas afectadas por este gen usando los datos originales
+                    # USE SAME LOGIC AS SUMMARY.PY:
+                    # Count unique samples affected by this gene using original data
                     gene_data_filtered = data[data[gene_column] == gene_in_original_order]
                     
-                    # Contar muestras únicas afectadas (igual que en summary.py)
+                    # Count unique affected samples (same as in summary.py)
                     affected_samples_set = set()
                     
                     for sample_col_name in sample_cols_for_percentage:
@@ -653,23 +693,23 @@ def create_oncoplot_plot(data: pd.DataFrame,
                             if is_mutation_present:
                                 affected_samples_set.add(sample_col_name)
                     
-                    # Calcular porcentaje exactamente igual que summary.py
+                    # Calculate percentage exactly same as summary.py
                     num_unique_samples_affected = len(affected_samples_set)
                     real_percentage = (num_unique_samples_affected / total_samples_in_dataset) * 100 if total_samples_in_dataset > 0 else 0
                     
                     if real_percentage > 0:
-                        # Calcular offset para el texto
+                        # Calculate offset for text
                         bar_length = df_percentage.loc[gene].sum()
                         offset = max_percentage * 0.02
                         ax_genes.text(bar_length + offset, i, f'{real_percentage:.1f}%', 
                                     va='center', fontsize=9)
                 
-                # Remover leyenda del panel lateral (se muestra abajo)
+                # Remove legend from side panel (shown below)
                 legend = ax_genes.get_legend()
                 if legend is not None:
                     legend.remove()
                 
-                # Configurar estilo del panel
+                # Configure panel style
                 ax_genes.spines['top'].set_visible(False)
                 ax_genes.spines['right'].set_visible(False)
                 ax_genes.spines['left'].set_visible(False)
@@ -679,21 +719,21 @@ def create_oncoplot_plot(data: pd.DataFrame,
                 ax_genes.margins(x=0.05, y=0.01)
                 
             except Exception as e:
-                print(f"Advertencia: Error al crear panel de genes personalizado: {e}")
+                print(f"Warning: Error creating custom gene panel: {e}")
                 import traceback
                 traceback.print_exc()
-                # Si falla, crear panel vacío
-                ax_genes.text(0.5, 0.5, 'Panel de genes\nno disponible', 
+                # If fails, create empty panel
+                ax_genes.text(0.5, 0.5, 'Gene panel\nnot available', 
                              ha='center', va='center', fontsize=10)
                 ax_genes.set_xlim(0, 1)
                 ax_genes.set_ylim(0, 1)
                 ax_genes.axis('off')
             
-            # === PANEL LEYENDA (INFERIOR) ===
-            # Crear elementos de leyenda para tipos de variantes
+            # === LEGEND PANEL (BOTTOM) ===
+            # Create legend elements for variant types
             legend_elements = []
             for variant in sorted(unique_variants):
-                if variant != 'None':  # No mostrar 'None' en la leyenda
+                if variant != 'None':  # Don't show 'None' in legend
                     color = color_mapping[variant]
                     label = variant.replace('_', ' ')
                     legend_elements.append(
@@ -703,7 +743,7 @@ def create_oncoplot_plot(data: pd.DataFrame,
             if legend_elements:
                 ax_legend.legend(
                     handles=legend_elements,
-                    title='Clasificación de Variantes',
+                    title='Variant Classification',
                     loc='center',
                     ncol=min(len(legend_elements), 6),
                     fontsize=10,
@@ -711,52 +751,57 @@ def create_oncoplot_plot(data: pd.DataFrame,
                     frameon=False
                 )
             
+            # Add sample count centered above legend
+            ax_legend.text(0.5, 0.85, f'Samples (n={len(sorted_samples)})', 
+                          ha='center', va='center', transform=ax_legend.transAxes,
+                          fontsize=11, fontweight='bold')
+            
             ax_legend.axis('off')
             
-            # Título principal de la figura
+            # Main figure title
             fig.suptitle(title, fontsize=16, fontweight='bold', y=0.95)
             
         else:
-            # Modo simple: solo heatmap sin paneles adicionales
+            # Simple mode: just heatmap without additional panels
             fig = ax.get_figure()
             ax_main = ax
         
-        # === HEATMAP PRINCIPAL ===
-        # Crear colormap personalizado
+        # === MAIN HEATMAP ===
+        # Create custom colormap
         colors = [color_mapping[value] for value in unique_values]
         custom_cmap = mcolors.ListedColormap(colors)
         
-        # Crear heatmap principal
+        # Create main heatmap
         im = ax_main.imshow(
             numeric_matrix.values,
-            cmap=custom_cmap,
+            cmap=custom_cmap, 
             aspect='auto',
             interpolation='nearest'
         )
         
-        # Configurar ejes del heatmap principal
-        if ax is not None:  # Solo poner título si no hay panel TMB
+        # Configure main heatmap axes
+        if ax is not None:  # Only set title if no TMB panel
             ax_main.set_title(title, fontsize=16, fontweight='bold', pad=20)
         
-        # ELIMINAR la etiqueta del eje X para evitar solapamiento con el TMB
-        # ax_main.set_xlabel(f'Muestras (n={len(sorted_samples)})', fontsize=12)  # Comentado
+        # REMOVE X axis label to avoid overlap with TMB
+        # ax_main.set_xlabel(f'Samples (n={len(sorted_samples)})', fontsize=12)  # Commented
         ax_main.set_ylabel('Genes', fontsize=12)
         
-        # Configurar ticks y labels
+        # Configure ticks and labels
         ax_main.set_xticks(range(len(sorted_samples)))
-        ax_main.set_yticks(range(len(top_genes)))
-        ax_main.set_yticklabels(top_genes, fontsize=10)
+        ax_main.set_yticks(range(len(sorted_genes)))
+        ax_main.set_yticklabels(sorted_genes, fontsize=10)
         
-        # ELIMINAR completamente las marcas y etiquetas del eje X del waterfall plot
-        ax_main.set_xticklabels([''] * len(sorted_samples))  # Etiquetas vacías
-        ax_main.tick_params(axis='x', which='both', bottom=False, top=False)  # Sin marcas en X
+        # COMPLETELY REMOVE X axis marks and labels from waterfall plot
+        ax_main.set_xticklabels([''] * len(sorted_samples))  # Empty labels
+        ax_main.tick_params(axis='x', which='both', bottom=False, top=False)  # No X marks
         
-        # Añadir grid sutil
+        # Add subtle grid
         ax_main.set_xticks(np.arange(-0.5, len(sorted_samples), 1), minor=True)
-        ax_main.set_yticks(np.arange(-0.5, len(top_genes), 1), minor=True)
+        ax_main.set_yticks(np.arange(-0.5, len(sorted_genes), 1), minor=True)
         ax_main.grid(which='minor', color='white', linestyle='-', linewidth=0.5)
         
-        # Si es modo simple, añadir leyenda al heatmap
+        # If simple mode, add legend to heatmap
         if ax is not None:
             legend_elements = []
             for variant in sorted(unique_variants):
@@ -766,24 +811,25 @@ def create_oncoplot_plot(data: pd.DataFrame,
                     legend_elements.append(
                         plt.Rectangle((0, 0), 1, 1, facecolor=color, label=label)
                     )
-            
+    
             if legend_elements:
                 ax_main.legend(
-                    handles=legend_elements,
-                    title='Clasificación de Variantes',
-                    bbox_to_anchor=(1.05, 1),
+                    handles=legend_elements, 
+                    title='Variant Classification',
+                    bbox_to_anchor=(1.05, 1), 
                     loc='upper left',
                     fontsize=9,
                     title_fontsize=10
                 )
+    
+        print(f"Oncoplot created successfully:")
+        print(f"  - {plot_matrix.shape[0]} genes")
+        print(f"  - {plot_matrix.shape[1]} samples")
+        print(f"  - {len(color_mapping)} variant types")
+        print(f"  - Standard cascade algorithm applied (maftools)")
         
-        print(f"Oncoplot creado exitosamente:")
-        print(f"  - {len(top_genes)} genes")
-        print(f"  - {len(sorted_samples)} muestras")
-        print(f"  - {len(unique_variants)} tipos de variantes")
-        
-        return fig
+        return fig 
         
     except Exception as e:
-        print(f"Error al crear oncoplot: {e}")
+        print(f"Error creating oncoplot: {e}")
         raise 

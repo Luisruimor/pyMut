@@ -554,65 +554,65 @@ class PyMutation:
                  max_samples: int = None,
                  show_interactive: bool = False) -> plt.Figure:
         """
-        Genera un oncoplot mostrando patrones de mutación en un heatmap.
+        Generates an oncoplot showing mutation patterns in a heatmap.
         
-        El oncoplot es una visualización fundamental en genómica del cáncer que muestra
-        los patrones de mutación a través de muestras y genes en formato heatmap.
+        The oncoplot is a fundamental visualization in cancer genomics that shows
+        mutation patterns across samples and genes in heatmap format.
         
-        Características:
-        - Detección automática de columnas de muestra (TCGA y formato .GT)
-        - Soporte para múltiples formatos de genotipo (A|G, A/G, etc.)
-        - Detección de Multi_Hit para muestras con múltiples mutaciones
-        - Esquemas de colores estándar para tipos de mutación
-        - Ordenamiento inteligente de genes por frecuencia de mutación
-        - Ordenamiento de muestras por carga mutacional
+        Features:
+        - Automatic detection of sample columns (TCGA and .GT format)
+        - Support for multiple genotype formats (A|G, A/G, etc.)
+        - Multi_Hit detection for samples with multiple mutations
+        - Standard color schemes for mutation types
+        - Smart gene ordering by mutation frequency
+        - Sample ordering by mutational burden
         
         Args:
-            figsize: Tamaño de la figura (ancho, alto) en pulgadas.
-                    Si es None, usa DEFAULT_ONCOPLOT_FIGSIZE.
-            title: Título para la visualización.
-            gene_column: Nombre de la columna que contiene símbolos de genes.
-            variant_column: Nombre de la columna que contiene clasificaciones de variantes.
-            ref_column: Nombre de la columna que contiene alelos de referencia.
-            alt_column: Nombre de la columna que contiene alelos alternativos.
-            top_genes_count: Número de genes más mutados a mostrar.
-                           Si es None, usa DEFAULT_ONCOPLOT_TOP_GENES.
-            max_samples: Número máximo de muestras a mostrar.
-                        Si es None, usa DEFAULT_ONCOPLOT_MAX_SAMPLES.
-            show_interactive: Si True, muestra la figura interactivamente.
+            figsize: Figure size (width, height) in inches.
+                    If None, uses DEFAULT_ONCOPLOT_FIGSIZE.
+            title: Title for the visualization.
+            gene_column: Name of the column containing gene symbols.
+            variant_column: Name of the column containing variant classifications.
+            ref_column: Name of the column containing reference alleles.
+            alt_column: Name of the column containing alternative alleles.
+            top_genes_count: Number of top mutated genes to show.
+                           If None, uses DEFAULT_ONCOPLOT_TOP_GENES.
+            max_samples: Maximum number of samples to show.
+                        If None, uses DEFAULT_ONCOPLOT_MAX_SAMPLES.
+            show_interactive: If True, displays the figure interactively.
             
         Returns:
-            plt.Figure: Objeto Figure de matplotlib con el oncoplot.
+            plt.Figure: matplotlib Figure object with the oncoplot.
             
         Raises:
-            ValueError: Si faltan columnas requeridas, no hay datos de mutación,
-                       o hay problemas con el formato de datos.
+            ValueError: If required columns are missing, no mutation data,
+                       or problems with data format.
             
         Examples:
-            Uso básico:
+            Basic usage:
             >>> py_mut = PyMutation(data)
             >>> fig = py_mut.oncoplot()
             >>> fig.savefig('oncoplot.png')
             
-            Con parámetros personalizados:
+            With custom parameters:
             >>> fig = py_mut.oncoplot(
-            ...     title="Oncoplot de Muestras TCGA",
+            ...     title="TCGA Samples Oncoplot",
             ...     top_genes_count=20,
             ...     max_samples=100
             ... )
             
-            Modo interactivo:
+            Interactive mode:
             >>> fig = py_mut.oncoplot(show_interactive=True)
             
         Note:
-            - El método detecta automáticamente columnas de muestra usando patrones
-              comunes como 'TCGA-*' y '*.GT'
-            - Los genes se ordenan por frecuencia de mutación (más mutados arriba)
-            - Las muestras se ordenan por carga mutacional total
-            - Los colores siguen estándares de genómica del cáncer
-            - Se maneja automáticamente la detección de Multi_Hit
+            - The method automatically detects sample columns using common
+              patterns like 'TCGA-*' and '*.GT'
+            - Genes are ordered by mutation frequency (most mutated at top)
+            - Samples are ordered by total mutational burden
+            - Colors follow cancer genomics standards
+            - Multi_Hit detection is handled automatically
         """
-        # Validar parámetros de entrada
+        # Validate input parameters
         if top_genes_count is None:
             top_genes_count = DEFAULT_ONCOPLOT_TOP_GENES
         if max_samples is None:
@@ -620,22 +620,22 @@ class PyMutation:
         if figsize is None:
             figsize = DEFAULT_ONCOPLOT_FIGSIZE
             
-        # Validación de parámetros
+        # Parameter validation
         if top_genes_count <= 0:
-            raise ValueError("top_genes_count debe ser un entero positivo")
+            raise ValueError("top_genes_count must be a positive integer")
         if max_samples <= 0:
-            raise ValueError("max_samples debe ser un entero positivo")
+            raise ValueError("max_samples must be a positive integer")
         if len(figsize) != 2 or any(x <= 0 for x in figsize):
-            raise ValueError("figsize debe ser una tupla de dos números positivos")
+            raise ValueError("figsize must be a tuple of two positive numbers")
             
-        # Validar columnas requeridas
+        # Validate required columns
         required_columns = [gene_column, variant_column, ref_column, alt_column]
         missing_columns = [col for col in required_columns if col not in self.data.columns]
         if missing_columns:
-            raise ValueError(f"Faltan las siguientes columnas requeridas: {missing_columns}")
+            raise ValueError(f"Missing required columns: {missing_columns}")
         
         try:
-            # Generar el oncoplot
+            # Generate the oncoplot
             fig = create_oncoplot_plot(
                 data=self.data,
                 gene_column=gene_column,
@@ -648,14 +648,14 @@ class PyMutation:
                 title=title
             )
             
-            # Mostrar interactivamente si se solicita
+            # Show interactively if requested
             if show_interactive:
                 self._show_figure_interactive(fig)
             
             return fig
             
         except Exception as e:
-            raise ValueError(f"Error al generar oncoplot: {str(e)}")
+            raise ValueError(f"Error generating oncoplot: {str(e)}")
     
     def _show_figure_interactive(self, figure: plt.Figure) -> None:
         """
