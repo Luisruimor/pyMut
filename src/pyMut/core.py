@@ -23,10 +23,11 @@ class MutationMetadata:
         fasta (str): Ruta del archivo FASTA.
         notes (Optional[str]): Notas adicionales.
     """
-    def __init__(self, source_format: str, file_path: str,
+    def __init__(self, source_format: str, file_path: str, samples: List[str],
                  filters: List[str],fasta: str, notes: Optional[str] = None):
         self.source_format = source_format
         self.file_path = file_path
+        self.samples = samples
         self.loaded_at = datetime.now()
         self.filters = filters
         self.notes = notes
