@@ -10,6 +10,7 @@ from .utils.constants import (
     DEFAULT_SUMMARY_FIGSIZE, DEFAULT_PLOT_FIGSIZE, DEFAULT_PLOT_TITLE,
     DEFAULT_TOP_GENES_COUNT, MODE_VARIANTS, VALID_PLOT_MODES
 )
+from .filters.genomic_range import gen_region,region
 
 class MutationMetadata:
     """
@@ -583,3 +584,5 @@ class PyMutation:
             if not was_interactive:
                 plt.ioff()  # Disable interactive mode if it wasn't active before
 
+PyMutation.region = region
+PyMutation.gen_region = gen_region
