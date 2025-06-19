@@ -201,30 +201,7 @@ def gen_region(self, gen_name: str):
         filter_description = f"gene_filter:{hugo_column}:{gen_name}"
         
     else:
-        logger.info("Processing non-MAF format - searching for gene columns")
-        
-        # For other formats, search in common gene columns
-        gene_columns = []
-        common_gene_cols = ['gene', 'gene_symbol', 'symbol', 'hugo_symbol']
-        
-        for col in self.data.columns:
-            if col.lower() in common_gene_cols:
-                gene_columns.append(col)
-        
-        if not gene_columns:
-            logger.error("No gene columns found in data")
-            raise ValueError("No gene columns found in data")
-        
-        # Filter using the first gene column found
-        gene_col = gene_columns[0]
-        logger.info(f"Using gene column: {gene_col} from available columns: {gene_columns}")
-        
-        filtered_data = self.data[
-            self.data[gene_col].str.upper() == gen_name.upper()
-        ]
-        
-        # Create filter description using the found column
-        filter_description = f"gene_filter:{gene_col}:{gen_name}"
+        pass
     
     # Create updated metadata with information about the applied filter
     updated_metadata = deepcopy(self.metadata)
