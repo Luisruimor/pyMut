@@ -364,11 +364,10 @@ def read_maf(path: str | Path, fasta: str | Path | None = None) -> PyMutation:
     metadata = MutationMetadata(
         source_format="MAF",
         file_path=str(path),
-        samples=samples,
         filters=["."],
         fasta=str(fasta) if fasta else "",
         notes="\n".join(comments) if comments else None,
     )
 
     logger.info("MAF processed successfully: %d rows, %d columns.", *maf.shape)
-    return PyMutation(maf, metadata)
+    return PyMutation(maf, metadata,samples)

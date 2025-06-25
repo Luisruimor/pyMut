@@ -23,11 +23,10 @@ class MutationMetadata:
         fasta (str): Ruta del archivo FASTA.
         notes (Optional[str]): Notas adicionales.
     """
-    def __init__(self, source_format: str, file_path: str, samples: List[str],
+    def __init__(self, source_format: str, file_path: str,
                  filters: List[str],fasta: str, notes: Optional[str] = None):
         self.source_format = source_format
         self.file_path = file_path
-        self.samples = samples
         self.loaded_at = datetime.now()
         self.filters = filters
         self.notes = notes
@@ -35,8 +34,9 @@ class MutationMetadata:
 
 
 class PyMutation:
-    def __init__(self, data: pd.DataFrame, metadata: MutationMetadata):
+    def __init__(self, data: pd.DataFrame, metadata: MutationMetadata,samples: List[str]):
         self.data = data
+        self.samples = samples
         self.metadata = metadata
     
     def save_figure(self, figure: plt.Figure, filename: str, 
