@@ -102,13 +102,13 @@ def normalize_variant_classification(df: pd.DataFrame) -> pd.DataFrame:
     #  - (gencode_\d+_)?    : optional prefix 'gencode_<num>_' (case insensitive)
     #  - variant[_]?classification : body of the name (allows 'variantclassification' or with '_')
     #  - $                  : end of string
-    patron = re.compile(r'^(gencode_\d+_)?variant[_]?classification$', flags=re.IGNORECASE)
+    pattern = re.compile(r'^(gencode_\d+_)?variant[_]?classification$', flags=re.IGNORECASE)
 
     # Find columns that match the pattern
-    columnas_objetivo = [col for col in df.columns if patron.match(col)]
+    variant_col = [col for col in df.columns if pattern.match(col)]
 
     # Convert values to uppercase for each found column
-    for col in columnas_objetivo:
+    for col in variant_col:
         # Only makes sense for object type columns (strings)
         if pd.api.types.is_string_dtype(df[col]):
             df[col] = df[col].str.upper()
