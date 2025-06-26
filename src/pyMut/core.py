@@ -34,8 +34,9 @@ class MutationMetadata:
 
 
 class PyMutation:
-    def __init__(self, data: pd.DataFrame, metadata: MutationMetadata):
+    def __init__(self, data: pd.DataFrame, metadata: MutationMetadata,samples: List[str]):
         self.data = data
+        self.samples = samples
         self.metadata = metadata
     
     def save_figure(self, figure: plt.Figure, filename: str, 
