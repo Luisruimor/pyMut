@@ -10,6 +10,8 @@ from .utils.constants import (
     DEFAULT_SUMMARY_FIGSIZE, DEFAULT_PLOT_FIGSIZE, DEFAULT_PLOT_TITLE,
     DEFAULT_TOP_GENES_COUNT, MODE_VARIANTS, VALID_PLOT_MODES
 )
+from .filters.genomic_range import gen_region,region
+from .filters.pass_filter import pass_filter
 
 class MutationMetadata:
     """
@@ -38,8 +40,22 @@ class PyMutation:
         self.data = data
         self.samples = samples
         self.metadata = metadata
-    
-    def save_figure(self, figure: plt.Figure, filename: str, 
+
+    def head(self, n: int = 5):
+        """
+        Return the first n rows of the mutation data.
+        This method delegates to the pandas DataFrame head() method.
+        """
+        return self.data.head(n)
+
+    def info(self):
+        """
+        Print a concise summary of the mutation data.
+        This method delegates to the pandas DataFrame info() method
+        """
+        return self.data.info()
+
+    def save_figure(self, figure: plt.Figure, filename: str,
                    dpi: int = 300, bbox_inches: str = 'tight', **kwargs) -> None:
         """
         Save a figure with high-quality configuration by default.
@@ -578,9 +594,12 @@ class PyMutation:
                 time.sleep(0.1)
                 # Allow matplotlib to process events minimally
                 figure.canvas.flush_events()
-                    
+
         finally:
             # Restore original interactive mode state only if we changed it
             if not was_interactive:
                 plt.ioff()  # Disable interactive mode if it wasn't active before
 
+PyMutation.region = region
+PyMutation.gen_region = gen_region
+PyMutation.pass_filter = pass_filter
