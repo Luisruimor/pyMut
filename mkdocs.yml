@@ -1,10 +1,11 @@
-site_name: pyMut Documentation
+site_name: pyMut
 site_description: Python library for genetic mutation visualization
 site_author: pyMut Development Team
+docs_dir: docs
 
 # Repository
-repo_name: your-username/pyMut
-repo_url: https://github.com/your-username/pyMut
+repo_name: Luisruimor/pyMut
+repo_url: https://github.com/Luisruimor/pyMut
 
 # Configuration
 theme:
@@ -35,6 +36,10 @@ theme:
 # Plugins
 plugins:
   - search
+  - mkdocs-jupyter:
+      jupyter_dirs: ['docs/examples']
+
+
 
 # Extensions
 markdown_extensions:
@@ -53,7 +58,18 @@ markdown_extensions:
 # Page tree
 nav:
   - Home: index.md
-  - Summary Plot: summary-plot.md
+  - Installation: installation.md
+  - Quickstart: quickstart.md
+  - Api:
+      - Core Class (PyMutation): api/pymutation_class.md
+      - Data Loading:
+          - Read MAF Files: api/read_maf.md
+      - Analysis Methods:
+          - TMB Analysis: api/tmb_analysis.md
+      - Visualization API:
+          - Summary Plot: api/summary_plot.md
+  - Example Usage:
+      - Variant Classification Plot: examples/maf_to_variant_classification.ipynb
 
 # Copyright
 copyright: Copyright &copy; 2024 pyMut Development Team
