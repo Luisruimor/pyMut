@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 
 from .core import PyMutation, MutationMetadata
-from .utils.format import formatear_rs, formatear_chr
+from .utils.format import formatear_rs, formatear_chr, normalize_variant_classification
 
 # ────────────────────────────────────────────────────────────────
 # LOGGER CONFIGURATION
@@ -189,47 +189,6 @@ def _parse_info_column(info_series: pd.Series) -> pd.DataFrame:
     info_df = pd.DataFrame(parsed.tolist())  # type: ignore[arg-type]
     return info_df
 
-def normalizar_variant_classification(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Converts values in any 'Variant Classification' column to uppercase,
-    regardless of Gencode prefix, version, or capitalization.
-
-    Examples of matched column names:
-        - Gencode_43_variantClassification
-        - gencode_34_variantclassification
-        - variant_classification
-        - Variant_Classification
-        - gencode_99_VariantClassification
-
-    Parameters
-    ----------
-    df : pd.DataFrame
-        Input DataFrame.
-
-    Returns
-    -------
-    pd.DataFrame
-        The same DataFrame with matched columns normalized to uppercase.
-        The same reference is returned to allow method chaining if desired.
-    """
-    # Regular expression:
-    #  - ^                  : start of string
-    #  - (gencode_\d+_)?    : optional prefix 'gencode_<num>_' (case insensitive)
-    #  - variant[_]?classification : body of the name (allows 'variantclassification' or with '_')
-    #  - $                  : end of string
-    patron = re.compile(r'^(gencode_\d+_)?variant[_]?classification$', flags=re.IGNORECASE)
-
-    # Find columns that match the pattern
-    columnas_objetivo = [col for col in df.columns if patron.match(col)]
-
-    # Convert values to uppercase for each found column
-    for col in columnas_objetivo:
-        # Only makes sense for object type columns (strings)
-        if pd.api.types.is_string_dtype(df[col]):
-            df[col] = df[col].str.upper()
-
-    return df
-
 # ════════════════════════════════════════════════════════════════
 # MAIN FUNCTIONS
 # ════════════════════════════════════════════════════════════════
@@ -307,7 +266,7 @@ def read_maf(path: str | Path, fasta: str | Path | None = None) -> PyMutation:
     logger.debug("Required columns present.")
 
     # Normalize Variant Classification column names
-    maf = normalizar_variant_classification(maf)
+    maf = normalize_variant_classification(maf)
 
     # ─── 4) GENERATE VCF-STYLE FIELDS ---------------------------------------
     maf["CHROM"] = maf["Chromosome"].astype(str).map(formatear_chr)
@@ -370,4 +329,4 @@ def read_maf(path: str | Path, fasta: str | Path | None = None) -> PyMutation:
     )
 
     logger.info("MAF processed successfully: %d rows, %d columns.", *maf.shape)
-    return PyMutation(maf, metadata)
+    return PyMutation(maf, metadata,samples)
