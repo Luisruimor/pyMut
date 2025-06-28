@@ -11,6 +11,7 @@ from .utils.constants import (
     DEFAULT_TOP_GENES_COUNT, MODE_VARIANTS, VALID_PLOT_MODES
 )
 from .filters.genomic_range import gen_region,region
+from .filters.pass_filter import pass_filter
 
 class MutationMetadata:
     """
@@ -579,7 +580,7 @@ class PyMutation:
                 time.sleep(0.1)
                 # Allow matplotlib to process events minimally
                 figure.canvas.flush_events()
-                    
+
         finally:
             # Restore original interactive mode state only if we changed it
             if not was_interactive:
@@ -587,3 +588,4 @@ class PyMutation:
 
 PyMutation.region = region
 PyMutation.gen_region = gen_region
+PyMutation.pass_filter = pass_filter
