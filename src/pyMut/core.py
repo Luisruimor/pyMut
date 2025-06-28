@@ -40,8 +40,22 @@ class PyMutation:
         self.data = data
         self.samples = samples
         self.metadata = metadata
-    
-    def save_figure(self, figure: plt.Figure, filename: str, 
+
+    def head(self, n: int = 5):
+        """
+        Return the first n rows of the mutation data.
+        This method delegates to the pandas DataFrame head() method.
+        """
+        return self.data.head(n)
+
+    def info(self):
+        """
+        Print a concise summary of the mutation data.
+        This method delegates to the pandas DataFrame info() method
+        """
+        return self.data.info()
+
+    def save_figure(self, figure: plt.Figure, filename: str,
                    dpi: int = 300, bbox_inches: str = 'tight', **kwargs) -> None:
         """
         Save a figure with high-quality configuration by default.
