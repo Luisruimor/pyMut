@@ -61,6 +61,11 @@ nav:
   - Installation: installation.md
   - Quickstart: quickstart.md
   - Api:
+      - Core Class (PyMutation): api/pymutation_class.md
+      - Data Loading:
+          - Read MAF Files: api/read_maf.md
+      - Analysis Methods:
+          - TMB Analysis: api/tmb_analysis.md
       - Visualization API:
           - Summary Plot: api/summary_plot.md
   - Example Usage:
