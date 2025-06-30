@@ -310,7 +310,7 @@ def read_maf(path: str | Path, fasta: str | Path | None = None) -> PyMutation:
     # ─── 5.5) REMOVE UNNECESSARY COLUMNS -------------------------------
     # We no longer need 'Tumor_Sample_Barcode' (mutations were
     # expanded into columns) nor 'Chromosome' (now it's in 'CHROM').
-    maf.drop(columns=["Tumor_Sample_Barcode", "Chromosome"], inplace=True)
+    maf.drop(columns=["Chromosome"], inplace=True)
 
     # ─── 6) ORDER COLUMNS -------------------------------------------------
     vcf_like = ["CHROM", "POS", "ID", "REF", "ALT", "QUAL", "FILTER"]

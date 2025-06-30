@@ -229,4 +229,4 @@ def gen_region(self, gen_name: str):
         logger.info(f"Successfully filtered data for gene: {gen_name}")
     
     # Return new PyMutation instance with filtered data and updated metadata
-    return type(self)(data=filtered_data.copy(), metadata=updated_metadata)
+    return type(self)(data=filtered_data.copy(), metadata=updated_metadata, samples=self.samples)

@@ -12,6 +12,7 @@ from .utils.constants import (
 )
 from .filters.genomic_range import gen_region,region
 from .filters.pass_filter import pass_filter
+from .filters.chrom_sample_filter import filter_by_chrom_sample
 
 class MutationMetadata:
     """
@@ -603,3 +604,4 @@ class PyMutation:
 PyMutation.region = region
 PyMutation.gen_region = gen_region
 PyMutation.pass_filter = pass_filter
+PyMutation.filter_by_chrom_sample = filter_by_chrom_sample
