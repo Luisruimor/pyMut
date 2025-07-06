@@ -137,4 +137,4 @@ src/pyMut/data/examples/xtra-reducido.tsv
 src/pyMut/data/examples/sample_mutations.tsv
 
 *.png
-data
+src/pyMut/data/subsets
