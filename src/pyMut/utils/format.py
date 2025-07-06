@@ -1,7 +1,7 @@
 import re
 import pandas as pd
 
-def formatear_rs(cadena):
+def format_rs(string: str) -> str:
     """
     Removes the 'rs' prefix from rsID codes in a pipe-separated string.
     
@@ -28,13 +28,13 @@ def formatear_rs(cadena):
     '123|456'
     """
     # Split the string by '|' to get each code
-    codigos = cadena.split('|')
+    codigos = string.split('|')
     # Remove the "rs" prefix from each code
     codigos_solo_numeros = [codigo[2:] if codigo.startswith("rs") else codigo for codigo in codigos]
 
     return '|'.join(codigos_solo_numeros)
 
-def formatear_chr(string: str):
+def format_chr(string: str):
     """
     Formats chromosome identifiers to a standard format.
     

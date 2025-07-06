@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 
 from .core import PyMutation, MutationMetadata
-from .utils.format import formatear_rs, formatear_chr, normalize_variant_classification
+from .utils.format import format_rs, format_chr, normalize_variant_classification
 
 # ────────────────────────────────────────────────────────────────
 # LOGGER CONFIGURATION
@@ -421,7 +421,7 @@ def read_maf(path: str | Path, fasta: str | Path | None = None) -> PyMutation:
     maf = normalize_variant_classification(maf)
 
     # ─── 4) GENERATE VCF-STYLE FIELDS ---------------------------------------
-    maf["CHROM"] = maf["Chromosome"].astype(str).map(formatear_chr)
+    maf["CHROM"] = maf["Chromosome"].astype(str).map(format_chr)
     maf["POS"] = maf["Start_Position"].astype("int64")
 
     if "dbSNP_RS" in maf.columns:
@@ -429,7 +429,7 @@ def read_maf(path: str | Path, fasta: str | Path | None = None) -> PyMutation:
             maf["dbSNP_RS"]
             .fillna(".")
             .replace(".", np.nan)
-            .map(lambda x: formatear_rs(str(x)) if pd.notna(x) else ".")
+            .map(lambda x: format_rs(str(x)) if pd.notna(x) else ".")
             .fillna(".")
         )
     else:
