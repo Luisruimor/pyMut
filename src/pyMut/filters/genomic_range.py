@@ -144,7 +144,7 @@ def region(self, chrom: str, start: int, end: int):
         logger.info(f"Successfully filtered genomic region: {chrom_formatted}:{start}-{end}")
 
     # Return new instance of the same type with updated metadata
-    return type(self)(data=new_df, metadata=updated_metadata)
+    return type(self)(data=new_df, metadata=updated_metadata, samples=self.samples)
 
 
 def gen_region(self, gen_name: str):
