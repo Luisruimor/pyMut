@@ -4,27 +4,27 @@ import pandas as pd
 def format_rs(string: str) -> str:
     """
     Removes the 'rs' prefix from rsID codes in a pipe-separated string.
-    
+
     Takes a string containing rsID codes separated by '|' and removes
     the 'rs' prefix from each code, returning only the numeric part.
-    
+
     Parameters
     ----------
     cadena : str
         Pipe-separated string containing rsID codes (e.g., "rs123|rs456").
-    
+
     Returns
     -------
     str
         Pipe-separated string with numeric parts only (e.g., "123|456").
-    
+
     Examples
     --------
-    >>> formatear_rs("rs123|rs456")
+    >>> format_rs("rs123|rs456")
     '123|456'
-    >>> formatear_rs("rs789")
+    >>> format_rs("rs789")
     '789'
-    >>> formatear_rs("123|rs456")  # Mixed format
+    >>> format_rs("123|rs456")  # Mixed format
     '123|456'
     """
     # Split the string by '|' to get each code
@@ -37,32 +37,32 @@ def format_rs(string: str) -> str:
 def format_chr(string: str):
     """
     Formats chromosome identifiers to a standard format.
-    
+
     Converts chromosome identifiers to the standard 'chr' format:
     - Converts "23" to "X"
     - Converts "24" to "Y" 
     - Adds "chr" prefix if not already present
     - Leaves existing "chr" prefixed identifiers unchanged
-    
+
     Parameters
     ----------
     string : str
         Chromosome identifier to format.
-    
+
     Returns
     -------
     str
         Standardized chromosome identifier with 'chr' prefix or 'X'/'Y' for sex chromosomes.
-    
+
     Examples
     --------
-    >>> formatear_chr("1")
+    >>> format_chr("1")
     'chr1'
-    >>> formatear_chr("23")
+    >>> format_chr("23")
     'X'
-    >>> formatear_chr("24")
+    >>> format_chr("24")
     'Y'
-    >>> formatear_chr("chr5")
+    >>> format_chr("chr5")
     'chr5'
     """
     if string == "23":

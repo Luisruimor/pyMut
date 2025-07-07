@@ -2,7 +2,7 @@ import pandas as pd
 import logging
 from copy import deepcopy
 from typing import Optional, List, Union
-from ..utils.format import formatear_chr
+from ..utils.format import format_chr
 from ..utils.constants import SAMPLE_COLUMN
 
 # ────────────────────────────────────────────────────────────────
@@ -47,7 +47,7 @@ def filter_by_chrom_sample(
     sample_column : str, optional
         Name of the column containing sample information. 
         Defaults to 'Tumor_Sample_Barcode'.
-    
+
     Returns
     -------
     PyMutation
@@ -100,11 +100,11 @@ def filter_by_chrom_sample(
             chrom_list = list(chrom)
 
         # Format chromosomes for consistency
-        chrom_formatted = [formatear_chr(str(c)) for c in chrom_list]
+        chrom_formatted = [format_chr(str(c)) for c in chrom_list]
         logger.info(f"Chromosomes to filter: {chrom_formatted}")
 
         # Format CHROM column in DataFrame
-        df["CHROM"] = df["CHROM"].astype(str).map(formatear_chr)
+        df["CHROM"] = df["CHROM"].astype(str).map(format_chr)
 
         # Apply chromosome filter
         chrom_mask = df["CHROM"].isin(chrom_formatted)

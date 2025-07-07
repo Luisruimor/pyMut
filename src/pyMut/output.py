@@ -7,9 +7,9 @@ from src.pyMut.input import required_columns_MAF
 
 logger = logging.getLogger(__name__)
 
-def _reverse_formatear_chr(chrom_str: str) -> str:
+def _reverse_format_chr(chrom_str: str) -> str:
     """
-    Reverse the chromosome formatting done by formatear_chr.
+    Reverse the chromosome formatting done by format_chr.
 
     Converts standardized chromosome identifiers back to original format:
     - Removes "chr" prefix
@@ -129,7 +129,7 @@ def to_maf(self, output_path: str | Path) -> None:
 
             # Create MAF row
             maf_row = {
-                "Chromosome": _reverse_formatear_chr(str(chrom)),
+                "Chromosome": _reverse_format_chr(str(chrom)),
                 "Start_Position": int(pos),
                 "Reference_Allele": str(ref),
                 "Tumor_Seq_Allele1": str(allele1),
