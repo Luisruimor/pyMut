@@ -50,6 +50,9 @@ coverage.xml
 .hypothesis/
 .pytest_cache/
 
+# pyMut cache directories
+.pymut_cache/
+
 # Translations
 *.mo
 *.pot

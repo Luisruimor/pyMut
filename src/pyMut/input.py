@@ -405,9 +405,9 @@ def _parse_info_column(info_series: pd.Series) -> pd.DataFrame:
 # ════════════════════════════════════════════════════════════════
 
 
-def read_maf(path: str | Path, fasta: str | Path | None = None) -> PyMutation:
+def read_maf(path: str | Path, fasta: str | Path | None = None, cache_dir: Optional[str | Path] = None) -> PyMutation:
     """
-    Read a MAF file and return a PyMutation object.
+    Read a MAF file and return a PyMutation object with automatic caching.
 
     Parameters
     ----------
@@ -416,6 +416,9 @@ def read_maf(path: str | Path, fasta: str | Path | None = None) -> PyMutation:
     fasta : str | Path, optional
         Path to the reference FASTA file. If provided, it will be included
         in the metadata of the resulting PyMutation object.
+    cache_dir : str | Path, optional
+        Directory for caching processed files. If None, uses a .pymut_cache
+        directory next to the input file.
 
     Returns
     -------
@@ -435,9 +438,51 @@ def read_maf(path: str | Path, fasta: str | Path | None = None) -> PyMutation:
         alternative also fails.
     Exception
         For any other errors encountered while reading or processing the file.
+
+    Notes
+    -----
+    Performance optimizations include:
+    - Automatic caching of processed results
+    - PyArrow-accelerated data processing when available
     """
+    start_time = time.time()
     path = Path(path)
+    cache_dir_path = Path(cache_dir) if cache_dir else None
+
     logger.info("Starting MAF reading: %s", path)
+
+    # ─── 1) CHECK CACHE ─────────────────────────────────────────────────────
+    cache_path = _get_cache_path(path, cache_dir_path)
+    if cache_path.exists():
+        logger.info("Loading from cache: %s", cache_path)
+        try:
+            maf = pd.read_parquet(cache_path)
+
+            # Load metadata from cache info file
+            cache_info_path = cache_path.with_suffix('.json')
+            if cache_info_path.exists():
+                import json
+                with open(cache_info_path) as f:
+                    cache_info = json.load(f)
+                comments = cache_info.get('comments', [])
+                samples = cache_info.get('samples', [])
+            else:
+                comments = []
+                samples = []
+
+            metadata = MutationMetadata(
+                source_format="MAF",
+                file_path=str(path),
+                filters=["."],
+                fasta=str(fasta) if fasta else "",
+                notes="\n".join(comments) if comments else None,
+            )
+
+            logger.info("Cache loaded successfully in %.2f seconds", time.time() - start_time)
+            return PyMutation(maf, metadata, samples)
+
+        except Exception as e:
+            logger.warning("Cache loading failed (%s), proceeding with fresh read", e)
 
     # ─── 1) SEPARATE COMMENTS (#) FROM BODY ──────────────────────────────
     comments: list[str] = []
@@ -532,7 +577,34 @@ def read_maf(path: str | Path, fasta: str | Path | None = None) -> PyMutation:
     ]
     maf = maf[final_cols]
 
-    # ─── 7) BUILD PyMutation OBJECT -------------------------------------
+    # ─── 7) SAVE TO CACHE ──────────────────────────────────────────────────
+    try:
+        logger.info("Saving to cache: %s", cache_path)
+        maf.to_parquet(cache_path, index=False)
+
+        # Ensure data is written to disk to avoid corruption
+        with open(cache_path, 'r+b') as f:
+            os.fsync(f.fileno())
+
+        # Save metadata
+        cache_info = {
+            'comments': comments,
+            'samples': samples,
+            'processing_time': time.time() - start_time,
+            'backend_used': 'pandas'
+        }
+
+        import json
+        cache_info_path = cache_path.with_suffix('.json')
+        with open(cache_info_path, 'w') as f:
+            json.dump(cache_info, f, indent=2)
+            os.fsync(f.fileno())
+
+        logger.debug("Cache saved successfully with fsync")
+    except Exception as e:
+        logger.warning("Failed to save cache: %s", e)
+
+    # ─── 8) BUILD PyMutation OBJECT -------------------------------------
     metadata = MutationMetadata(
         source_format="MAF",
         file_path=str(path),
@@ -541,8 +613,10 @@ def read_maf(path: str | Path, fasta: str | Path | None = None) -> PyMutation:
         notes="\n".join(comments) if comments else None,
     )
 
-    logger.info("MAF processed successfully: %d rows, %d columns.", *maf.shape)
-    return PyMutation(maf, metadata,samples)
+    total_time = time.time() - start_time
+    logger.info("MAF processed successfully: %d rows, %d columns in %.2f seconds", 
+                *maf.shape, total_time)
+    return PyMutation(maf, metadata, samples)
 
 
 def read_vcf(
