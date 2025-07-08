@@ -37,9 +37,9 @@ class MutationMetadata:
 
 
 class PyMutation:
-    def __init__(self, data: pd.DataFrame, metadata: MutationMetadata,samples: List[str]):
+    def __init__(self, data: pd.DataFrame, metadata: Optional[MutationMetadata] = None, samples: Optional[List[str]] = None):
         self.data = data
-        self.samples = samples
+        self.samples = samples if samples is not None else []
         self.metadata = metadata
 
     def head(self, n: int = 5):
@@ -600,6 +600,145 @@ class PyMutation:
             # Restore original interactive mode state only if we changed it
             if not was_interactive:
                 plt.ioff()  # Disable interactive mode if it wasn't active before
+
+    def pfam_annotation(self, *, aa_column: str = 'aa_pos', 
+                       summarize_by: str = 'PfamDomain', top_n: int = 10,
+                       include_synonymous: bool = False, plot: bool = False,
+                       annotator_backend: str = 'vep_cli', force_rebuild_db: bool = False) -> Union[pd.DataFrame, Tuple[pd.DataFrame, object]]:
+        """
+        Annotate genetic variants with Pfam domain information.
+
+        This method adds functional domain information to each genetic variant,
+        allowing users to quickly see which "important" parts of the protein
+        are affected and how frequently these impacts occur across a cohort.
+
+        Args:
+            aa_column: Column name containing amino acid position (default: 'aa_pos')
+            summarize_by: Either 'PfamDomain' or 'AAPos' for grouping results
+            top_n: Number of top results to return (default: 10)
+            include_synonymous: Whether to include synonymous variants (default: False)
+            plot: Whether to generate a visualization (default: False)
+            annotator_backend: Backend for variant annotation ('pyvep' or 'vep_cli')
+            force_rebuild_db: Force rebuild of the embedded database
+
+        Returns:
+            DataFrame with Pfam domain summary, optionally with plot object
+
+        Examples:
+            >>> # Basic Pfam annotation
+            >>> summary = py_mut.pfam_annotation()
+
+            >>> # Get top 5 domains with plot
+            >>> summary, fig = py_mut.pfam_annotation(top_n=5, plot=True)
+
+            >>> # Summarize by amino acid positions
+            >>> summary = py_mut.pfam_annotation(summarize_by='AAPos')
+        """
+        from .pfam_annotation import (
+            build_embedded_db, connect_db, VariantAnnotator, 
+            annotate_pfam, pfam_domains
+        )
+
+        print("🧬 Starting Pfam domain annotation...")
+
+        # Step 1: Ensure database is built
+        if force_rebuild_db:
+            print("🔨 Rebuilding embedded database...")
+            build_embedded_db(force_rebuild=True)
+
+        # Step 2: Check if variant annotation is needed
+        required_cols = ['protein_id', aa_column]
+        needs_annotation = not all(col in self.data.columns for col in required_cols)
+
+        annotated_data = self.data.copy()
+
+        # Check if we have MAF-style protein annotation
+        maf_protein_cols = ['Protein_Change', 'Hugo_Symbol']
+        has_maf_annotation = all(col in self.data.columns for col in maf_protein_cols)
+
+        if has_maf_annotation and needs_annotation:
+            print("✅ MAF data detected with protein annotations, extracting amino acid positions...")
+
+            # Extract amino acid position from Protein_Change column (e.g., p.K960R -> 960)
+            def extract_aa_position(protein_change):
+                if pd.isna(protein_change) or protein_change == '':
+                    return None
+                try:
+                    # Handle formats like p.K960R, p.Leu123Pro, etc.
+                    import re
+                    match = re.search(r'p\.[A-Za-z]*(\d+)', str(protein_change))
+                    if match:
+                        return int(match.group(1))
+                except:
+                    pass
+                return None
+
+            # Add aa_pos column
+            annotated_data[aa_column] = annotated_data['Protein_Change'].apply(extract_aa_position)
+
+            # Use Hugo_Symbol as protein_id for now (we'll map to UniProt later)
+            annotated_data['protein_id'] = annotated_data['Hugo_Symbol']
+
+            print(f"   Extracted amino acid positions for {annotated_data[aa_column].notna().sum()} variants")
+
+        elif needs_annotation:
+            print("🔍 Variant annotation required...")
+
+            # Check if we have the minimum required columns for annotation
+            min_required = ['chrom', 'pos', 'ref', 'alt']
+            missing_cols = [col for col in min_required if col not in self.data.columns]
+
+            if missing_cols:
+                # Try alternative column names
+                alt_mapping = {
+                    'chrom': ['Chromosome', 'CHROM', 'chr'],
+                    'pos': ['Start_Position', 'POS', 'position'],
+                    'ref': ['Reference_Allele', 'REF'],
+                    'alt': ['Tumor_Seq_Allele2', 'ALT', 'Variant_Allele']
+                }
+
+                for std_col in missing_cols[:]:
+                    for alt_col in alt_mapping.get(std_col, []):
+                        if alt_col in self.data.columns:
+                            annotated_data = annotated_data.rename(columns={alt_col: std_col})
+                            missing_cols.remove(std_col)
+                            break
+
+                if missing_cols:
+                    raise ValueError(f"Missing required columns for variant annotation: {missing_cols}")
+
+            # Perform variant annotation
+            annotator = VariantAnnotator(backend=annotator_backend)
+            annotated_data = annotator.annotate(annotated_data)
+        else:
+            print("✅ Data already contains protein annotation columns")
+
+        # Step 3: Connect to database and annotate with Pfam domains
+        db_conn = connect_db()
+
+        try:
+            # Annotate with Pfam domains
+            pfam_annotated_data = annotate_pfam(annotated_data, db_conn, aa_column=aa_column)
+
+            # Step 4: Generate summary
+            summary_result = pfam_domains(
+                pfam_annotated_data,
+                aa_column=aa_column,
+                summarize_by=summarize_by,
+                top_n=top_n,
+                include_synonymous=include_synonymous,
+                plot=plot
+            )
+
+            # Update the PyMutation object's data with the annotated data
+            self.data = pfam_annotated_data
+
+            print("✅ Pfam annotation complete!")
+
+            return summary_result
+
+        finally:
+            db_conn.close()
 
 PyMutation.region = region
 PyMutation.gen_region = gen_region

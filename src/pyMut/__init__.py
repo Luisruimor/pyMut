@@ -6,4 +6,11 @@ from .version import __version__
 from . import mutation_burden
 from . import output
 
-__all__ = ['PyMutation','read_maf', 'read_vcf']
+from .pfam_annotation import (
+    connect_db, VariantAnnotator, annotate_pfam, pfam_domains, build_embedded_db
+)
+
+__all__ = [
+    'PyMutation', 'read_maf', 'read_vcf', 
+    'connect_db', 'VariantAnnotator', 'annotate_pfam', 'pfam_domains', 'build_embedded_db'
+]

@@ -3,7 +3,7 @@ from pathlib import Path
 from typing import List
 import pandas as pd
 
-from src.pyMut.input import required_columns_MAF
+from .input import required_columns_MAF
 
 logger = logging.getLogger(__name__)
 
