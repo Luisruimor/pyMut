@@ -145,3 +145,6 @@ ALL.chr10.shapeit2_integrated_snvindels_v2a_27022019.GRCh38.phased.vcf.gz
 ALL.chr10.shapeit2_integrated_snvindels_v2a_27022019.GRCh38.phased.vcf.gz.tbi
 
 src/pyMut/data/resources
+
+# mkdocs gh-page
+site
