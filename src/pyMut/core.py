@@ -1,9 +1,7 @@
-from typing import List, Optional
 import pandas as pd
 from datetime import datetime
 import matplotlib.pyplot as plt
-import numpy as np
-from typing import List, Dict, Union, Optional, Tuple
+from typing import List, Optional, Tuple
 from .utils.constants import (
     VARIANT_CLASSIFICATION_COLUMN, VARIANT_TYPE_COLUMN, SAMPLE_COLUMN, 
     GENE_COLUMN, REF_COLUMN, ALT_COLUMN, FUNCOTATION_COLUMN, 
@@ -13,6 +11,9 @@ from .utils.constants import (
 from .filters.genomic_range import gen_region,region
 from .filters.pass_filter import pass_filter
 from .filters.chrom_sample_filter import filter_by_chrom_sample
+from .pfam_annotation import (
+    annotate_pfam, pfam_domains,
+)
 
 class MutationMetadata:
     """
@@ -37,9 +38,9 @@ class MutationMetadata:
 
 
 class PyMutation:
-    def __init__(self, data: pd.DataFrame, metadata: MutationMetadata,samples: List[str]):
+    def __init__(self, data: pd.DataFrame, metadata: Optional[MutationMetadata] = None, samples: Optional[List[str]] = None):
         self.data = data
-        self.samples = samples
+        self.samples = samples if samples is not None else []
         self.metadata = metadata
 
     def head(self, n: int = 5):
@@ -601,7 +602,10 @@ class PyMutation:
             if not was_interactive:
                 plt.ioff()  # Disable interactive mode if it wasn't active before
 
+
 PyMutation.region = region
 PyMutation.gen_region = gen_region
 PyMutation.pass_filter = pass_filter
 PyMutation.filter_by_chrom_sample = filter_by_chrom_sample
+PyMutation.annotate_pfam = annotate_pfam
+PyMutation.pfam_domains = pfam_domains
