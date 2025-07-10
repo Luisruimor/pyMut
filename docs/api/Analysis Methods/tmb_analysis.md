@@ -104,6 +104,33 @@ non_synonymous_types = {
 }
 ```
 
+## Archivos de Resultados
+
+El método genera automáticamente dos archivos TSV con los resultados del análisis:
+
+### TMB_analysis.tsv - Análisis por Muestra
+
+| Sample | Total_Mutations | Non_Synonymous_Mutations | TMB_Total_Normalized | TMB_Non_Synonymous_Normalized |
+|--------|-----------------|--------------------------|---------------------|------------------------------|
+| TCGA-AB-2988 | 15 | 13 | 0.248110 | 0.215029 |
+| TCGA-AB-2869 | 12 | 8 | 0.198488 | 0.132326 |
+| TCGA-AB-3009 | 42 | 34 | 0.694709 | 0.562384 |
+| TCGA-AB-2830 | 17 | 13 | 0.281192 | 0.215029 |
+| TCGA-AB-2887 | 15 | 12 | 0.248110 | 0.198488 |
+
+*Tabla mostrando las primeras 5 muestras del análisis TMB. El archivo completo contiene datos para todas las muestras analizadas.*
+
+### TMB_statistics.tsv - Estadísticas Globales
+
+| Metric | Count | Mean | Median | Min | Max | Q1 | Q3 | Std |
+|--------|-------|------|--------|-----|-----|----|----|-----|
+| Total_Mutations | 193 | 11.435233 | 11.000000 | 1.000000 | 42.000000 | 6.000000 | 15.000000 | 6.752870 |
+| Non_Synonymous_Mutations | 193 | 8.974093 | 9.000000 | 0.000000 | 34.000000 | 5.000000 | 12.000000 | 5.452862 |
+| TMB_Total_Normalized | 193 | 0.189147 | 0.181948 | 0.016541 | 0.694709 | 0.099244 | 0.248110 | 0.111697 |
+| TMB_Non_Synonymous_Normalized | 193 | 0.148438 | 0.148866 | 0.000000 | 0.562384 | 0.082703 | 0.198488 | 0.090194 |
+
+*Estadísticas descriptivas del conjunto completo de datos, incluyendo media, mediana, cuartiles y desviación estándar.*
+
 ## Ejemplo Completo
 
 ```python

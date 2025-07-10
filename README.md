@@ -202,7 +202,7 @@ python -m pytest tests/ -v
 - **[Installation Guide](docs/user-guide/installation.md)** - Detailed installation instructions
 - **[User Guide](docs/user-guide/basic-usage.md)** - Step-by-step tutorials
 - **[API Reference](docs/api/)** - Complete API documentation
-- **[Examples](examples/)** - Real-world usage examples
+- **[Examples](docs/examples/)** - Real-world usage examples
 
 ## 🤝 Contributing
 

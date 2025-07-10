@@ -28,7 +28,7 @@ fig.savefig("summary.png")
 
 ## Documentación Disponible
 
-- **[Summary Plot](api/summary_plot.md)** - Visualización principal que combina múltiples análisis
+- **[Summary Plot](api/Visualization/summary_plot.md)** - Visualización principal que combina múltiples análisis
 
 ## Formato de Datos
 

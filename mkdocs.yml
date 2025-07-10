@@ -60,16 +60,34 @@ nav:
   - Home: index.md
   - Installation: installation.md
   - Quickstart: quickstart.md
-  - Api:
-      - Core Class (PyMutation): api/pymutation_class.md
+  - API Reference:
+      - Core:
+          - PyMutation Class: api/Core/pymutation_class.md
       - Data Loading:
-          - Read MAF Files: api/read_maf.md
+          - Read MAF Files: api/Data Loading/read_maf.md
+          - Read VCF Files: api/Data Loading/read_vcf.md
+      - Data Export:
+          - Export to MAF: api/Data Export/to_maf.md
+      - Filters:
+          - Genomic Range Filters: api/Filters/genomic_range.md
+          - Quality Filter (PASS): api/Filters/pass_filter.md
+          - Chromosome & Sample Filter: api/Filters/chrom_sample_filter.md
       - Analysis Methods:
-          - TMB Analysis: api/tmb_analysis.md
+          - TMB Analysis: api/Analysis Methods/tmb_analysis.md
+          - Pfam Domain Annotation: api/Analysis Methods/pfam_annotation.md
       - Visualization API:
-          - Summary Plot: api/summary_plot.md
+          - Summary Plot: api/Visualization/summary_plot.md
+      - Other Utilities:
+          - VCF Subset Creation: api/Other Utilities/create_subset.md
+          - VEP Annotation Merging: api/Other Utilities/merge_vep_annotation.md
   - Example Usage:
       - Variant Classification Plot: examples/maf_to_variant_classification.ipynb
+      - Data Filtering Examples: examples/example_filtering.ipynb
+      - TMB Analysis Demo: examples/mutation_burden_demo.ipynb
+      - Pfam Domain Annotation Demo: examples/pfam_annotation_demo.ipynb
+      - VEP Annotation Merging: examples/merge_annotation.ipynb
+      - VCF Subset Extraction: examples/vcf_subset_extraction.ipynb
+      - VCF to PyMutation Conversion: examples/vcf_to_PyMutation.ipynb
 
 # Copyright
 copyright: Copyright &copy; 2024 pyMut Development Team
