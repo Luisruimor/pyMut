@@ -50,6 +50,9 @@ coverage.xml
 .hypothesis/
 .pytest_cache/
 
+# pyMut cache directories
+.pymut_cache/
+
 # Translations
 *.mo
 *.pot
@@ -137,4 +140,8 @@ src/pyMut/data/examples/xtra-reducido.tsv
 src/pyMut/data/examples/sample_mutations.tsv
 
 *.png
-data
+src/pyMut/data/subsets
+ALL.chr10.shapeit2_integrated_snvindels_v2a_27022019.GRCh38.phased.vcf.gz
+ALL.chr10.shapeit2_integrated_snvindels_v2a_27022019.GRCh38.phased.vcf.gz.tbi
+
+src/pyMut/data/resources

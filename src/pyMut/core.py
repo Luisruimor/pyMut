@@ -1,14 +1,18 @@
-from typing import List, Optional
 import pandas as pd
 from datetime import datetime
 import matplotlib.pyplot as plt
-import numpy as np
-from typing import List, Dict, Union, Optional, Tuple
+from typing import List, Optional, Tuple
 from .utils.constants import (
     VARIANT_CLASSIFICATION_COLUMN, VARIANT_TYPE_COLUMN, SAMPLE_COLUMN, 
     GENE_COLUMN, REF_COLUMN, ALT_COLUMN, FUNCOTATION_COLUMN, 
     DEFAULT_SUMMARY_FIGSIZE, DEFAULT_PLOT_FIGSIZE, DEFAULT_PLOT_TITLE,
     DEFAULT_TOP_GENES_COUNT, MODE_VARIANTS, VALID_PLOT_MODES
+)
+from .filters.genomic_range import gen_region,region
+from .filters.pass_filter import pass_filter
+from .filters.chrom_sample_filter import filter_by_chrom_sample
+from .pfam_annotation import (
+    annotate_pfam, pfam_domains,
 )
 
 class MutationMetadata:
@@ -34,12 +38,26 @@ class MutationMetadata:
 
 
 class PyMutation:
-    def __init__(self, data: pd.DataFrame, metadata: MutationMetadata,samples: List[str]):
+    def __init__(self, data: pd.DataFrame, metadata: Optional[MutationMetadata] = None, samples: Optional[List[str]] = None):
         self.data = data
-        self.samples = samples
+        self.samples = samples if samples is not None else []
         self.metadata = metadata
-    
-    def save_figure(self, figure: plt.Figure, filename: str, 
+
+    def head(self, n: int = 5):
+        """
+        Return the first n rows of the mutation data.
+        This method delegates to the pandas DataFrame head() method.
+        """
+        return self.data.head(n)
+
+    def info(self):
+        """
+        Print a concise summary of the mutation data.
+        This method delegates to the pandas DataFrame info() method
+        """
+        return self.data.info()
+
+    def save_figure(self, figure: plt.Figure, filename: str,
                    dpi: int = 300, bbox_inches: str = 'tight', **kwargs) -> None:
         """
         Save a figure with high-quality configuration by default.
@@ -578,9 +596,16 @@ class PyMutation:
                 time.sleep(0.1)
                 # Allow matplotlib to process events minimally
                 figure.canvas.flush_events()
-                    
+
         finally:
             # Restore original interactive mode state only if we changed it
             if not was_interactive:
                 plt.ioff()  # Disable interactive mode if it wasn't active before
 
+
+PyMutation.region = region
+PyMutation.gen_region = gen_region
+PyMutation.pass_filter = pass_filter
+PyMutation.filter_by_chrom_sample = filter_by_chrom_sample
+PyMutation.annotate_pfam = annotate_pfam
+PyMutation.pfam_domains = pfam_domains

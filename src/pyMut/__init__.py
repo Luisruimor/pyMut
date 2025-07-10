@@ -1,5 +1,12 @@
 from .core import PyMutation
-from .io import read_maf
+from .input import read_maf, read_vcf
 from .version import __version__
 
-__all__ = ['PyMutation','read_maf']
+# Import modules that add methods to PyMutation class
+from . import mutation_burden
+from . import output
+from . import pfam_annotation
+
+__all__ = [
+    'PyMutation', 'read_maf', 'read_vcf',
+]
