@@ -62,8 +62,9 @@ def _create_region_key_from_maf(row: pd.Series) -> str:
 def merge_maf_with_vep_annotations(
     maf_file: str | Path,
     vep_file: str | Path,
-    output_file: Optional[str | Path] = None
-) -> pd.DataFrame:
+    output_file: Optional[str | Path] = None,
+    compress: bool = False
+) -> tuple[pd.DataFrame, Path]:
     """
     Merge MAF file with VEP annotations using pandas and DuckDB for optimization.
 
@@ -75,11 +76,15 @@ def merge_maf_with_vep_annotations(
         Path to the VEP annotation file (.txt)
     output_file : str | Path, optional
         Output file path. If None, creates filename with "_annotated" suffix
+    compress : bool, optional
+        Whether to compress the output file with gzip (default: False)
 
     Returns
     -------
-    pd.DataFrame
-        Merged DataFrame with MAF data and VEP annotations
+    tuple[pd.DataFrame, Path]
+        A tuple containing:
+        - Merged DataFrame with MAF data and VEP annotations
+        - Path to the output file that was created
     """
     maf_file = Path(maf_file)
     vep_file = Path(vep_file)
@@ -88,12 +93,21 @@ def merge_maf_with_vep_annotations(
         # Create output filename with _annotated suffix
         if maf_file.suffix == '.gz':
             stem = maf_file.stem.replace('.maf', '')
-            output_file = maf_file.parent / f"{stem}_annotated.maf"
+            base_name = f"{stem}_VEP_annotated.maf"
         else:
             stem = maf_file.stem
-            output_file = maf_file.parent / f"{stem}_annotated{maf_file.suffix}"
+            base_name = f"{stem}_VEP_annotated{maf_file.suffix}"
+
+        # Add .gz extension if compression is requested
+        if compress:
+            output_file = maf_file.parent / f"{base_name}.gz"
+        else:
+            output_file = maf_file.parent / base_name
     else:
         output_file = Path(output_file)
+        # If compression is requested but output file doesn't end with .gz, add it
+        if compress and not str(output_file).endswith('.gz'):
+            output_file = output_file.with_suffix(output_file.suffix + '.gz')
 
     logger.info(f"Reading MAF file: {maf_file}")
 
@@ -201,8 +215,14 @@ def merge_maf_with_vep_annotations(
     logger.info(f"Merge completed: {result_df.shape[0]} rows, {result_df.shape[1]} columns")
 
     logger.info(f"Saving annotated file to: {output_file}")
-    result_df.to_csv(output_file, sep='\t', index=False)
+
+    # Save file with or without compression
+    if compress or str(output_file).endswith('.gz'):
+        with gzip.open(output_file, 'wt') as f:
+            result_df.to_csv(f, sep='\t', index=False)
+    else:
+        result_df.to_csv(output_file, sep='\t', index=False)
 
     conn.close()
 
-    return result_df
+    return result_df, output_file
