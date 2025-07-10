@@ -3,11 +3,11 @@ import duckdb
 from typing import Optional
 import re
 
-from .utils.database import (
+from ..utils.database import (
     PfamAnnotationError,
     connect_db
 )
-from .utils.fields import col, find_alias
+from ..utils.fields import col, find_alias
 
 
 
@@ -274,7 +274,7 @@ def annotate_pfam(self,
                 result_df[pfam_col] = None
 
         # Return new PyMutation object
-        from .core import PyMutation
+        from ..core import PyMutation
         return PyMutation(result_df, metadata=self.metadata, samples=self.samples)
 
     finally:
