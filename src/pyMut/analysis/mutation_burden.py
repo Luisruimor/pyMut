@@ -284,9 +284,5 @@ def log_tmb_summary(analysis_df: pd.DataFrame) -> None:
 
 # Add the method to PyMutation class
 def add_tmb_method_to_pymutation():
-    from .core import PyMutation
+    from ..core import PyMutation
     PyMutation.calculate_tmb_analysis = calculate_tmb_analysis
-
-
-# Automatically add the method when the module is imported
-add_tmb_method_to_pymutation()

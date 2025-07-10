@@ -11,7 +11,7 @@ from .utils.constants import (
 from .filters.genomic_range import gen_region,region
 from .filters.pass_filter import pass_filter
 from .filters.chrom_sample_filter import filter_by_chrom_sample
-from .pfam_annotation import (
+from .analysis.pfam_annotation import (
     annotate_pfam, pfam_domains,
 )
 
