@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Union, Optional, Tuple
 from datetime import datetime
 from ..utils.format import format_chr
+from ..utils.merge_vep_annotation import merge_maf_with_vep_annotations
 
 logger = logging.getLogger(__name__)
 
@@ -140,16 +141,22 @@ def maf_vep_annotate(maf_file: Union[str, Path],
                      output_file: Optional[Union[str, Path]] = None,
                      synonyms_file: Optional[Union[str, Path]] = None,
                      assembly: Optional[str] = None,
-                     version: Optional[str] = None) -> Tuple[bool, str]:
+                     version: Optional[str] = None,
+                     compress: bool = True) -> Tuple[bool, str]:
     """
-    Wrapper method for VEP annotation that accepts MAF files.
+    Wrapper method for VEP annotation that accepts MAF files and merges annotations back to MAF.
 
-    This method converts a MAF file to region format internally and then runs VEP annotation
-    with the following fixed parameters:
+    This method converts a MAF file to region format internally, runs VEP annotation, and then
+    merges the VEP annotations back with the original MAF file. VEP annotation uses the following 
+    fixed parameters:
     - --offline --cache
     - --protein --uniprot --domains --symbol
     - --synonyms (automatically constructed from cache directory or provided explicitly)
     - --no_stats
+
+    After successful VEP annotation, the method automatically merges the VEP results with the 
+    original MAF file, creating an annotated MAF file with VEP_ prefixed columns. The original
+    VEP annotation files are preserved and not deleted.
 
     Assembly and cache version can be provided explicitly or automatically extracted from the cache directory name.
     The chr_synonyms file path can be provided explicitly or automatically constructed as: cache_dir/homo_sapiens/{version}_{assembly}/chr_synonyms.txt
@@ -164,11 +171,12 @@ def maf_vep_annotate(maf_file: Union[str, Path],
                       constructed from cache directory structure
         assembly: Genome assembly name (optional). If None, automatically extracted from cache directory name
         version: VEP cache version (optional). If None, automatically extracted from cache directory name
+        compress: Whether to compress the merged output file with gzip (default: True)
 
     Returns:
-        Tuple[bool, str]: (success_status, output_path) where success_status is True 
-                         if annotation was successful, and output_path is the path to 
-                         the output file or directory
+        Tuple[bool, str]: (success_status, output_info) where success_status is True 
+                         if annotation was successful, and output_info contains information
+                         about both the VEP file and the merged MAF file paths
 
     Raises:
         ValueError: If cache directory name format is invalid and assembly/version not provided
@@ -250,7 +258,23 @@ def maf_vep_annotate(maf_file: Union[str, Path],
         if result.stderr:
             logger.warning(f"VEP warnings/messages: {result.stderr}")
 
-        return True, str(output_path)
+        # Merge VEP annotations with original MAF file
+        logger.info("Merging VEP annotations with original MAF file...")
+        try:
+            merged_df, merged_output_path = merge_maf_with_vep_annotations(
+                maf_file=maf_path,
+                vep_file=output_path,
+                output_file=None,
+                compress=compress
+            )
+            logger.info(f"Successfully merged VEP annotations. Merged file: {merged_output_path}")
+
+            return True, f"VEP folder: {output_path}, Merged file: {merged_output_path}"
+
+        except Exception as merge_error:
+            logger.error(f"Failed to merge VEP annotations: {merge_error}")
+            # Success for VEP annotation, merge failure
+            return True, f"VEP folder: {output_path}, Merge failed: {merge_error}"
 
     except (subprocess.CalledProcessError, FileNotFoundError) as e:
         logger.error(f"VEP annotation failed: {e}")
