@@ -40,7 +40,11 @@ def format_chr(string: str):
 
     Converts chromosome identifiers to the standard 'chr' format:
     - Converts "23" to "X"
-    - Converts "24" to "Y" 
+    - Converts "24" to "Y"
+    - Converts "25" to "MT"
+    - Converts "chr23" to "chrX"
+    - Converts "chr24" to "chrY"
+    - Converts "chr25" to "chrM"
     - Adds "chr" prefix if not already present
     - Leaves existing "chr" prefixed identifiers unchanged
 
@@ -52,7 +56,7 @@ def format_chr(string: str):
     Returns
     -------
     str
-        Standardized chromosome identifier with 'chr' prefix or 'X'/'Y' for sex chromosomes.
+        Standardized chromosome identifier with 'chr' prefix or 'X'/'Y'/'MT' for special chromosomes.
 
     Examples
     --------
@@ -62,13 +66,31 @@ def format_chr(string: str):
     'X'
     >>> format_chr("24")
     'Y'
+    >>> format_chr("25")
+    'MT'
+    >>> format_chr("chr23")
+    'chrX'
+    >>> format_chr("chr24")
+    'chrY'
+    >>> format_chr("chr25")
+    'chrM'
     >>> format_chr("chr5")
     'chr5'
     """
+    # Handle numeric chromosome identifiers
     if string == "23":
         return "X"
     elif string == "24":
         return "Y"
+    elif string == "25":
+        return "MT"
+    # Handle chr-prefixed chromosome identifiers
+    elif string == "chr23":
+        return "chrX"
+    elif string == "chr24":
+        return "chrY"
+    elif string == "chr25":
+        return "chrM"
     elif string.startswith("chr"):
         return string
     else:
