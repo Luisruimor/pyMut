@@ -46,6 +46,7 @@ FIELDS: Dict[str, List[str]] = {
         "SYMBOL",
         "Gene",
         "Gene_Name",
+        "GENE_SYMBOL"
     ],
     # Consecuencia funcional de la variante
     "Consequence": [
