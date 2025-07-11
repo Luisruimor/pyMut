@@ -4,6 +4,6 @@ VEP Annotation Module
 This module provides functionality for annotating variants.
 """
 
-from .vep_annotate import maf_vep_annotate
+from .vep_annotate import wrap_maf_vep_annotate
 
-__all__ = ['maf_vep_annotate']
+__all__ = ['wrap_maf_vep_annotate']
