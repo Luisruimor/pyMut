@@ -10,20 +10,153 @@ from ..utils.fields import find_alias, col
 logger = logging.getLogger(__name__)
 
 
-def maf_COSMIC_OncoKB_annotation(
+def knownCancer(
     maf_file: Union[str, Path],
     annotation_table: Union[str, Path],
     output_path: Optional[Union[str, Path]] = None,
     compress_output: bool = True,
     join_column: str = "Hugo_Symbol",
-    synonyms_column: str = "SYNONIMS",
-    oncokb_table: Optional[Union[str, Path]] = None,
-    oncokb_synonyms_column: str = "Gene Aliases"
+    oncokb_table: Optional[Union[str, Path]] = None
 ) -> tuple[pd.DataFrame, Path]:
     """
-    Annotate MAF file with COSMIC Cancer Gene Census data and optionally OncoKB data using optimized approach.
+    Annotate MAF file with specific cancer-related annotations from COSMIC and OncoKB.
+
+    This function filters annotations to include only cancer-relevant fields and adds
+    a combined Is_Oncogene_any field that indicates if a gene is an oncogene according
+    to any source.
+
+    Parameters
+    ----------
+    maf_file : str | Path
+        Path to the MAF file (.maf or .maf.gz)
+    annotation_table : str | Path
+        Path to the COSMIC annotation table (.tsv or .tsv.gz)
+    output_path : str | Path, optional
+        Output file path. If None, creates filename with "_KnownCancer_annotated.maf" suffix
+    compress_output : bool, default True
+        Whether to compress the output file with gzip
+    join_column : str, default "Hugo_Symbol"
+        Column name to use for joining (canonical name from fields.py)
+    oncokb_table : str | Path, optional
+        Path to the OncoKB cancer gene list table (.tsv). If provided, OncoKB
+        annotations will be added to the output.
+
+    Returns
+    -------
+    tuple[pd.DataFrame, Path]
+        A tuple containing:
+        - Annotated DataFrame with MAF data and filtered cancer annotations
+        - Path to the output file that was created
+
+    Raises
+    ------
+    FileNotFoundError
+        If input files don't exist
+    ValueError
+        If join column is not found in either file
+    """
+
+    temp_output = None
+    if output_path is not None:
+        temp_output = Path(str(output_path).replace('.maf', '_temp_full.maf'))
+
+    # Get full annotations using the auxiliary function
+    full_df, temp_path = _maf_COSMIC_OncoKB_annotation_aux(
+        maf_file=maf_file,
+        annotation_table=annotation_table,
+        output_path=temp_output,
+        compress_output=False,
+        join_column=join_column,
+        oncokb_table=oncokb_table
+    )
+
+    # Define the specific columns we want to keep
+    target_columns = [
+        "COSMIC_ROLE_IN_CANCER",
+        "COSMIC_TIER",
+        "OncoKB_Is Oncogene",
+        "OncoKB_Is Tumor Suppressor Gene",
+        "OncoKB_OncoKB Annotated",
+        "OncoKB_MSK-IMPACT",
+        "OncoKB_MSK-HEME",
+        "OncoKB_FOUNDATION ONE",
+        "OncoKB_FOUNDATION ONE HEME",
+        "OncoKB_Vogelstein"
+    ]
+
+    # Get original MAF columns
+    original_columns = [col for col in full_df.columns if not (col.startswith('COSMIC_') or col.startswith('OncoKB_'))]
+
+    # Filter to keep only original columns plus target annotation columns
+    available_target_columns = [col for col in target_columns if col in full_df.columns]
+    columns_to_keep = original_columns + available_target_columns
+
+    filtered_df = full_df[columns_to_keep].copy()
+
+    # Is_Oncogene_any -> True if OncoKB_Is Oncogene is True OR COSMIC has any annotation (not empty)
+    oncokb_oncogene = filtered_df.get('OncoKB_Is Oncogene', pd.Series([False] * len(filtered_df)))
+    cosmic_role = filtered_df.get('COSMIC_ROLE_IN_CANCER', pd.Series([''] * len(filtered_df)))
+    cosmic_tier = filtered_df.get('COSMIC_TIER', pd.Series([''] * len(filtered_df)))
+
+    # Convert OncoKB_Is Oncogene to boolean (handle string representations)
+    oncokb_is_oncogene_bool = oncokb_oncogene.astype(str).str.lower().isin(['true', '1', 'yes'])
+
+    # COSMIC annotation exists if ROLE_IN_CANCER or TIER is not empty
+    cosmic_role_has_annotation = cosmic_role.astype(str).str.strip() != ''
+    cosmic_tier_has_annotation = cosmic_tier.astype(str).str.strip() != ''
+    cosmic_has_annotation = cosmic_role_has_annotation | cosmic_tier_has_annotation
+
+    # Is_Oncogene_any is True if either source indicates oncogene status
+    filtered_df['Is_Oncogene_any'] = oncokb_is_oncogene_bool | cosmic_has_annotation
+
+    # Set up final output path
+    if output_path is None:
+        maf_file_path = Path(maf_file)
+        if maf_file_path.suffix == '.gz':
+            stem = maf_file_path.stem.replace('.maf', '')
+            base_name = f"{stem}_knownCancer_annotated.maf"
+        else:
+            stem = maf_file_path.stem
+            base_name = f"{stem}_knownCancer_annotated{maf_file_path.suffix}"
+
+        if compress_output:
+            final_output_path = maf_file_path.parent / f"{base_name}.gz"
+        else:
+            final_output_path = maf_file_path.parent / base_name
+    else:
+        final_output_path = Path(output_path)
+        if compress_output and not str(final_output_path).endswith('.gz'):
+            final_output_path = final_output_path.with_suffix(final_output_path.suffix + '.gz')
+
+    # Save the filtered result
+    logger.info(f"Saving KnownCancer annotated file to: {final_output_path}")
+    _write_file_auto(filtered_df, final_output_path, compress_output)
+
+    # Clean up temporary file
+    if temp_path.exists():
+        temp_path.unlink()
+
+    logger.info(f"KnownCancer annotation completed successfully")
+    logger.info(f"Output file saved: {final_output_path}")
+    logger.info(f"Filtered to {len(available_target_columns)} annotation columns plus Is_Oncogene_any field")
+
+    return filtered_df, final_output_path
+
+
+
+def _maf_COSMIC_OncoKB_annotation_aux(
+    maf_file: Union[str, Path],
+    annotation_table: Union[str, Path],
+    output_path: Optional[Union[str, Path]] = None,
+    compress_output: bool = True,
+    join_column: str = "Hugo_Symbol",
+    oncokb_table: Optional[Union[str, Path]] = None
+) -> tuple[pd.DataFrame, Path]:
+    """
+    Auxiliary function to annotate MAF file with COSMIC Cancer Gene Census data and optionally OncoKB data.
 
     Uses a hybrid approach: DuckDB for large files (>2GB), pandas+pyarrow for smaller files.
+    Synonyms columns are hardcoded: "SYNONIMS" for COSMIC and "Gene Aliases" for OncoKB.
 
     Parameters
     ----------
@@ -37,15 +170,9 @@ def maf_COSMIC_OncoKB_annotation(
         Whether to compress the output file with gzip
     join_column : str, default "Hugo_Symbol"
         Column name to use for joining (canonical name from fields.py)
-    synonyms_column : str, default "SYNONIMS"
-        Column name containing gene synonyms separated by commas. If this column
-        exists in the annotation table, a synonym dictionary will be created to
-        improve gene matching.
     oncokb_table : str | Path, optional
         Path to the OncoKB cancer gene list table (.tsv). If provided, OncoKB
         annotations will be added to the output.
-    oncokb_synonyms_column : str, default "Gene Aliases"
-        Column name containing gene synonyms in the OncoKB table, separated by commas.
 
     Returns
     -------
@@ -115,13 +242,13 @@ def maf_COSMIC_OncoKB_annotation(
 
     if use_duckdb:
         return _annotate_with_duckdb(
-            maf_file, annotation_table, output_path, compress_output, join_column, synonyms_column,
-            oncokb_table_path, oncokb_synonyms_column
+            maf_file, annotation_table, output_path, compress_output, join_column, "SYNONIMS",
+            oncokb_table_path, "Gene Aliases"
         )
     else:
         return _annotate_with_pandas(
-            maf_file, annotation_table, output_path, compress_output, join_column, synonyms_column,
-            oncokb_table_path, oncokb_synonyms_column
+            maf_file, annotation_table, output_path, compress_output, join_column, "SYNONIMS",
+            oncokb_table_path, "Gene Aliases"
         )
 
 
@@ -521,5 +648,5 @@ def _annotate_with_duckdb(
 
 
 __all__ = [
-    "maf_COSMIC_OncoKB_annotation"
+    "knownCancer"
 ]
