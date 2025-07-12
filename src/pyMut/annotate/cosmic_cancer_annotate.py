@@ -10,16 +10,18 @@ from ..utils.fields import find_alias, col
 logger = logging.getLogger(__name__)
 
 
-def maf_COSMIC_annotation(
+def maf_COSMIC_OncoKB_annotation(
     maf_file: Union[str, Path],
     annotation_table: Union[str, Path],
     output_path: Optional[Union[str, Path]] = None,
     compress_output: bool = True,
     join_column: str = "Hugo_Symbol",
-    synonyms_column: str = "SYNONIMS"
+    synonyms_column: str = "SYNONIMS",
+    oncokb_table: Optional[Union[str, Path]] = None,
+    oncokb_synonyms_column: str = "Gene Aliases"
 ) -> tuple[pd.DataFrame, Path]:
     """
-    Annotate MAF file with COSMIC Cancer Gene Census data using optimized approach.
+    Annotate MAF file with COSMIC Cancer Gene Census data and optionally OncoKB data using optimized approach.
 
     Uses a hybrid approach: DuckDB for large files (>2GB), pandas+pyarrow for smaller files.
 
@@ -39,12 +41,17 @@ def maf_COSMIC_annotation(
         Column name containing gene synonyms separated by commas. If this column
         exists in the annotation table, a synonym dictionary will be created to
         improve gene matching.
+    oncokb_table : str | Path, optional
+        Path to the OncoKB cancer gene list table (.tsv). If provided, OncoKB
+        annotations will be added to the output.
+    oncokb_synonyms_column : str, default "Gene Aliases"
+        Column name containing gene synonyms in the OncoKB table, separated by commas.
 
     Returns
     -------
     tuple[pd.DataFrame, Path]
         A tuple containing:
-        - Annotated DataFrame with MAF data and COSMIC annotations
+        - Annotated DataFrame with MAF data, COSMIC annotations, and optionally OncoKB annotations
         - Path to the output file that was created
 
     Raises
@@ -58,9 +65,15 @@ def maf_COSMIC_annotation(
     maf_file = Path(maf_file)
     annotation_table = Path(annotation_table)
 
+    oncokb_table_path = None
+    if oncokb_table is not None:
+        oncokb_table_path = Path(oncokb_table)
+
     logger.info(f"Starting COSMIC annotation process")
     logger.info(f"MAF file: {maf_file}")
     logger.info(f"Annotation table: {annotation_table}")
+    if oncokb_table_path:
+        logger.info(f"OncoKB table: {oncokb_table_path}")
 
     if not maf_file.exists():
         logger.error(f"MAF file not found: {maf_file}")
@@ -68,13 +81,22 @@ def maf_COSMIC_annotation(
     if not annotation_table.exists():
         logger.error(f"Annotation table not found: {annotation_table}")
         raise FileNotFoundError(f"Annotation table not found: {annotation_table}")
+    if oncokb_table_path and not oncokb_table_path.exists():
+        logger.error(f"OncoKB table not found: {oncokb_table_path}")
+        raise FileNotFoundError(f"OncoKB table not found: {oncokb_table_path}")
     if output_path is None:
         if maf_file.suffix == '.gz':
             stem = maf_file.stem.replace('.maf', '')
-            base_name = f"{stem}_COSMIC_annotated.maf"
+            if oncokb_table_path:
+                base_name = f"{stem}_COSMIC_OncoKB_annotated.maf"
+            else:
+                base_name = f"{stem}_COSMIC_annotated.maf"
         else:
             stem = maf_file.stem
-            base_name = f"{stem}_COSMIC_annotated{maf_file.suffix}"
+            if oncokb_table_path:
+                base_name = f"{stem}_COSMIC_OncoKB_annotated{maf_file.suffix}"
+            else:
+                base_name = f"{stem}_COSMIC_annotated{maf_file.suffix}"
 
         if compress_output:
             output_path = maf_file.parent / f"{base_name}.gz"
@@ -93,11 +115,13 @@ def maf_COSMIC_annotation(
 
     if use_duckdb:
         return _annotate_with_duckdb(
-            maf_file, annotation_table, output_path, compress_output, join_column, synonyms_column
+            maf_file, annotation_table, output_path, compress_output, join_column, synonyms_column,
+            oncokb_table_path, oncokb_synonyms_column
         )
     else:
         return _annotate_with_pandas(
-            maf_file, annotation_table, output_path, compress_output, join_column, synonyms_column
+            maf_file, annotation_table, output_path, compress_output, join_column, synonyms_column,
+            oncokb_table_path, oncokb_synonyms_column
         )
 
 
@@ -181,6 +205,43 @@ def _create_synonyms_dict(annotation_df: pd.DataFrame, synonyms_column: str) -> 
     return synonyms_dict
 
 
+def _create_oncokb_synonyms_dict(oncokb_df: pd.DataFrame, synonyms_column: str) -> dict:
+    """
+    Create a dictionary mapping OncoKB gene synonyms to their main gene symbol.
+
+    Parameters
+    ----------
+    oncokb_df : pd.DataFrame
+        OncoKB DataFrame containing gene symbols and synonyms
+    synonyms_column : str
+        Name of the column containing synonyms separated by commas
+
+    Returns
+    -------
+    dict
+        Dictionary mapping synonyms to main gene symbols
+    """
+    synonyms_dict = {}
+
+    if synonyms_column not in oncokb_df.columns:
+        logger.info(f"OncoKB synonyms column '{synonyms_column}' not found. Skipping OncoKB synonym mapping.")
+        return synonyms_dict
+
+    logger.info(f"Creating OncoKB synonyms dictionary from column '{synonyms_column}'...")
+
+    for _, row in oncokb_df.iterrows():
+        gene_symbol = row['Hugo Symbol']
+        synonyms_str = row[synonyms_column]
+
+        if pd.notna(synonyms_str) and synonyms_str.strip():
+            synonyms = [syn.strip() for syn in str(synonyms_str).split(',') if syn.strip()]
+            for synonym in synonyms:
+                synonyms_dict[synonym] = gene_symbol
+
+    logger.info(f"Created OncoKB synonyms dictionary with {len(synonyms_dict)} mappings")
+    return synonyms_dict
+
+
 def _apply_synonyms_mapping(maf_df: pd.DataFrame, maf_join_col: str, synonyms_dict: dict) -> pd.DataFrame:
     """
     Apply synonyms mapping to MAF DataFrame to improve gene matching.
@@ -225,7 +286,9 @@ def _annotate_with_pandas(
     output_path: Path,
     compress_output: bool,
     join_column: str,
-    synonyms_column: str
+    synonyms_column: str,
+    oncokb_table: Optional[Path] = None,
+    oncokb_synonyms_column: str = "Gene Aliases"
 ) -> tuple[pd.DataFrame, Path]:
     """
     Annotate using pandas with pyarrow optimization for smaller files.
@@ -255,7 +318,6 @@ def _annotate_with_pandas(
 
     logger.info("Performing annotation merge...")
 
-    # Add prefix to annotation columns to avoid conflicts (except GENE_SYMBOL)
     annotation_cols_to_rename = {col: f"COSMIC_{col}" for col in annotation_df.columns if col != 'GENE_SYMBOL'}
     annotation_df_renamed = annotation_df.rename(columns=annotation_cols_to_rename)
 
@@ -279,8 +341,51 @@ def _annotate_with_pandas(
     for col in cosmic_columns:
         result_df[col] = result_df[col].fillna("")
 
-    logger.info(f"Annotation completed: {result_df.shape[0]} rows, {result_df.shape[1]} columns")
+    logger.info(f"COSMIC annotation completed: {result_df.shape[0]} rows, {result_df.shape[1]} columns")
     logger.info(f"Added {len(cosmic_columns)} COSMIC annotation columns")
+
+    # Process OncoKB annotation if provided
+    if oncokb_table is not None:
+        logger.info(f"Reading OncoKB table: {oncokb_table}")
+        oncokb_df = _read_file_auto(oncokb_table, sep='\t', low_memory=False)
+        logger.info(f"OncoKB table loaded: {oncokb_df.shape[0]} rows, {oncokb_df.shape[1]} columns")
+
+        if 'Hugo Symbol' not in oncokb_df.columns:
+            logger.error(f"'Hugo Symbol' column not found in OncoKB table. Available columns: {list(oncokb_df.columns)}")
+            raise ValueError(f"'Hugo Symbol' column not found in OncoKB table. Available columns: {list(oncokb_df.columns)}")
+
+        oncokb_synonyms_dict = _create_oncokb_synonyms_dict(oncokb_df, oncokb_synonyms_column)
+        result_df_oncokb_mapped = _apply_synonyms_mapping(result_df, maf_join_col, oncokb_synonyms_dict)
+
+        logger.info("Performing OncoKB annotation merge...")
+
+        oncokb_cols_to_rename = {col: f"OncoKB_{col}" for col in oncokb_df.columns if col != 'Hugo Symbol'}
+        oncokb_df_renamed = oncokb_df.rename(columns=oncokb_cols_to_rename)
+
+        result_df = result_df_oncokb_mapped.merge(
+            oncokb_df_renamed,
+            left_on='_mapped_gene_symbol',
+            right_on='Hugo Symbol',
+            how='left'
+        )
+
+        columns_to_drop = []
+        if 'Hugo Symbol' in result_df.columns:
+            columns_to_drop.append('Hugo Symbol')
+        if '_mapped_gene_symbol' in result_df.columns:
+            columns_to_drop.append('_mapped_gene_symbol')
+
+        if columns_to_drop:
+            result_df = result_df.drop(columns_to_drop, axis=1)
+
+        oncokb_columns = [col for col in result_df.columns if col.startswith('OncoKB_')]
+        for col in oncokb_columns:
+            result_df[col] = result_df[col].fillna("")
+
+        logger.info(f"OncoKB annotation completed: {result_df.shape[0]} rows, {result_df.shape[1]} columns")
+        logger.info(f"Added {len(oncokb_columns)} OncoKB annotation columns")
+
+    logger.info(f"Total annotation completed: {result_df.shape[0]} rows, {result_df.shape[1]} columns")
 
     logger.info(f"Saving annotated file to: {output_path}")
     _write_file_auto(result_df, output_path, compress_output)
@@ -297,7 +402,9 @@ def _annotate_with_duckdb(
     output_path: Path,
     compress_output: bool,
     join_column: str,
-    synonyms_column: str
+    synonyms_column: str,
+    oncokb_table: Optional[Path] = None,
+    oncokb_synonyms_column: str = "Gene Aliases"
 ) -> tuple[pd.DataFrame, Path]:
     """
     Annotate using DuckDB for large files optimization.
@@ -333,7 +440,6 @@ def _annotate_with_duckdb(
         conn.register('maf_data', maf_df_mapped)
         conn.register('annotation_data', annotation_df)
 
-        # Build select clauses for annotation columns (with COSMIC_ prefix)
         annotation_columns = [col for col in annotation_df.columns if col != 'GENE_SYMBOL']
         annotation_select_clauses = [f"a.{col} as COSMIC_{col}" for col in annotation_columns]
         annotation_select_str = ",\n        ".join(annotation_select_clauses)
@@ -355,8 +461,52 @@ def _annotate_with_duckdb(
         for col in cosmic_columns:
             result_df[col] = result_df[col].fillna("")
 
-        logger.info(f"Annotation completed: {result_df.shape[0]} rows, {result_df.shape[1]} columns")
+        logger.info(f"COSMIC annotation completed: {result_df.shape[0]} rows, {result_df.shape[1]} columns")
         logger.info(f"Added {len(cosmic_columns)} COSMIC annotation columns")
+
+        # Process OncoKB annotation if provided
+        if oncokb_table is not None:
+            logger.info(f"Reading OncoKB table: {oncokb_table}")
+            oncokb_df = _read_file_auto(oncokb_table, sep='\t', low_memory=False)
+            logger.info(f"OncoKB table loaded: {oncokb_df.shape[0]} rows, {oncokb_df.shape[1]} columns")
+
+            if 'Hugo Symbol' not in oncokb_df.columns:
+                logger.error(f"'Hugo Symbol' column not found in OncoKB table. Available columns: {list(oncokb_df.columns)}")
+                raise ValueError(f"'Hugo Symbol' column not found in OncoKB table. Available columns: {list(oncokb_df.columns)}")
+
+            oncokb_synonyms_dict = _create_oncokb_synonyms_dict(oncokb_df, oncokb_synonyms_column)
+            result_df_oncokb_mapped = _apply_synonyms_mapping(result_df, maf_join_col, oncokb_synonyms_dict)
+
+            logger.info("Performing OncoKB annotation merge with DuckDB...")
+
+            conn.register('oncokb_data', oncokb_df)
+            conn.register('result_data', result_df_oncokb_mapped)
+
+            oncokb_columns = [col for col in oncokb_df.columns if col != 'Hugo Symbol']
+            oncokb_select_clauses = [f"o.{col} as OncoKB_{col}" for col in oncokb_columns]
+            oncokb_select_str = ",\n        ".join(oncokb_select_clauses)
+
+            oncokb_merge_query = f"""
+            SELECT 
+                r.*,
+                {oncokb_select_str}
+            FROM result_data r
+            LEFT JOIN oncokb_data o ON r._mapped_gene_symbol = o."Hugo Symbol"
+            """
+
+            result_df = conn.execute(oncokb_merge_query).df()
+
+            if '_mapped_gene_symbol' in result_df.columns:
+                result_df = result_df.drop('_mapped_gene_symbol', axis=1)
+
+            oncokb_columns = [col for col in result_df.columns if col.startswith('OncoKB_')]
+            for col in oncokb_columns:
+                result_df[col] = result_df[col].fillna("")
+
+            logger.info(f"OncoKB annotation completed: {result_df.shape[0]} rows, {result_df.shape[1]} columns")
+            logger.info(f"Added {len(oncokb_columns)} OncoKB annotation columns")
+
+        logger.info(f"Total annotation completed: {result_df.shape[0]} rows, {result_df.shape[1]} columns")
 
         logger.info(f"Saving annotated file to: {output_path}")
         _write_file_auto(result_df, output_path, compress_output)
@@ -371,5 +521,5 @@ def _annotate_with_duckdb(
 
 
 __all__ = [
-    "maf_COSMIC_annotation"
+    "maf_COSMIC_OncoKB_annotation"
 ]
