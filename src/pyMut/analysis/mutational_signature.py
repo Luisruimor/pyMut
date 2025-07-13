@@ -576,6 +576,196 @@ def estimateSignatures(contexts_df: pd.DataFrame, nMin: int = 2, nTry: int = 6,
     }
 
 
+def extract_signatures(contexts_df: pd.DataFrame, k: int, nrun: int = 30, 
+                      pseudocount: float = 1e-4, random_seed: Optional[int] = None) -> Dict:
+    """
+    Extract mutational signatures using Non-negative Matrix Factorization (NMF).
+
+    This function decomposes a 96 × samples matrix into two interpretable components:
+    - Matrix W (96 × k): Signature profiles (each column sums to 1)
+    - Matrix H (k × samples): Signature contributions to each sample
+
+    The function converts rows to relative frequencies, adds a small pseudocount to avoid
+    zeros, uses NNDSVD initialization with Kullback-Leibler divergence cost function,
+    runs the algorithm multiple times with different random seeds, and selects the
+    solution with the lowest residual for stability.
+
+    Parameters
+    ----------
+    contexts_df : pd.DataFrame
+        96 × samples matrix with trinucleotide context counts (from trinucleotideMatrix)
+    k : int
+        Number of signatures to extract (typically obtained from estimate_signatures)
+    nrun : int, default 30
+        Number of NMF runs with different random seeds to ensure stability
+    pseudocount : float, default 1e-4
+        Small positive constant added to avoid zeros in the matrix
+    random_seed : int, optional
+        Base random seed for reproducibility. If None, uses random initialization
+
+    Returns
+    -------
+    Dict
+        Dictionary containing:
+        - 'W': numpy.ndarray (96 × k) - Signature profiles (columns sum to 1)
+        - 'H': numpy.ndarray (k × samples) - Signature contributions
+        - 'reconstruction_error': float - Final reconstruction error
+        - 'best_run': int - Index of the best run selected
+        - 'all_errors': list - Reconstruction errors from all runs
+
+    Raises
+    ------
+    ImportError
+        If required packages (scikit-learn) are not installed
+    ValueError
+        If input parameters are invalid or NMF consistently fails
+
+    Notes
+    -----
+    The W matrix columns are renormalized so each signature sums to 1, facilitating
+    comparison with external catalogs. The H matrix indicates non-negative contributions
+    of each signature to each tumor, ready for clinical analysis or visualization.
+    """
+    try:
+        from sklearn.decomposition import NMF
+        from sklearn.metrics import mean_squared_error
+    except ImportError as e:
+        missing_pkg = str(e).split("'")[1] if "'" in str(e) else "scikit-learn"
+        raise ImportError(f"{missing_pkg} is required for signature extraction. "
+                         f"Install with: pip install scikit-learn")
+
+    # Validate input parameters
+    if not isinstance(contexts_df, pd.DataFrame):
+        raise ValueError("contexts_df must be a pandas DataFrame")
+
+    if contexts_df.shape[0] != 96:
+        raise ValueError("contexts_df must have 96 rows (trinucleotide contexts)")
+
+    if k < 1:
+        raise ValueError("k must be >= 1")
+
+    if k > contexts_df.shape[1]:
+        raise ValueError("k cannot be larger than the number of samples")
+
+    if nrun < 1:
+        raise ValueError("nrun must be >= 1")
+
+    if pseudocount <= 0:
+        raise ValueError("pseudocount must be > 0")
+
+    logger.info(f"Extracting {k} signatures with {nrun} runs using NMF with KL divergence")
+
+    # Convert to numpy array and ensure float type
+    matrix = contexts_df.values.astype(float)
+
+    # Convert each row to relative frequencies
+    row_sums = matrix.sum(axis=1, keepdims=True)
+    row_sums[row_sums == 0] = 1  # Avoid division by zero for empty contexts
+    normalized_matrix = matrix / row_sums
+
+    # Add pseudocount to avoid zeros
+    normalized_matrix += pseudocount
+
+    # Re-normalize after adding pseudocount
+    row_sums = normalized_matrix.sum(axis=1, keepdims=True)
+    normalized_matrix = normalized_matrix / row_sums
+
+    logger.info(f"Matrix normalized to frequencies with pseudocount {pseudocount}")
+
+    # Store results from all runs
+    all_results = []
+    all_errors = []
+
+    # Set up random seeds for reproducibility
+    if random_seed is not None:
+        np.random.seed(random_seed)
+        seeds = [random_seed + i for i in range(nrun)]
+    else:
+        seeds = [np.random.randint(0, 10000) for _ in range(nrun)]
+
+    # Run NMF multiple times with different seeds
+    for run_idx in range(nrun):
+        try:
+            # Use NNDSVD initialization with KL divergence
+            nmf = NMF(
+                n_components=k,
+                init='nndsvda',  # NNDSVDA initialization (avoids zeros with multiplicative update)
+                solver='mu',    # Multiplicative update solver supports KL divergence
+                beta_loss='kullback-leibler',  # KL divergence cost function
+                random_state=seeds[run_idx],
+                max_iter=2000,
+                tol=1e-6,
+                alpha_W=0.0,    # No regularization
+                alpha_H=0.0     # No regularization
+            )
+
+            # Fit the model
+            W = nmf.fit_transform(normalized_matrix)
+            H = nmf.components_
+
+            # Calculate reconstruction error using KL divergence
+            reconstructed = np.dot(W, H)
+
+            # KL divergence: sum(x * log(x/y) - x + y) where x is original, y is reconstructed
+            # Add small epsilon to avoid log(0)
+            eps = 1e-10
+            original_safe = normalized_matrix + eps
+            reconstructed_safe = reconstructed + eps
+
+            kl_div = np.sum(original_safe * np.log(original_safe / reconstructed_safe) 
+                           - original_safe + reconstructed_safe)
+
+            all_results.append({
+                'W': W.copy(),
+                'H': H.copy(),
+                'error': kl_div,
+                'run': run_idx,
+                'nmf_model': nmf
+            })
+            all_errors.append(kl_div)
+
+        except Exception as e:
+            logger.warning(f"NMF run {run_idx} failed: {e}")
+            all_errors.append(np.inf)
+            continue
+
+    # Check if any runs succeeded
+    successful_results = [r for r in all_results if r['error'] != np.inf]
+    if not successful_results:
+        raise ValueError("All NMF runs failed. Try adjusting pseudocount or input data.")
+
+    # Select the best result (lowest reconstruction error)
+    best_result = min(successful_results, key=lambda x: x['error'])
+    best_run_idx = best_result['run']
+
+    logger.info(f"Best result from run {best_run_idx} with error {best_result['error']:.6f}")
+    logger.info(f"Successful runs: {len(successful_results)}/{nrun}")
+
+    # Get the best W and H matrices
+    W_best = best_result['W']
+    H_best = best_result['H']
+
+    # Renormalize W columns so each signature sums to 1
+    W_normalized = W_best / W_best.sum(axis=0, keepdims=True)
+
+    # Adjust H accordingly to maintain the reconstruction
+    # Since W_new = W_old / sum(W_old), we need H_new = H_old * sum(W_old)
+    column_sums = W_best.sum(axis=0, keepdims=True)
+    H_adjusted = H_best * column_sums.T
+
+    logger.info("Signatures extracted and normalized successfully")
+
+    return {
+        'W': W_normalized,
+        'H': H_adjusted,
+        'reconstruction_error': best_result['error'],
+        'best_run': best_run_idx,
+        'all_errors': all_errors,
+        'successful_runs': len(successful_results),
+        'total_runs': nrun
+    }
+
+
 # Add the method to PyMutation class
 def add_trinucleotide_method_to_pymutation():
     """Add trinucleotideMatrix method to PyMutation class."""
