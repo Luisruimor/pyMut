@@ -346,8 +346,251 @@ def trinucleotideMatrix(self, fasta_file: str) -> Tuple[pd.DataFrame, pd.DataFra
     return contexts_df, valid_data
 
 
+def estimateSignatures(contexts_df: pd.DataFrame, nMin: int = 2, nTry: int = 6,
+                      nrun: int = 5, parallel: int = 4, pConstant: Optional[float] = None) -> Dict:
+    """
+    Estimate optimal number of mutational signatures using NMF decomposition.
+
+    This method normalizes the input matrix to frequencies, performs NMF decomposition
+    for different numbers of signatures (k), and calculates stability metrics to
+    identify the optimal number of signatures.
+
+    Parameters
+    ----------
+    contexts_df : pd.DataFrame
+        96 x samples matrix with trinucleotide context counts (from trinucleotideMatrix)
+    nMin : int, default 2
+        Minimum number of signatures to test
+    nTry : int, default 6
+        Maximum number of signatures to test
+    nrun : int, default 5
+        Number of NMF runs per k value for stability assessment
+    parallel : int, default 4
+        Number of CPU cores to use for parallel processing
+    pConstant : float, optional
+        Small positive constant to add to matrix if NMF fails due to zeros
+
+    Returns
+    -------
+    Dict
+        Dictionary containing:
+        - 'metrics': DataFrame with stability metrics for each k
+        - 'models': List of NMF models for each k and run
+        - 'optimal_k': Suggested optimal number of signatures
+
+    Raises
+    ------
+    ImportError
+        If required packages (scikit-learn, scipy) are not installed
+    ValueError
+        If input matrix is invalid or NMF consistently fails
+    """
+    import pandas as pd  # Local import to ensure availability
+    try:
+        from sklearn.decomposition import NMF
+        from sklearn.metrics import mean_squared_error
+        from scipy.cluster.hierarchy import linkage, cophenet
+        from scipy.spatial.distance import pdist
+        import concurrent.futures
+    except ImportError as e:
+        missing_pkg = str(e).split("'")[1] if "'" in str(e) else "required package"
+        raise ImportError(f"{missing_pkg} is required for signature estimation. "
+                         f"Install with: pip install scikit-learn scipy")
+
+    # Validate input
+    if not isinstance(contexts_df, pd.DataFrame):
+        raise ValueError("contexts_df must be a pandas DataFrame")
+
+    if contexts_df.shape[0] != 96:
+        raise ValueError("contexts_df must have 96 rows (trinucleotide contexts)")
+
+    if nMin < 1 or nTry < nMin:
+        raise ValueError("nMin must be >= 1 and nTry must be >= nMin")
+
+    logger.info(f"Starting signature estimation for k={nMin} to k={nTry} with {nrun} runs each")
+
+    # Normalize matrix to frequencies (row-wise)
+    matrix = contexts_df.values.astype(float)
+    row_sums = matrix.sum(axis=1, keepdims=True)
+    row_sums[row_sums == 0] = 1  # Avoid division by zero
+    normalized_matrix = matrix / row_sums
+
+    logger.info(f"Normalized matrix shape: {normalized_matrix.shape}")
+
+    # Check for excessive zeros and apply pConstant if needed
+    zero_fraction = (normalized_matrix == 0).sum() / normalized_matrix.size
+    if zero_fraction > 0.8 and pConstant is not None:
+        logger.warning(f"Matrix has {zero_fraction:.2%} zeros, adding pConstant={pConstant}")
+        normalized_matrix += pConstant
+        # Re-normalize after adding constant
+        row_sums = normalized_matrix.sum(axis=1, keepdims=True)
+        normalized_matrix = normalized_matrix / row_sums
+
+    def _run_nmf_single(k, run_idx, matrix):
+        """Run a single NMF decomposition."""
+        try:
+            nmf = NMF(n_components=k, init='random', random_state=run_idx, 
+                     max_iter=1000, tol=1e-4)
+            W = nmf.fit_transform(matrix)
+            H = nmf.components_
+
+            # Calculate reconstruction error (RSS)
+            reconstructed = np.dot(W, H)
+            rss = mean_squared_error(matrix, reconstructed) * matrix.size
+
+            return {
+                'k': k,
+                'run': run_idx,
+                'model': nmf,
+                'W': W,
+                'H': H,
+                'rss': rss,
+                'success': True
+            }
+        except Exception as e:
+            logger.warning(f"NMF failed for k={k}, run={run_idx}: {e}")
+            return {
+                'k': k,
+                'run': run_idx,
+                'model': None,
+                'W': None,
+                'H': None,
+                'rss': np.inf,
+                'success': False
+            }
+
+    # Run NMF for all k values and runs in parallel
+    all_results = []
+    k_values = range(nMin, nTry + 1)
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=parallel) as executor:
+        futures = []
+        for k in k_values:
+            for run_idx in range(nrun):
+                future = executor.submit(_run_nmf_single, k, run_idx, normalized_matrix)
+                futures.append(future)
+
+        # Collect results
+        for future in concurrent.futures.as_completed(futures):
+            result = future.result()
+            all_results.append(result)
+
+    # Organize results by k
+    results_by_k = {}
+    for result in all_results:
+        k = result['k']
+        if k not in results_by_k:
+            results_by_k[k] = []
+        results_by_k[k].append(result)
+
+    # Calculate metrics for each k
+    metrics_data = []
+    models_data = []
+
+    for k in k_values:
+        k_results = results_by_k[k]
+        successful_results = [r for r in k_results if r['success']]
+
+        if len(successful_results) == 0:
+            logger.warning(f"All NMF runs failed for k={k}")
+            continue
+
+        # Calculate mean RSS
+        rss_values = [r['rss'] for r in successful_results]
+        mean_rss = np.mean(rss_values)
+        std_rss = np.std(rss_values)
+
+        # Calculate cophenetic correlation
+        # Use consensus matrix approach for stability
+        if len(successful_results) >= 2:
+            # Create consensus matrix from H matrices
+            H_matrices = [r['H'] for r in successful_results]
+            n_samples = H_matrices[0].shape[1]
+
+            # Calculate pairwise correlations between samples across runs
+            consensus_matrix = np.zeros((n_samples, n_samples))
+
+            for i in range(len(H_matrices)):
+                for j in range(i + 1, len(H_matrices)):
+                    H1, H2 = H_matrices[i], H_matrices[j]
+                    # Calculate correlation between H matrices
+                    corr_matrix = np.corrcoef(H1.T, H2.T)[:n_samples, n_samples:]
+                    consensus_matrix += np.abs(corr_matrix)
+
+            consensus_matrix /= (len(H_matrices) * (len(H_matrices) - 1) / 2)
+
+            # Calculate cophenetic correlation
+            try:
+                # Convert consensus matrix to distance matrix
+                distance_matrix = 1 - consensus_matrix
+                condensed_dist = pdist(distance_matrix)
+                linkage_matrix = linkage(condensed_dist, method='average')
+                cophenetic_corr, _ = cophenet(linkage_matrix, condensed_dist)
+            except:
+                cophenetic_corr = np.nan
+        else:
+            cophenetic_corr = np.nan
+
+        # Calculate dispersion (coefficient of variation of RSS)
+        dispersion = std_rss / mean_rss if mean_rss > 0 else np.inf
+
+        metrics_data.append({
+            'k': k,
+            'mean_rss': mean_rss,
+            'std_rss': std_rss,
+            'cophenetic_corr': cophenetic_corr,
+            'dispersion': dispersion,
+            'successful_runs': len(successful_results),
+            'total_runs': len(k_results)
+        })
+
+        # Store models
+        models_data.extend(successful_results)
+
+    if not metrics_data:
+        raise ValueError("All NMF decompositions failed. Try adjusting pConstant or input data.")
+
+    # Create metrics DataFrame
+    metrics_df = pd.DataFrame(metrics_data)
+
+    # Suggest optimal k based on cophenetic correlation drop
+    optimal_k = nMin
+    if len(metrics_df) > 1:
+        # Find the k where cophenetic correlation drops most significantly
+        valid_coph = metrics_df.dropna(subset=['cophenetic_corr'])
+        if len(valid_coph) > 1:
+            # Calculate differences in cophenetic correlation
+            coph_diff = valid_coph['cophenetic_corr'].diff().abs()
+            if not coph_diff.isna().all():
+                max_drop_idx = coph_diff.idxmax()
+                optimal_k = valid_coph.loc[max_drop_idx, 'k']
+
+    logger.info(f"Signature estimation completed. Suggested optimal k: {optimal_k}")
+
+    return {
+        'metrics': metrics_df,
+        'models': models_data,
+        'optimal_k': optimal_k,
+        'normalized_matrix': normalized_matrix,
+        'original_matrix': matrix
+    }
+
+
 # Add the method to PyMutation class
 def add_trinucleotide_method_to_pymutation():
     """Add trinucleotideMatrix method to PyMutation class."""
     from ..core import PyMutation
     PyMutation.trinucleotideMatrix = trinucleotideMatrix
+
+
+def add_signature_methods_to_pymutation():
+    """Add signature analysis methods to PyMutation class."""
+    from ..core import PyMutation
+    PyMutation.trinucleotideMatrix = trinucleotideMatrix
+
+    # Wrap the independent function as a method
+    def estimateSignatures_method(self, contexts_df, **kwargs):
+        """Method wrapper for the independent estimateSignatures function."""
+        return estimateSignatures(contexts_df, **kwargs)
+
+    PyMutation.estimateSignatures = estimateSignatures_method
