@@ -6,6 +6,10 @@ from .version import __version__
 from .analysis import mutation_burden
 from . import output
 from .analysis import pfam_annotation
+from .analysis import mutational_signature
+
+# Add methods to PyMutation class
+mutational_signature.add_trinucleotide_method_to_pymutation()
 
 
 __all__ = [
