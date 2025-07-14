@@ -409,11 +409,11 @@ def estimateSignatures(contexts_df: pd.DataFrame, nMin: int = 2, nTry: int = 6,
 
     logger.info(f"Starting signature estimation for k={nMin} to k={nTry} with {nrun} runs each")
 
-    # Normalize matrix to frequencies (row-wise)
+    # Normalize matrix to frequencies (column-wise to preserve sample-specific patterns)
     matrix = contexts_df.values.astype(float)
-    row_sums = matrix.sum(axis=1, keepdims=True)
-    row_sums[row_sums == 0] = 1  # Avoid division by zero
-    normalized_matrix = matrix / row_sums
+    col_sums = matrix.sum(axis=0, keepdims=True)
+    col_sums[col_sums == 0] = 1  # Avoid division by zero
+    normalized_matrix = matrix / col_sums
 
     logger.info(f"Normalized matrix shape: {normalized_matrix.shape}")
 
@@ -422,9 +422,9 @@ def estimateSignatures(contexts_df: pd.DataFrame, nMin: int = 2, nTry: int = 6,
     if zero_fraction > 0.8 and pConstant is not None:
         logger.warning(f"Matrix has {zero_fraction:.2%} zeros, adding pConstant={pConstant}")
         normalized_matrix += pConstant
-        # Re-normalize after adding constant
-        row_sums = normalized_matrix.sum(axis=1, keepdims=True)
-        normalized_matrix = normalized_matrix / row_sums
+        # Re-normalize after adding constant (by column to maintain sample-specific patterns)
+        col_sums = normalized_matrix.sum(axis=0, keepdims=True)
+        normalized_matrix = normalized_matrix / col_sums
 
     def _run_nmf_single(k, run_idx, matrix):
         """Run a single NMF decomposition."""
@@ -658,17 +658,18 @@ def extract_signatures(contexts_df: pd.DataFrame, k: int, nrun: int = 30,
     # Convert to numpy array and ensure float type
     matrix = contexts_df.values.astype(float)
 
-    # Convert each row to relative frequencies
-    row_sums = matrix.sum(axis=1, keepdims=True)
-    row_sums[row_sums == 0] = 1  # Avoid division by zero for empty contexts
-    normalized_matrix = matrix / row_sums
+    # Convert each column (sample) to relative frequencies
+    # This preserves the differential signal between samples for each trinucleotide context
+    col_sums = matrix.sum(axis=0, keepdims=True)
+    col_sums[col_sums == 0] = 1  # Avoid division by zero for empty samples
+    normalized_matrix = matrix / col_sums
 
     # Add pseudocount to avoid zeros
     normalized_matrix += pseudocount
 
-    # Re-normalize after adding pseudocount
-    row_sums = normalized_matrix.sum(axis=1, keepdims=True)
-    normalized_matrix = normalized_matrix / row_sums
+    # Re-normalize after adding pseudocount (by column to maintain sample-specific patterns)
+    col_sums = normalized_matrix.sum(axis=0, keepdims=True)
+    normalized_matrix = normalized_matrix / col_sums
 
     logger.info(f"Matrix normalized to frequencies with pseudocount {pseudocount}")
 
@@ -766,6 +767,226 @@ def extract_signatures(contexts_df: pd.DataFrame, k: int, nrun: int = 30,
     }
 
 
+def compare_signatures(W: np.ndarray, cosmic_path: str, min_cosine: float = 0.6, 
+                      return_matrix: bool = False) -> Dict:
+    """
+    Compare extracted signatures with COSMIC catalog using cosine similarity.
+
+    This function loads the COSMIC catalog, validates context compatibility,
+    calculates cosine similarity between each signature in W and each COSMIC signature,
+    and returns a summary of best matches along with optionally the full similarity matrix.
+
+    Parameters
+    ----------
+    W : numpy.ndarray
+        96 × k matrix from extract_signatures with normalized signature profiles
+        (each column sums to 1)
+    cosmic_path : str
+        Path to COSMIC catalog file (e.g., "COSMIC_v3.4_SBS_GRCh38.txt")
+    min_cosine : float, default 0.6
+        Minimum cosine similarity threshold for considering a match
+    return_matrix : bool, default False
+        If True, also return the full cosine similarity matrix
+
+    Returns
+    -------
+    Dict
+        Dictionary containing:
+        - 'summary_df': pandas.DataFrame with columns ['Signature_W', 'Best_COSMIC', 'Cosine', 'Aetiology']
+        - 'cosine_matrix': numpy.ndarray (k × N) - Only if return_matrix=True
+
+    Raises
+    ------
+    FileNotFoundError
+        If cosmic_path file does not exist
+    ValueError
+        If contexts don't match between W and COSMIC catalog
+    ImportError
+        If required packages are not installed
+
+    Notes
+    -----
+    The function expects the COSMIC catalog to have 96 rows corresponding to 
+    trinucleotide contexts and columns for different signatures. The first column
+    should contain context labels, and there should be an 'aetiology' column or
+    similar metadata.
+    """
+    try:
+        from sklearn.metrics.pairwise import cosine_similarity
+    except ImportError as e:
+        missing_pkg = str(e).split("'")[1] if "'" in str(e) else "scikit-learn"
+        raise ImportError(f"{missing_pkg} is required for cosine similarity calculation. "
+                         f"Install with: pip install scikit-learn")
+
+    # Validate input W matrix
+    if not isinstance(W, np.ndarray):
+        raise ValueError("W must be a numpy array")
+
+    if W.shape[0] != 96:
+        raise ValueError("W must have 96 rows (trinucleotide contexts)")
+
+    if len(W.shape) != 2:
+        raise ValueError("W must be a 2D array")
+
+    logger.info(f"Comparing {W.shape[1]} signatures with COSMIC catalog")
+
+    # Load COSMIC catalog and set contexts column as index
+    try:
+        cosmic_df = pd.read_csv(cosmic_path, sep='\t')
+    except FileNotFoundError:
+        raise FileNotFoundError(f"COSMIC catalog file not found: {cosmic_path}")
+    except Exception as e:
+        raise ValueError(f"Error reading COSMIC catalog: {e}")
+
+    logger.info(f"Loaded COSMIC catalog with shape {cosmic_df.shape}")
+
+    # Validate catalog structure
+    if cosmic_df.shape[0] != 96:  # 96 contexts (header becomes column names)
+        raise ValueError(f"COSMIC catalog must have 96 rows (trinucleotide contexts), got {cosmic_df.shape[0]}")
+
+    # Extract context labels and set as index
+    context_column = cosmic_df.columns[0]  # First column should be 'Type'
+    contexts = cosmic_df[context_column].values  # All rows are data (no header row to skip)
+    cosmic_df = cosmic_df.set_index(context_column)
+
+    # Verify/renormalize W matrix (columns should sum to 1)
+    W_sums = W.sum(axis=0)
+    if not np.allclose(W_sums, 1.0, rtol=1e-5):
+        logger.warning("W matrix columns do not sum to 1, renormalizing...")
+        W = W / W_sums.reshape(1, -1)
+        logger.info("W matrix renormalized")
+
+    # CRITICAL: Ensure exact row alignment between W matrix and COSMIC catalog
+    # The W matrix is assumed to follow the standard TRINUCLEOTIDE_CONTEXTS order
+    # We must reindex the COSMIC catalog to match this exact order
+    logger.info("Aligning COSMIC catalog with standard trinucleotide context order...")
+
+    # Check if all required contexts are present in the catalog
+    missing_contexts = set(TRINUCLEOTIDE_CONTEXTS) - set(contexts)
+    if missing_contexts:
+        raise ValueError(f"COSMIC catalog is missing required contexts: {missing_contexts}")
+
+    # Reindex catalog to match the standard TRINUCLEOTIDE_CONTEXTS order
+    try:
+        cosmic_df = cosmic_df.reindex(TRINUCLEOTIDE_CONTEXTS)
+        if cosmic_df.isnull().any().any():
+            raise ValueError("Some standard trinucleotide contexts are missing in COSMIC catalog")
+        logger.info("COSMIC catalog successfully aligned to standard context order")
+    except Exception as e:
+        raise ValueError(f"Failed to align COSMIC catalog contexts: {e}")
+
+    # Get signature columns (all columns now since we set index)
+    signature_columns = list(cosmic_df.columns)
+
+    if len(signature_columns) == 0:
+        raise ValueError("No signature columns found in COSMIC catalog")
+
+    # Define artifact signatures to remove
+    artifact_signatures = {
+        'SBS27', 'SBS43', 'SBS45', 'SBS46', 'SBS47', 'SBS48', 'SBS49', 'SBS50',
+        'SBS51', 'SBS52', 'SBS53', 'SBS54', 'SBS55', 'SBS56', 'SBS57', 'SBS58',
+        'SBS59', 'SBS60', 'SBS95'
+    }
+
+    # Remove artifact signatures: containing "artefact" in description, names ending in "c", or specific SBS signatures
+    filtered_columns = []
+    for col in signature_columns:
+        # Check if name ends with "c"
+        if col.endswith('c'):
+            logger.info(f"Removing artifact signature {col} (ends with 'c')")
+            continue
+        # Check if contains "artefact" (case insensitive)
+        if 'artefact' in col.lower():
+            logger.info(f"Removing artifact signature {col} (contains 'artefact')")
+            continue
+        # Check if it's one of the specified artifact signatures
+        if col in artifact_signatures:
+            logger.info(f"Removing artifact signature {col} (specified artifact)")
+            continue
+        filtered_columns.append(col)
+
+    signature_columns = filtered_columns
+    cosmic_df = cosmic_df[signature_columns]
+
+    # Extract signature matrix
+    cosmic_matrix = cosmic_df.values.astype(float)
+
+    # Remove signatures that sum to 0
+    column_sums = cosmic_matrix.sum(axis=0)
+    zero_sum_mask = column_sums == 0
+    if zero_sum_mask.any():
+        zero_sum_sigs = [signature_columns[i] for i in range(len(signature_columns)) if zero_sum_mask[i]]
+        logger.info(f"Removing signatures with zero sum: {zero_sum_sigs}")
+        non_zero_mask = ~zero_sum_mask
+        cosmic_matrix = cosmic_matrix[:, non_zero_mask]
+        signature_columns = [sig for i, sig in enumerate(signature_columns) if non_zero_mask[i]]
+
+    logger.info(f"Found {len(signature_columns)} valid COSMIC signatures after filtering")
+
+    # Validate that we have 96 contexts in the correct order
+    if len(TRINUCLEOTIDE_CONTEXTS) != 96:
+        raise ValueError(f"Expected 96 trinucleotide contexts in standard order, got {len(TRINUCLEOTIDE_CONTEXTS)}")
+
+    if cosmic_matrix.shape[0] != 96:
+        raise ValueError(f"COSMIC matrix must have 96 rows, got {cosmic_matrix.shape[0]}")
+
+    # Verify the alignment is correct
+    current_contexts = cosmic_df.index.tolist()
+    if current_contexts != TRINUCLEOTIDE_CONTEXTS:
+        raise ValueError("COSMIC catalog contexts are not properly aligned with standard order")
+
+    # Normalize each remaining signature to sum to 1
+    cosmic_normalized = cosmic_matrix / cosmic_matrix.sum(axis=0, keepdims=True)
+
+    logger.info("COSMIC signatures normalized")
+
+    # Calculate cosine similarity between W and COSMIC signatures
+    # W is 96 × k, cosmic_normalized is 96 × N
+    # We want cosine_matrix to be k × N
+    cosine_matrix = cosine_similarity(W.T, cosmic_normalized.T)
+
+    logger.info(f"Calculated cosine similarity matrix: {cosine_matrix.shape}")
+
+    # Create summary DataFrame
+    summary_data = []
+
+    for i in range(W.shape[1]):
+        # Find best match for signature i
+        similarities = cosine_matrix[i, :]
+        best_idx = np.argmax(similarities)
+        best_cosine = similarities[best_idx]
+        best_cosmic = signature_columns[best_idx]
+
+        # Check if similarity meets threshold
+        if best_cosine >= min_cosine:
+            match_status = best_cosmic
+        else:
+            match_status = "No match"
+
+        # Add "Aetiology" - for now set to "Unknown" as the catalog doesn't have descriptions
+        # In a full implementation, this would merge with a descriptions table
+        aetiology = "Unknown"
+
+        summary_data.append({
+            'Signature_W': f'Signature_{i+1}',
+            'Best_COSMIC': match_status,
+            'Cosine': best_cosine,
+            'Aetiology': aetiology
+        })
+
+    summary_df = pd.DataFrame(summary_data)
+
+    logger.info(f"Created summary with {len(summary_data)} signature comparisons")
+
+    # Prepare return dictionary
+    result = {'summary_df': summary_df}
+
+    if return_matrix:
+        result['cosine_matrix'] = cosine_matrix
+
+    return result
+
+
 # Add the method to PyMutation class
 def add_trinucleotide_method_to_pymutation():
     """Add trinucleotideMatrix method to PyMutation class."""
@@ -783,4 +1004,14 @@ def add_signature_methods_to_pymutation():
         """Method wrapper for the independent estimateSignatures function."""
         return estimateSignatures(contexts_df, **kwargs)
 
+    def extractSignatures_method(self, contexts_df, **kwargs):
+        """Method wrapper for the independent extract_signatures function."""
+        return extract_signatures(contexts_df, **kwargs)
+
+    def compareSignatures_method(self, W, cosmic_path, **kwargs):
+        """Method wrapper for the independent compare_signatures function."""
+        return compare_signatures(W, cosmic_path, **kwargs)
+
     PyMutation.estimateSignatures = estimateSignatures_method
+    PyMutation.extractSignatures = extractSignatures_method
+    PyMutation.compareSignatures = compareSignatures_method
