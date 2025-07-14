@@ -172,32 +172,47 @@ def merge_maf_with_vep_annotations(
     conn.register('maf_data', maf_df)
     conn.register('vep_data', meaningful_annotations)
 
+    # Dynamic SQL query
+    vep_columns_mapping = {
+        'Gene': 'VEP_Gene',
+        'Feature': 'VEP_Feature',
+        'Feature_type': 'VEP_Feature_type',
+        'Consequence': 'VEP_Consequence',
+        'cDNA_position': 'VEP_cDNA_position',
+        'CDS_position': 'VEP_CDS_position',
+        'Protein_position': 'VEP_Protein_position',
+        'Amino_acids': 'VEP_Amino_acids',
+        'Codons': 'VEP_Codons',
+        'Existing_variation': 'VEP_Existing_variation',
+        'SYMBOL': 'VEP_SYMBOL',
+        'SYMBOL_SOURCE': 'VEP_SYMBOL_SOURCE',
+        'HGNC_ID': 'VEP_HGNC_ID',
+        'ENSP': 'VEP_ENSP',
+        'SWISSPROT': 'VEP_SWISSPROT',
+        'TREMBL': 'VEP_TREMBL',
+        'UNIPARC': 'VEP_UNIPARC',
+        'UNIPROT_ISOFORM': 'VEP_UNIPROT_ISOFORM',
+        'DOMAINS': 'VEP_DOMAINS',
+        'IMPACT': 'VEP_IMPACT',
+        'STRAND': 'VEP_STRAND',
+        'DISTANCE': 'VEP_DISTANCE'
+    }
+
+    # Select columns that exist in the VEP data
+    available_vep_columns = meaningful_annotations.columns.tolist()
+    vep_select_clauses = []
+
+    for vep_col, alias in vep_columns_mapping.items():
+        if vep_col in available_vep_columns:
+            vep_select_clauses.append(f"v.{vep_col} as {alias}")
+
+    vep_select_str = ",\n        ".join(vep_select_clauses)
+
     # Perform the merge using SQL
-    merge_query = """
+    merge_query = f"""
     SELECT 
         m.*,
-        v.Gene as VEP_Gene,
-        v.Feature as VEP_Feature,
-        v.Feature_type as VEP_Feature_type,
-        v.Consequence as VEP_Consequence,
-        v.cDNA_position as VEP_cDNA_position,
-        v.CDS_position as VEP_CDS_position,
-        v.Protein_position as VEP_Protein_position,
-        v.Amino_acids as VEP_Amino_acids,
-        v.Codons as VEP_Codons,
-        v.Existing_variation as VEP_Existing_variation,
-        v.SYMBOL as VEP_SYMBOL,
-        v.SYMBOL_SOURCE as VEP_SYMBOL_SOURCE,
-        v.HGNC_ID as VEP_HGNC_ID,
-        v.ENSP as VEP_ENSP,
-        v.SWISSPROT as VEP_SWISSPROT,
-        v.TREMBL as VEP_TREMBL,
-        v.UNIPARC as VEP_UNIPARC,
-        v.UNIPROT_ISOFORM as VEP_UNIPROT_ISOFORM,
-        v.DOMAINS as VEP_DOMAINS,
-        v.IMPACT as VEP_IMPACT,
-        v.STRAND as VEP_STRAND,
-        v.DISTANCE as VEP_DISTANCE
+        {vep_select_str}
     FROM maf_data m
     LEFT JOIN vep_data v ON m.region_key = v.region_key
     """
@@ -211,6 +226,12 @@ def merge_maf_with_vep_annotations(
     if 'Hugo_Symbol' in result_df.columns and 'VEP_SYMBOL' in result_df.columns:
         mask = result_df['Hugo_Symbol'] == result_df['VEP_SYMBOL']
         result_df.loc[mask, 'VEP_SYMBOL'] = None
+
+    # Replace missing VEP annotations with empty strings instead of "-" or NaN
+    vep_columns = [col for col in result_df.columns if col.startswith('VEP_')]
+    for col in vep_columns:
+        result_df[col] = result_df[col].fillna("")
+        result_df[col] = result_df[col].replace("-", "")
 
     logger.info(f"Merge completed: {result_df.shape[0]} rows, {result_df.shape[1]} columns")
 
