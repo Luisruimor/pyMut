@@ -25,6 +25,16 @@ from .visualizations.summary import (
     create_summary_plot
 )
 from .visualizations.oncoplot import create_oncoplot_plot
+from .visualizations.mutational_signature import (
+    create_mutational_signature_analysis,
+    extract_mutation_matrix,
+    perform_nmf,
+    create_signature_profile_plot,
+    create_cosine_similarity_heatmap,
+    create_signature_contribution_heatmap,
+    create_signature_contribution_barplot,
+    create_signature_donut_plot
+)
 from .utils.constants import (
     DEFAULT_PLOT_FIGSIZE, DEFAULT_SUMMARY_FIGSIZE, DEFAULT_PLOT_TITLE,
     DEFAULT_TOP_GENES_COUNT, GENE_COLUMN, VARIANT_CLASSIFICATION_COLUMN,
@@ -658,6 +668,79 @@ class PyMutation:
             
         except Exception as e:
             raise ValueError(f"Error generating oncoplot: {str(e)}")
+    
+    def mutational_signature_plot(self,
+                                n_signatures: int = 3,
+                                sample_column: str = SAMPLE_COLUMN,
+                                ref_column: str = REF_COLUMN,
+                                alt_column: str = ALT_COLUMN,
+                                context_column: Optional[str] = None,
+                                cosmic_signatures: Optional[pd.DataFrame] = None,
+                                figsize: Tuple[int, int] = (20, 24),
+                                title: str = "Mutational Signature Analysis",
+                                show_interactive: bool = False) -> plt.Figure:
+        """
+        Generate a comprehensive mutational signature analysis visualization.
+        
+        This analysis extracts mutational signatures from the data using Non-negative
+        Matrix Factorization (NMF) and creates multiple visualizations:
+        
+        A. Signature profiles - Bar charts showing the 96 trinucleotide contexts
+        B. Cosine similarity - Heatmap comparing with COSMIC signatures
+        C. Sample contributions - Heatmap showing signature contributions per sample
+        D. Relative contributions - Stacked bar plot of signature proportions
+        E. Overall proportions - Donut plot of total signature contributions
+        
+        Args:
+            n_signatures: Number of signatures to extract (default: 3)
+            sample_column: Column containing sample identifiers
+            ref_column: Column containing reference alleles
+            alt_column: Column containing alternative alleles
+            context_column: Column containing trinucleotide context (optional)
+                          If None, will try to auto-detect context column
+            cosmic_signatures: DataFrame with COSMIC reference signatures (optional)
+                             If None, will use synthetic signatures for demonstration
+            figsize: Overall figure size (default: (20, 24))
+            title: Main title for the analysis
+            show_interactive: If True, display the plot interactively
+            
+        Returns:
+            matplotlib.figure.Figure: Complete mutational signature analysis figure
+            
+        Example:
+            >>> # Basic usage
+            >>> fig = py_mut.mutational_signature_plot(n_signatures=3)
+            >>> fig.savefig('mutational_signatures.png')
+            
+            >>> # With COSMIC comparison
+            >>> cosmic_df = pd.read_csv('COSMIC_signatures.tsv', sep='\t', index_col=0)
+            >>> fig = py_mut.mutational_signature_plot(
+            ...     n_signatures=4,
+            ...     cosmic_signatures=cosmic_df,
+            ...     figsize=(24, 28)
+            ... )
+        """
+        # Create the complete analysis
+        fig = create_mutational_signature_analysis(
+            self.data,
+            n_signatures=n_signatures,
+            sample_column=sample_column,
+            ref_column=ref_column,
+            alt_column=alt_column,
+            context_column=context_column,
+            cosmic_signatures=cosmic_signatures,
+            figsize=figsize
+        )
+        
+        # Add main title if different from default
+        if title != "Mutational Signature Analysis":
+            fig.texts[0].set_text(title)  # Update the main title
+        
+        # Show interactively if requested
+        if show_interactive:
+            self._show_figure_interactive(fig)
+        
+        return fig
     
     def _show_figure_interactive(self, figure: plt.Figure) -> None:
         """

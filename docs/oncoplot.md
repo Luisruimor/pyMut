@@ -5,15 +5,16 @@ El **oncoplot** (también conocido como waterfall plot en algunos contextos) es 
 ## Tabla de Contenidos
 
 1. [Introducción](#introducción)
-2. [Instalación y Configuración](#instalación-y-configuración)
-3. [Uso Básico](#uso-básico)
-4. [Parámetros Detallados](#parámetros-detallados)
-5. [Formatos de Datos Soportados](#formatos-de-datos-soportados)
-6. [Ejemplos Avanzados](#ejemplos-avanzados)
-7. [Personalización Visual](#personalización-visual)
-8. [Interpretación del Oncoplot](#interpretación-del-oncoplot)
-9. [Solución de Problemas](#solución-de-problemas)
-10. [Optimización de Rendimiento](#optimización-de-rendimiento)
+2. [Algoritmo de Cascada](#algoritmo-de-cascada)
+3. [Instalación y Configuración](#instalación-y-configuración)
+4. [Uso Básico](#uso-básico)
+5. [Parámetros Detallados](#parámetros-detallados)
+6. [Formatos de Datos Soportados](#formatos-de-datos-soportados)
+7. [Ejemplos Avanzados](#ejemplos-avanzados)
+8. [Personalización Visual](#personalización-visual)
+9. [Interpretación del Oncoplot](#interpretación-del-oncoplot)
+10. [Solución de Problemas](#solución-de-problemas)
+11. [Optimización de Rendimiento](#optimización-de-rendimiento)
 
 ## Introducción
 
@@ -33,6 +34,46 @@ El oncoplot es una herramienta esencial para visualizar paisajes mutacionales en
 - **Esquemas de colores estándar** para tipos de mutación
 - **Ordenamiento inteligente** por frecuencia de mutación
 - **Alta calidad de exportación** (PNG, PDF, SVG)
+
+## Algoritmo de Cascada
+
+### Implementación Estándar (maftools/ComplexHeatmap)
+pyMut implementa el algoritmo estándar de cascada/waterfall usado por herramientas como maftools y ComplexHeatmap:
+
+```python
+# PASO 1: Ordenar genes por frecuencia de mutación
+# Los genes con más mutaciones aparecen primero (arriba)
+
+# PASO 2: Crear matriz binaria (0 = no mutado, 1 = mutado)
+binary_matrix = plot_matrix.applymap(lambda x: 0 if x == 'None' else 1)
+
+# PASO 3: Ordenamiento lexicográfico de muestras
+# Ordena por todos los genes como criterio secuencial
+sorted_samples = binary_matrix.T.sort_values(
+    by=sorted_genes,  # Genes ordenados por frecuencia
+    ascending=False   # Descendente para efecto cascada
+).index.tolist()
+```
+
+### ¿Por qué este algoritmo?
+- **Compatibilidad**: Produce el mismo resultado que maftools, ComplexHeatmap y otras herramientas estándar
+- **Efecto Cascada Visual**: Las muestras con mutaciones en genes frecuentes aparecen a la izquierda
+- **Ordenamiento Jerárquico**: Primero por el gen más frecuente, luego por el segundo, etc.
+- **Reproducibilidad**: Garantiza el mismo ordenamiento que otras herramientas con los mismos datos
+
+### Comparación con Otros Enfoques
+```python
+# ✅ Enfoque estándar (maftools/ComplexHeatmap) - IMPLEMENTADO
+# Ordenamiento lexicográfico por todos los genes
+sorted_samples = binary_matrix.T.sort_values(
+    by=sorted_genes, ascending=False
+).index.tolist()
+
+# 🔄 Enfoque alternativo (solo TMB)
+# Ordena solo por carga mutacional total
+tmb_per_sample = (matrix != 'None').sum(axis=0)
+sorted_samples = tmb_per_sample.sort_values(ascending=False).index.tolist()
+```
 
 ## Instalación y Configuración
 

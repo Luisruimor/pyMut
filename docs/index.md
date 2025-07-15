@@ -82,6 +82,30 @@ Cada componente del summary plot está disponible individualmente:
 - `variant_classification_summary_plot()`
 - `top_mutated_genes_plot()`
 
+### 4. Mutational Signature Analysis
+
+Análisis completo de firmas mutacionales que incluye:
+- Extracción de firmas usando NMF
+- Perfiles de 96 contextos trinucleotídicos
+- Comparación con firmas COSMIC
+- Contribución por muestra
+- Visualización de proporciones
+
+```python
+# Análisis con 3 firmas
+fig = py_mut.mutational_signature_plot(n_signatures=3)
+fig.savefig("signatures.png")
+
+# Con firmas COSMIC
+cosmic = pd.read_csv("COSMIC.tsv", sep='\t', index_col=0)
+fig = py_mut.mutational_signature_plot(
+    n_signatures=4,
+    cosmic_signatures=cosmic
+)
+```
+
+Más detalles en la [documentación de firmas mutacionales](mutational-signature.md).
+
 ## Estructura del Proyecto
 
 ```
@@ -213,6 +237,7 @@ class PyMutation:
     def variants_per_sample_plot(self, **kwargs) -> plt.Figure
     def variant_classification_summary_plot(self, **kwargs) -> plt.Figure
     def top_mutated_genes_plot(self, **kwargs) -> plt.Figure
+    def mutational_signature_plot(self, n_signatures: int, cosmic_signatures: pd.DataFrame = None) -> plt.Figure
 ```
 
 ### Parámetros Comunes
