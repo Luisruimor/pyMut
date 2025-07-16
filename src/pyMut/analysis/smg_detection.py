@@ -7,28 +7,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Union, Literal, Tuple, List, Optional
 
-from ..utils.compatibility import (
-    check_numpy_compatibility, 
-    check_pandas_compatibility,
-    safe_import_with_fallback,
-    print_compatibility_report
-)
-
-pd, pandas_available = safe_import_with_fallback('pandas')
-if not pandas_available:
-    numpy_compatible, numpy_error = check_numpy_compatibility()
-    pandas_compatible, pandas_error = check_pandas_compatibility()
-
-    if not numpy_compatible:
-        logging.warning("NumPy compatibility issue detected!")
-        logging.warning(numpy_error)
-        logging.info("For a full compatibility report, run:")
-        logging.info("python -c 'from pyMut.utils.compatibility import print_compatibility_report; print_compatibility_report()'")
-    elif not pandas_compatible:
-        logging.warning("Pandas compatibility issue detected!")
-        logging.warning(pandas_error)
-
-    raise ImportError("pandas could not be imported due to compatibility issues. See error messages above for solutions.")
+import pandas as pd
 
 try:
     from pyensembl import EnsemblRelease
