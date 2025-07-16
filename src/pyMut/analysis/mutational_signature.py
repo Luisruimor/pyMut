@@ -52,10 +52,7 @@ TRINUCLEOTIDE_CONTEXTS = [
     "T[T>G]A", "T[T>G]C", "T[T>G]G", "T[T>G]T"
 ]
 
-# Create mapping from context to index
 CONTEXT_TO_INDEX = {context: idx for idx, context in enumerate(TRINUCLEOTIDE_CONTEXTS)}
-
-# Complement mapping
 COMPLEMENT = {'A': 'T', 'T': 'A', 'C': 'G', 'G': 'C'}
 
 
@@ -85,7 +82,7 @@ def _normalize_to_pyrimidine(ref: str, alt: str, trinuc: str) -> Tuple[str, str,
     if ref in ['C', 'T']:
         return ref, alt, trinuc
     else:
-        # Convert to reverse complement
+        # Convert to reverse complement for pyrimidine context
         new_ref = COMPLEMENT[ref]
         new_alt = COMPLEMENT[alt]
         new_trinuc = _get_reverse_complement(trinuc)
@@ -114,10 +111,8 @@ def _get_trinucleotide_context(fasta, chrom: str, pos: int) -> Optional[str]:
         # Handle chromosome name variations
         chrom_key = chrom
         if chrom_key not in fasta.keys():
-            # Try with 'chr' prefix
             if not chrom_key.startswith('chr'):
                 chrom_key = f'chr{chrom}'
-            # Try without 'chr' prefix
             elif chrom_key.startswith('chr'):
                 chrom_key = chrom_key[3:]
 
@@ -190,10 +185,9 @@ def trinucleotideMatrix(self, fasta_file: str) -> Tuple[pd.DataFrame, pd.DataFra
     except ImportError:
         raise ImportError("pyfaidx is required for trinucleotide analysis. Install with: pip install pyfaidx")
 
-    # Import field utilities
+    # Get required columns and detect data format
     from ..utils.fields import col
-
-    # Get required columns using the field mapping system
+    
     chrom_col = col(self.data, "Chromosome", required=True)
     pos_col = col(self.data, "Start_Position", required=True) 
     ref_col = col(self.data, "Reference_Allele", required=True)
@@ -203,10 +197,7 @@ def trinucleotideMatrix(self, fasta_file: str) -> Tuple[pd.DataFrame, pd.DataFra
     if any(col is None for col in [chrom_col, pos_col, ref_col, alt_col]):
         raise ValueError("Required columns not found. Need: Chromosome, Start_Position, Reference_Allele, Tumor_Seq_Allele2")
 
-    # Detect data format (wide vs long)
     if sample_col is None:
-        # Wide format: each sample is a separate column
-        # Identify sample columns (exclude standard VCF/MAF columns)
         standard_cols = {'CHROM', 'POS', 'ID', 'REF', 'ALT', 'QUAL', 'FILTER', 'INFO', 'FORMAT',
                         'Hugo_Symbol', 'Entrez_Gene_Id', 'Center', 'NCBI_Build', 'Start_Position', 
                         'End_position', 'Strand', 'Variant_Classification', 'Variant_Type', 
@@ -217,12 +208,11 @@ def trinucleotideMatrix(self, fasta_file: str) -> Tuple[pd.DataFrame, pd.DataFra
         logger.info(f"Detected wide format with {len(sample_columns)} sample columns")
         data_format = "wide"
     else:
-        # Long format: single sample column
         sample_columns = None
         logger.info("Detected long format with Tumor_Sample_Barcode column")
         data_format = "long"
 
-    # Filter for SNVs only
+    # Filter for SNVs and load reference genome
     snv_mask = (
         (ref_col.isin(['A', 'C', 'G', 'T'])) & 
         (alt_col.isin(['A', 'C', 'G', 'T'])) &
@@ -232,18 +222,16 @@ def trinucleotideMatrix(self, fasta_file: str) -> Tuple[pd.DataFrame, pd.DataFra
     if not snv_mask.any():
         raise ValueError("No valid SNVs found in the dataset")
 
-    # Create working dataframe with SNVs only
     snv_data = self.data[snv_mask].copy()
     logger.info(f"Processing {len(snv_data)} SNVs from {len(self.data)} total mutations")
 
-    # Load FASTA file
     try:
         fasta = pyfaidx.Fasta(fasta_file)
         logger.info(f"Loaded FASTA file: {fasta_file}")
     except Exception as e:
         raise ValueError(f"Error loading FASTA file {fasta_file}: {e}")
 
-    # Extract trinucleotide contexts
+    # Process each SNV to extract trinucleotide context
     trinuc_contexts = []
     class96_labels = []
     idx96_values = []
@@ -254,7 +242,6 @@ def trinucleotideMatrix(self, fasta_file: str) -> Tuple[pd.DataFrame, pd.DataFra
         ref = str(row[ref_col.name]).upper()
         alt = str(row[alt_col.name]).upper()
 
-        # Get trinucleotide context
         trinuc = _get_trinucleotide_context(fasta, chrom, pos)
 
         if trinuc is None:
@@ -263,26 +250,20 @@ def trinucleotideMatrix(self, fasta_file: str) -> Tuple[pd.DataFrame, pd.DataFra
             idx96_values.append(None)
             continue
 
-        # Normalize to pyrimidine context
         norm_ref, norm_alt, norm_trinuc = _normalize_to_pyrimidine(ref, alt, trinuc)
-
-        # Create context label
         context_label = _create_context_label(norm_ref, norm_alt, norm_trinuc)
-
-        # Get index
         context_idx = CONTEXT_TO_INDEX.get(context_label)
 
         trinuc_contexts.append(norm_trinuc)
         class96_labels.append(context_label)
         idx96_values.append(context_idx)
 
-    # Add new columns to the SNV data
+    # Add context information and filter valid entries
     snv_data = snv_data.copy()
     snv_data['trinuc'] = trinuc_contexts
     snv_data['class96'] = class96_labels
     snv_data['idx96'] = idx96_values
 
-    # Filter out rows with missing context information
     valid_mask = snv_data['idx96'].notna()
     valid_data = snv_data[valid_mask].copy()
 
@@ -291,13 +272,11 @@ def trinucleotideMatrix(self, fasta_file: str) -> Tuple[pd.DataFrame, pd.DataFra
     if len(valid_data) == 0:
         raise ValueError("No SNVs with valid trinucleotide contexts found")
 
-    # Create the 96 x samples matrix
+    # Create 96 x samples matrix based on data format
     if data_format == "long":
-        # Long format: use sample column
         sample_names = valid_data[sample_col.name].unique()
         contexts_matrix = np.zeros((96, len(sample_names)), dtype=int)
 
-        # Fill the matrix
         for sample_idx, sample in enumerate(sample_names):
             sample_data = valid_data[valid_data[sample_col.name] == sample]
             context_counts = sample_data['idx96'].value_counts()
@@ -307,17 +286,14 @@ def trinucleotideMatrix(self, fasta_file: str) -> Tuple[pd.DataFrame, pd.DataFra
                     contexts_matrix[int(context_idx), sample_idx] = count
 
     else:
-        # Wide format: each sample is a column with genotype calls
         sample_names = sample_columns
         contexts_matrix = np.zeros((96, len(sample_names)), dtype=int)
 
-        # For each variant (row), check which samples have the mutation
         for idx, row in valid_data.iterrows():
             context_idx = row['idx96']
             if pd.notna(context_idx):
                 context_idx = int(context_idx)
 
-                # Check each sample column for this variant
                 for sample_idx, sample_name in enumerate(sample_names):
                     genotype = str(row[sample_name])
 
@@ -330,7 +306,6 @@ def trinucleotideMatrix(self, fasta_file: str) -> Tuple[pd.DataFrame, pd.DataFra
                         ref_allele = str(row[ref_col.name]).upper()
                         alt_allele = str(row[alt_col.name]).upper()
 
-                        # Count how many copies of the alternative allele
                         alt_count = sum(1 for allele in alleles if allele == alt_allele)
                         contexts_matrix[context_idx, sample_idx] += alt_count
 
@@ -397,7 +372,7 @@ def estimateSignatures(contexts_df: pd.DataFrame, nMin: int = 2, nTry: int = 6,
         raise ImportError(f"{missing_pkg} is required for signature estimation. "
                          f"Install with: pip install scikit-learn scipy")
 
-    # Validate input
+    # Validate input parameters
     if not isinstance(contexts_df, pd.DataFrame):
         raise ValueError("contexts_df must be a pandas DataFrame")
 
@@ -409,20 +384,19 @@ def estimateSignatures(contexts_df: pd.DataFrame, nMin: int = 2, nTry: int = 6,
 
     logger.info(f"Starting signature estimation for k={nMin} to k={nTry} with {nrun} runs each")
 
-    # Normalize matrix to frequencies (column-wise to preserve sample-specific patterns)
+    # Normalize matrix to frequencies
     matrix = contexts_df.values.astype(float)
     col_sums = matrix.sum(axis=0, keepdims=True)
-    col_sums[col_sums == 0] = 1  # Avoid division by zero
+    col_sums[col_sums == 0] = 1
     normalized_matrix = matrix / col_sums
 
     logger.info(f"Normalized matrix shape: {normalized_matrix.shape}")
 
-    # Check for excessive zeros and apply pConstant if needed
+    # Apply pseudocount if matrix has too many zeros
     zero_fraction = (normalized_matrix == 0).sum() / normalized_matrix.size
     if zero_fraction > 0.8 and pConstant is not None:
         logger.warning(f"Matrix has {zero_fraction:.2%} zeros, adding pConstant={pConstant}")
         normalized_matrix += pConstant
-        # Re-normalize after adding constant (by column to maintain sample-specific patterns)
         col_sums = normalized_matrix.sum(axis=0, keepdims=True)
         normalized_matrix = normalized_matrix / col_sums
 
@@ -434,7 +408,6 @@ def estimateSignatures(contexts_df: pd.DataFrame, nMin: int = 2, nTry: int = 6,
             W = nmf.fit_transform(matrix)
             H = nmf.components_
 
-            # Calculate reconstruction error (RSS)
             reconstructed = np.dot(W, H)
             rss = mean_squared_error(matrix, reconstructed) * matrix.size
 
@@ -459,7 +432,7 @@ def estimateSignatures(contexts_df: pd.DataFrame, nMin: int = 2, nTry: int = 6,
                 'success': False
             }
 
-    # Run NMF for all k values and runs in parallel
+    # Execute NMF runs in parallel and collect results
     all_results = []
     k_values = range(nMin, nTry + 1)
 
@@ -470,12 +443,10 @@ def estimateSignatures(contexts_df: pd.DataFrame, nMin: int = 2, nTry: int = 6,
                 future = executor.submit(_run_nmf_single, k, run_idx, normalized_matrix)
                 futures.append(future)
 
-        # Collect results
         for future in concurrent.futures.as_completed(futures):
             result = future.result()
             all_results.append(result)
 
-    # Organize results by k
     results_by_k = {}
     for result in all_results:
         k = result['k']
@@ -495,33 +466,27 @@ def estimateSignatures(contexts_df: pd.DataFrame, nMin: int = 2, nTry: int = 6,
             logger.warning(f"All NMF runs failed for k={k}")
             continue
 
-        # Calculate mean RSS
+        # Calculate stability metrics
         rss_values = [r['rss'] for r in successful_results]
         mean_rss = np.mean(rss_values)
         std_rss = np.std(rss_values)
 
         # Calculate cophenetic correlation
-        # Use consensus matrix approach for stability
         if len(successful_results) >= 2:
-            # Create consensus matrix from H matrices
             H_matrices = [r['H'] for r in successful_results]
             n_samples = H_matrices[0].shape[1]
 
-            # Calculate pairwise correlations between samples across runs
             consensus_matrix = np.zeros((n_samples, n_samples))
 
             for i in range(len(H_matrices)):
                 for j in range(i + 1, len(H_matrices)):
                     H1, H2 = H_matrices[i], H_matrices[j]
-                    # Calculate correlation between H matrices
                     corr_matrix = np.corrcoef(H1.T, H2.T)[:n_samples, n_samples:]
                     consensus_matrix += np.abs(corr_matrix)
 
             consensus_matrix /= (len(H_matrices) * (len(H_matrices) - 1) / 2)
 
-            # Calculate cophenetic correlation
             try:
-                # Convert consensus matrix to distance matrix
                 distance_matrix = 1 - consensus_matrix
                 condensed_dist = pdist(distance_matrix)
                 linkage_matrix = linkage(condensed_dist, method='average')
@@ -544,22 +509,18 @@ def estimateSignatures(contexts_df: pd.DataFrame, nMin: int = 2, nTry: int = 6,
             'total_runs': len(k_results)
         })
 
-        # Store models
         models_data.extend(successful_results)
 
     if not metrics_data:
         raise ValueError("All NMF decompositions failed. Try adjusting pConstant or input data.")
 
-    # Create metrics DataFrame
     metrics_df = pd.DataFrame(metrics_data)
 
-    # Suggest optimal k based on cophenetic correlation drop
+    # Determine optimal number of signatures
     optimal_k = nMin
     if len(metrics_df) > 1:
-        # Find the k where cophenetic correlation drops most significantly
         valid_coph = metrics_df.dropna(subset=['cophenetic_corr'])
         if len(valid_coph) > 1:
-            # Calculate differences in cophenetic correlation
             coph_diff = valid_coph['cophenetic_corr'].diff().abs()
             if not coph_diff.isna().all():
                 max_drop_idx = coph_diff.idxmax()
@@ -655,60 +616,50 @@ def extract_signatures(contexts_df: pd.DataFrame, k: int, nrun: int = 30,
 
     logger.info(f"Extracting {k} signatures with {nrun} runs using NMF with KL divergence")
 
-    # Convert to numpy array and ensure float type
+    # Prepare and normalize matrix
     matrix = contexts_df.values.astype(float)
 
-    # Convert each column (sample) to relative frequencies
-    # This preserves the differential signal between samples for each trinucleotide context
     col_sums = matrix.sum(axis=0, keepdims=True)
-    col_sums[col_sums == 0] = 1  # Avoid division by zero for empty samples
+    col_sums[col_sums == 0] = 1
     normalized_matrix = matrix / col_sums
 
-    # Add pseudocount to avoid zeros
     normalized_matrix += pseudocount
 
-    # Re-normalize after adding pseudocount (by column to maintain sample-specific patterns)
     col_sums = normalized_matrix.sum(axis=0, keepdims=True)
     normalized_matrix = normalized_matrix / col_sums
 
     logger.info(f"Matrix normalized to frequencies with pseudocount {pseudocount}")
 
-    # Store results from all runs
+    # Execute multiple NMF runs for stability
     all_results = []
     all_errors = []
 
-    # Set up random seeds for reproducibility
     if random_seed is not None:
         np.random.seed(random_seed)
         seeds = [random_seed + i for i in range(nrun)]
     else:
         seeds = [np.random.randint(0, 10000) for _ in range(nrun)]
 
-    # Run NMF multiple times with different seeds
     for run_idx in range(nrun):
         try:
-            # Use NNDSVD initialization with KL divergence
             nmf = NMF(
                 n_components=k,
-                init='nndsvda',  # NNDSVDA initialization (avoids zeros with multiplicative update)
-                solver='mu',    # Multiplicative update solver supports KL divergence
-                beta_loss='kullback-leibler',  # KL divergence cost function
+                init='nndsvda',
+                solver='mu',
+                beta_loss='kullback-leibler',
                 random_state=seeds[run_idx],
                 max_iter=2000,
                 tol=1e-6,
-                alpha_W=0.0,    # No regularization
-                alpha_H=0.0     # No regularization
+                alpha_W=0.0,
+                alpha_H=0.0
             )
 
-            # Fit the model
             W = nmf.fit_transform(normalized_matrix)
             H = nmf.components_
 
-            # Calculate reconstruction error using KL divergence
+            # Calculate KL divergence reconstruction error
             reconstructed = np.dot(W, H)
 
-            # KL divergence: sum(x * log(x/y) - x + y) where x is original, y is reconstructed
-            # Add small epsilon to avoid log(0)
             eps = 1e-10
             original_safe = normalized_matrix + eps
             reconstructed_safe = reconstructed + eps
@@ -730,27 +681,22 @@ def extract_signatures(contexts_df: pd.DataFrame, k: int, nrun: int = 30,
             all_errors.append(np.inf)
             continue
 
-    # Check if any runs succeeded
+    # Select best result and normalize signatures
     successful_results = [r for r in all_results if r['error'] != np.inf]
     if not successful_results:
         raise ValueError("All NMF runs failed. Try adjusting pseudocount or input data.")
 
-    # Select the best result (lowest reconstruction error)
     best_result = min(successful_results, key=lambda x: x['error'])
     best_run_idx = best_result['run']
 
     logger.info(f"Best result from run {best_run_idx} with error {best_result['error']:.6f}")
     logger.info(f"Successful runs: {len(successful_results)}/{nrun}")
 
-    # Get the best W and H matrices
     W_best = best_result['W']
     H_best = best_result['H']
 
-    # Renormalize W columns so each signature sums to 1
     W_normalized = W_best / W_best.sum(axis=0, keepdims=True)
 
-    # Adjust H accordingly to maintain the reconstruction
-    # Since W_new = W_old / sum(W_old), we need H_new = H_old * sum(W_old)
     column_sums = W_best.sum(axis=0, keepdims=True)
     H_adjusted = H_best * column_sums.T
 
@@ -818,7 +764,7 @@ def compare_signatures(W: np.ndarray, cosmic_path: str, min_cosine: float = 0.6,
         raise ImportError(f"{missing_pkg} is required for cosine similarity calculation. "
                          f"Install with: pip install scikit-learn")
 
-    # Validate input W matrix
+    # Validate input and load COSMIC catalog
     if not isinstance(W, np.ndarray):
         raise ValueError("W must be a numpy array")
 
@@ -830,7 +776,6 @@ def compare_signatures(W: np.ndarray, cosmic_path: str, min_cosine: float = 0.6,
 
     logger.info(f"Comparing {W.shape[1]} signatures with COSMIC catalog")
 
-    # Load COSMIC catalog and set contexts column as index
     try:
         cosmic_df = pd.read_csv(cosmic_path, sep='\t')
     except FileNotFoundError:
@@ -840,33 +785,27 @@ def compare_signatures(W: np.ndarray, cosmic_path: str, min_cosine: float = 0.6,
 
     logger.info(f"Loaded COSMIC catalog with shape {cosmic_df.shape}")
 
-    # Validate catalog structure
-    if cosmic_df.shape[0] != 96:  # 96 contexts (header becomes column names)
+    if cosmic_df.shape[0] != 96:
         raise ValueError(f"COSMIC catalog must have 96 rows (trinucleotide contexts), got {cosmic_df.shape[0]}")
 
-    # Extract context labels and set as index
+    # Process COSMIC catalog structure
     context_column = cosmic_df.columns[0]  # First column should be 'Type'
     contexts = cosmic_df[context_column].values  # All rows are data (no header row to skip)
     cosmic_df = cosmic_df.set_index(context_column)
 
-    # Verify/renormalize W matrix (columns should sum to 1)
+    # Normalize W matrix and align with COSMIC catalog
     W_sums = W.sum(axis=0)
     if not np.allclose(W_sums, 1.0, rtol=1e-5):
         logger.warning("W matrix columns do not sum to 1, renormalizing...")
         W = W / W_sums.reshape(1, -1)
         logger.info("W matrix renormalized")
 
-    # CRITICAL: Ensure exact row alignment between W matrix and COSMIC catalog
-    # The W matrix is assumed to follow the standard TRINUCLEOTIDE_CONTEXTS order
-    # We must reindex the COSMIC catalog to match this exact order
     logger.info("Aligning COSMIC catalog with standard trinucleotide context order...")
 
-    # Check if all required contexts are present in the catalog
     missing_contexts = set(TRINUCLEOTIDE_CONTEXTS) - set(contexts)
     if missing_contexts:
         raise ValueError(f"COSMIC catalog is missing required contexts: {missing_contexts}")
 
-    # Reindex catalog to match the standard TRINUCLEOTIDE_CONTEXTS order
     try:
         cosmic_df = cosmic_df.reindex(TRINUCLEOTIDE_CONTEXTS)
         if cosmic_df.isnull().any().any():
@@ -875,31 +814,26 @@ def compare_signatures(W: np.ndarray, cosmic_path: str, min_cosine: float = 0.6,
     except Exception as e:
         raise ValueError(f"Failed to align COSMIC catalog contexts: {e}")
 
-    # Get signature columns (all columns now since we set index)
     signature_columns = list(cosmic_df.columns)
 
     if len(signature_columns) == 0:
         raise ValueError("No signature columns found in COSMIC catalog")
 
-    # Define artifact signatures to remove
+    # Filter out artifact signatures
     artifact_signatures = {
         'SBS27', 'SBS43', 'SBS45', 'SBS46', 'SBS47', 'SBS48', 'SBS49', 'SBS50',
         'SBS51', 'SBS52', 'SBS53', 'SBS54', 'SBS55', 'SBS56', 'SBS57', 'SBS58',
         'SBS59', 'SBS60', 'SBS95'
     }
 
-    # Remove artifact signatures: containing "artefact" in description, names ending in "c", or specific SBS signatures
     filtered_columns = []
     for col in signature_columns:
-        # Check if name ends with "c"
         if col.endswith('c'):
             logger.info(f"Removing artifact signature {col} (ends with 'c')")
             continue
-        # Check if contains "artefact" (case insensitive)
         if 'artefact' in col.lower():
             logger.info(f"Removing artifact signature {col} (contains 'artefact')")
             continue
-        # Check if it's one of the specified artifact signatures
         if col in artifact_signatures:
             logger.info(f"Removing artifact signature {col} (specified artifact)")
             continue
@@ -908,10 +842,8 @@ def compare_signatures(W: np.ndarray, cosmic_path: str, min_cosine: float = 0.6,
     signature_columns = filtered_columns
     cosmic_df = cosmic_df[signature_columns]
 
-    # Extract signature matrix
     cosmic_matrix = cosmic_df.values.astype(float)
 
-    # Remove signatures that sum to 0
     column_sums = cosmic_matrix.sum(axis=0)
     zero_sum_mask = column_sums == 0
     if zero_sum_mask.any():
@@ -923,48 +855,39 @@ def compare_signatures(W: np.ndarray, cosmic_path: str, min_cosine: float = 0.6,
 
     logger.info(f"Found {len(signature_columns)} valid COSMIC signatures after filtering")
 
-    # Validate that we have 96 contexts in the correct order
+    # Validate alignment and calculate cosine similarity
     if len(TRINUCLEOTIDE_CONTEXTS) != 96:
         raise ValueError(f"Expected 96 trinucleotide contexts in standard order, got {len(TRINUCLEOTIDE_CONTEXTS)}")
 
     if cosmic_matrix.shape[0] != 96:
         raise ValueError(f"COSMIC matrix must have 96 rows, got {cosmic_matrix.shape[0]}")
 
-    # Verify the alignment is correct
     current_contexts = cosmic_df.index.tolist()
     if current_contexts != TRINUCLEOTIDE_CONTEXTS:
         raise ValueError("COSMIC catalog contexts are not properly aligned with standard order")
 
-    # Normalize each remaining signature to sum to 1
     cosmic_normalized = cosmic_matrix / cosmic_matrix.sum(axis=0, keepdims=True)
 
     logger.info("COSMIC signatures normalized")
 
-    # Calculate cosine similarity between W and COSMIC signatures
-    # W is 96 × k, cosmic_normalized is 96 × N
-    # We want cosine_matrix to be k × N
     cosine_matrix = cosine_similarity(W.T, cosmic_normalized.T)
 
     logger.info(f"Calculated cosine similarity matrix: {cosine_matrix.shape}")
 
-    # Create summary DataFrame
+    # Create comparison summary
     summary_data = []
 
     for i in range(W.shape[1]):
-        # Find best match for signature i
         similarities = cosine_matrix[i, :]
         best_idx = np.argmax(similarities)
         best_cosine = similarities[best_idx]
         best_cosmic = signature_columns[best_idx]
 
-        # Check if similarity meets threshold
         if best_cosine >= min_cosine:
             match_status = best_cosmic
         else:
             match_status = "No match"
 
-        # Add "Aetiology" - for now set to "Unknown" as the catalog doesn't have descriptions
-        # In a full implementation, this would merge with a descriptions table
         aetiology = "Unknown"
 
         summary_data.append({
@@ -978,7 +901,6 @@ def compare_signatures(W: np.ndarray, cosmic_path: str, min_cosine: float = 0.6,
 
     logger.info(f"Created summary with {len(summary_data)} signature comparisons")
 
-    # Prepare return dictionary
     result = {'summary_df': summary_df}
 
     if return_matrix:
@@ -992,26 +914,3 @@ def add_trinucleotide_method_to_pymutation():
     """Add trinucleotideMatrix method to PyMutation class."""
     from ..core import PyMutation
     PyMutation.trinucleotideMatrix = trinucleotideMatrix
-
-
-def add_signature_methods_to_pymutation():
-    """Add signature analysis methods to PyMutation class."""
-    from ..core import PyMutation
-    PyMutation.trinucleotideMatrix = trinucleotideMatrix
-
-    # Wrap the independent function as a method
-    def estimateSignatures_method(self, contexts_df, **kwargs):
-        """Method wrapper for the independent estimateSignatures function."""
-        return estimateSignatures(contexts_df, **kwargs)
-
-    def extractSignatures_method(self, contexts_df, **kwargs):
-        """Method wrapper for the independent extract_signatures function."""
-        return extract_signatures(contexts_df, **kwargs)
-
-    def compareSignatures_method(self, W, cosmic_path, **kwargs):
-        """Method wrapper for the independent compare_signatures function."""
-        return compare_signatures(W, cosmic_path, **kwargs)
-
-    PyMutation.estimateSignatures = estimateSignatures_method
-    PyMutation.extractSignatures = extractSignatures_method
-    PyMutation.compareSignatures = compareSignatures_method
