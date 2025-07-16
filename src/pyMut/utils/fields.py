@@ -214,6 +214,56 @@ FIELDS: Dict[str, List[str]] = {
         "Sample",
         "tumor_sample_barcode",
     ],
+    # Chromosome
+    "Chromosome": [
+        "Chromosome",
+        "CHROM",
+        "Chr",
+        "CHR",
+        "chrom",
+        "chr",
+    ],
+    # Start Position
+    "Start_Position": [
+        "Start_Position",
+        "Start_position",
+        "POS",
+        "Position",
+        "Pos",
+        "pos",
+        "start",
+        "Start",
+    ],
+    # Reference Allele
+    "Reference_Allele": [
+        "Reference_Allele",
+        "REF",
+        "Ref",
+        "ref",
+        "Reference",
+        "reference",
+    ],
+    # Tumor Sequence Allele 2
+    "Tumor_Seq_Allele2": [
+        "Tumor_Seq_Allele2",
+        "ALT",
+        "Alt",
+        "alt",
+        "Alternative",
+        "alternative",
+        "Tumor_Allele",
+    ],
+    # Tumor Sample Barcode
+    "Tumor_Sample_Barcode": [
+        "Tumor_Sample_Barcode",
+        "Sample",
+        "sample",
+        "Sample_ID",
+        "SampleID",
+        "sample_id",
+        "Barcode",
+        "barcode",
+    ],
 }
 
 # ---------------------------------------------------------------------------
