@@ -149,3 +149,6 @@ src/pyMut/data/resources
 # mkdocs gh-page
 site
 src/pyMut/data/examples/tcga_laml.maf
+
+# Salida auxiliar de OncodriveCLUSTL
+**/tcga_laml_aux_*
