@@ -148,3 +148,4 @@ src/pyMut/data/resources
 
 # mkdocs gh-page
 site
+src/pyMut/data/examples/tcga_laml.maf
