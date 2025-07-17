@@ -19,10 +19,10 @@ VEP (Variant Effect Predictor) es una herramienta de Ensembl que predice el efec
 ## Uso Básico
 
 ```python
-from pyMut.annotate.vep_annotate import wrap_maf_vep_annotate
+from pyMut.annotate.vep_annotate import wrap_maf_vep_annotate_protein
 
 # Anotación VEP básica
-success, output_info = wrap_maf_vep_annotate(
+success, output_info = wrap_maf_vep_annotate_protein(
     maf_file="mutations.maf",
     cache_dir="/path/to/vep_cache",
     fasta="/path/to/reference.fa"

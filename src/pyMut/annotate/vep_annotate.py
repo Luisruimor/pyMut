@@ -135,14 +135,14 @@ def _maf_to_region(maf_path: Union[str, Path],
         return False, str(output_file) if 'output_file' in locals() else ""
 
 
-def wrap_maf_vep_annotate(maf_file: Union[str, Path],
-                          cache_dir: Union[str, Path],
-                          fasta: Union[str, Path],
-                          output_file: Optional[Union[str, Path]] = None,
-                          synonyms_file: Optional[Union[str, Path]] = None,
-                          assembly: Optional[str] = None,
-                          version: Optional[str] = None,
-                          compress: bool = True) -> Tuple[bool, str]:
+def wrap_maf_vep_annotate_protein(maf_file: Union[str, Path],
+                                  cache_dir: Union[str, Path],
+                                  fasta: Union[str, Path],
+                                  output_file: Optional[Union[str, Path]] = None,
+                                  synonyms_file: Optional[Union[str, Path]] = None,
+                                  assembly: Optional[str] = None,
+                                  version: Optional[str] = None,
+                                  compress: bool = True) -> Tuple[bool, str]:
     """
     Wrapper method for VEP annotation that accepts MAF files and merges annotations back to MAF.
 
@@ -294,13 +294,13 @@ def wrap_maf_vep_annotate(maf_file: Union[str, Path],
             logger.warning(f"Failed to clean up temporary region file {region_file}: {e}")
 
 
-def wrap_vcf_vep_annotate(vcf_file: Union[str, Path],
-                          cache_dir: Union[str, Path],
-                          fasta: Union[str, Path],
-                          output_file: Optional[Union[str, Path]] = None,
-                          synonyms_file: Optional[Union[str, Path]] = None,
-                          assembly: Optional[str] = None,
-                          version: Optional[str] = None) -> Tuple[bool, str]:
+def wrap_vcf_vep_annotate_protein(vcf_file: Union[str, Path],
+                                  cache_dir: Union[str, Path],
+                                  fasta: Union[str, Path],
+                                  output_file: Optional[Union[str, Path]] = None,
+                                  synonyms_file: Optional[Union[str, Path]] = None,
+                                  assembly: Optional[str] = None,
+                                  version: Optional[str] = None) -> Tuple[bool, str]:
     """
     Wrapper method for VEP annotation that accepts VCF files directly.
 
