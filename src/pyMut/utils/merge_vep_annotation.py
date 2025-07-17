@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Optional, Dict, Any
 import gzip
 import logging
+from .format import format_chr
 
 logger = logging.getLogger(__name__)
 
@@ -37,27 +38,30 @@ def _parse_vep_extra_column(extra_str: str) -> Dict[str, str]:
 def _create_region_key_from_maf(row: pd.Series) -> str:
     """
     Create a region key from MAF row that matches the VEP Uploaded_variation format.
+    
+    Generates the same key that VEP uses by:
+    - Using format_chr for proper chromosome formatting (23→X, 24→Y)
+    - Using the actual End_Position for indels
+    - Using proper reference/alternative allele logic
 
     Parameters
     ----------
     row : pd.Series
-        MAF row with Chromosome, Start_Position, Reference_Allele, and Tumor_Seq_Allele2
+        MAF row with Chromosome, Start_Position, End_position, Reference_Allele, 
+        Tumor_Seq_Allele1, and Tumor_Seq_Allele2
 
     Returns
     -------
     str
-        Region key in format chr:start-end:ref/alt
+        Region key in format chr:start-end:len(ref)/alt
     """
-    chrom = str(row['Chromosome']).replace('chr', '')
-    if not chrom.startswith('chr'):
-        chrom = f'chr{chrom}'
-
+    chrom = format_chr(str(row['Chromosome']))  # "chr1…chrX, chrY"
     start = int(row['Start_Position'])
+    end = int(row['End_position'])  # Use the real range
     ref = str(row['Reference_Allele'])
-    alt = str(row['Tumor_Seq_Allele2']) if pd.notna(row['Tumor_Seq_Allele2']) else str(row['Tumor_Seq_Allele1'])
-
-    # For single nucleotide variants, start and end are the same
-    return f"{chrom}:{start}-{start}:1/{alt}"
+    alt = str(row['Tumor_Seq_Allele2'] or row['Tumor_Seq_Allele1'] or "-")
+    
+    return f"{chrom}:{start}-{end}:{len(ref)}/{alt}"
 
 def merge_maf_with_vep_annotations(
     maf_file: str | Path,
@@ -164,6 +168,12 @@ def merge_maf_with_vep_annotations(
     ].copy()
 
     logger.info(f"Filtered to {meaningful_annotations.shape[0]} meaningful annotations")
+
+    # Remove duplicates from VEP before merge to avoid cartesian product
+    logger.info("Removing VEP duplicates...")
+    original_vep_count = len(meaningful_annotations)
+    meaningful_annotations = meaningful_annotations.drop_duplicates("region_key", keep="first")
+    logger.info(f"Removed {original_vep_count - len(meaningful_annotations)} duplicate VEP entries")
 
     logger.info("Performing optimized merge with DuckDB...")
 

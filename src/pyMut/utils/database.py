@@ -37,10 +37,12 @@ def parse_idmapping_selected(mapping_file: Path, chunk_size: int = int(1e6)) -> 
     Parse UniProt ID mapping file with column-based extraction.
 
     This function reads the UniProt ID mapping file and extracts mappings
-    for Ensembl proteins (ENSP) and RefSeq proteins (NP_) to UniProt IDs.
+    for Ensembl proteins (ENSP) and RefSeq proteins (NP_) to UniProt IDs,
+    as well as short names from UniProt.
 
     Expected format:
     - Column 1: UniProt ID
+    - Column 2: Short name (e.g., 1433B_HUMAN)
     - Column 4: RefSeq protein IDs (semicolon-separated)
     - Column 21: Ensembl protein IDs (semicolon-separated)
 
@@ -49,9 +51,9 @@ def parse_idmapping_selected(mapping_file: Path, chunk_size: int = int(1e6)) -> 
         chunk_size: Size of chunks to process at a time
 
     Returns:
-        DataFrame with columns: prot_id, uniprot
+        DataFrame with columns: prot_id, uniprot, short_name
     """
-    print(f"📊 Parsing UniProt ID mapping file: {mapping_file}")
+    print(f"Parsing UniProt ID mapping file: {mapping_file}")
 
     all_mappings = []
     total_lines = 0
@@ -67,6 +69,7 @@ def parse_idmapping_selected(mapping_file: Path, chunk_size: int = int(1e6)) -> 
                 parts = line.strip().split('\t')
                 if len(parts) >= 21:  # Need at least 21 columns
                     uniprot_id = parts[0]
+                    short_name = parts[1] if len(parts) > 1 and parts[1] != "-" else ""
 
                     # RefSeq protein IDs from column 4
                     refseq_ids = parts[3] if len(parts) > 3 else ""
@@ -76,7 +79,8 @@ def parse_idmapping_selected(mapping_file: Path, chunk_size: int = int(1e6)) -> 
                             if refseq_id.startswith('NP_'):
                                 chunk_data.append({
                                     'prot_id': refseq_id,
-                                    'uniprot': uniprot_id
+                                    'uniprot': uniprot_id,
+                                    'short_name': short_name
                                 })
                                 kept_lines += 1
 
@@ -88,9 +92,19 @@ def parse_idmapping_selected(mapping_file: Path, chunk_size: int = int(1e6)) -> 
                             if ensembl_id.startswith('ENSP'):
                                 chunk_data.append({
                                     'prot_id': ensembl_id,
-                                    'uniprot': uniprot_id
+                                    'uniprot': uniprot_id,
+                                    'short_name': short_name
                                 })
                                 kept_lines += 1
+
+                    # Add row for short_name association if short_name exists
+                    if short_name:
+                        chunk_data.append({
+                            'prot_id': short_name,
+                            'uniprot': uniprot_id,
+                            'short_name': short_name
+                        })
+                        kept_lines += 1
 
                 if len(chunk_data) >= chunk_size:
                     all_mappings.extend(chunk_data)
@@ -102,21 +116,21 @@ def parse_idmapping_selected(mapping_file: Path, chunk_size: int = int(1e6)) -> 
             if chunk_data:
                 all_mappings.extend(chunk_data)
 
-        print(f"📊 Processed {total_lines:,} total lines")
-        print(f"📊 Kept {kept_lines:,} protein mappings")
+        print(f"Processed {total_lines:,} total lines")
+        print(f"Kept {kept_lines:,} protein mappings")
 
         if all_mappings:
             df = pd.DataFrame(all_mappings)
             df = df.drop_duplicates()
-            print(f"📊 Final unique mappings: {len(df):,}")
+            print(f"Final unique mappings: {len(df):,}")
             return df
         else:
             print("⚠️  No relevant mappings found")
-            return pd.DataFrame(columns=['prot_id', 'uniprot'])
+            return pd.DataFrame(columns=['prot_id', 'uniprot', 'short_name'])
 
     except Exception as e:
         print(f"❌ Error parsing mapping file: {e}")
-        return pd.DataFrame(columns=['prot_id', 'uniprot'])
+        return pd.DataFrame(columns=['prot_id', 'uniprot', 'short_name'])
 
 
 def check_mapping_coverage(conn: duckdb.DuckDBPyConnection) -> bool:
@@ -134,7 +148,7 @@ def check_mapping_coverage(conn: duckdb.DuckDBPyConnection) -> bool:
         np_count = conn.execute("SELECT COUNT(*) FROM xref WHERE prot_id LIKE 'NP_%'").fetchone()[0]
         total_count = conn.execute("SELECT COUNT(*) FROM xref").fetchone()[0]
 
-        print(f"📊 Mapping coverage:")
+        print(f"Mapping coverage:")
         print(f"    Total mappings: {total_count:,}")
         print(f"    ENSP mappings: {ensp_count:,}")
         print(f"    NP_ mappings: {np_count:,}")
@@ -199,7 +213,7 @@ def build_embedded_db(force_rebuild: bool = False) -> str:
     if not pfam_file.exists():
         raise PfamAnnotationError(f"Pfam file not found: {pfam_file}")
 
-    print("📊 Loading Pfam data...")
+    print("Loading Pfam data...")
 
     chunk_size = int(1e6)
     total_rows = 0
@@ -259,20 +273,21 @@ def build_embedded_db(force_rebuild: bool = False) -> str:
             if chunk_count % 10 == 0:
                 print(f"  Processed {chunk_count} chunks...")
 
-    print(f"📊 Loaded {total_rows:,} Pfam domain annotations")
+    print(f"Loaded {total_rows:,} Pfam domain annotations")
 
     # 2. Read HUMAN_9606_idmapping_selected.tab.gz and create xref table
     mapping_file = resources_path / "mappings" / "HUMAN_9606_idmapping_selected.tab.gz"
     if not mapping_file.exists():
-        print(f"⚠️  Mapping file not found: {mapping_file}")
-        print("⚠️  Creating empty xref table.")
+        print(f"Mapping file not found: {mapping_file}")
+        print("Creating empty xref table.")
         print("📝  Note: Without UniProt mappings, Pfam annotation will be limited to variants")
         print("    that already have UniProt protein IDs in the input data.")
         conn.execute("DROP TABLE IF EXISTS xref")
         conn.execute("""
             CREATE TABLE xref (
                 prot_id VARCHAR,
-                uniprot VARCHAR
+                uniprot VARCHAR,
+                short_name VARCHAR
             )
         """)
     else:
@@ -289,7 +304,8 @@ def build_embedded_db(force_rebuild: bool = False) -> str:
             conn.execute("""
                 CREATE TABLE xref (
                     prot_id VARCHAR,
-                    uniprot VARCHAR
+                    uniprot VARCHAR,
+                    short_name VARCHAR
                 )
             """)
         else:
@@ -301,7 +317,8 @@ def build_embedded_db(force_rebuild: bool = False) -> str:
                     conn.execute("""
                         CREATE TABLE xref (
                             prot_id VARCHAR,
-                            uniprot VARCHAR
+                            uniprot VARCHAR,
+                            short_name VARCHAR
                         )
                     """)
 
@@ -317,7 +334,8 @@ def build_embedded_db(force_rebuild: bool = False) -> str:
                     conn.execute("""
                         CREATE TABLE xref (
                             prot_id VARCHAR,
-                            uniprot VARCHAR
+                            uniprot VARCHAR,
+                            short_name VARCHAR
                         )
                     """)
             except Exception as e:
@@ -327,14 +345,17 @@ def build_embedded_db(force_rebuild: bool = False) -> str:
                 conn.execute("""
                     CREATE TABLE xref (
                         prot_id VARCHAR,
-                        uniprot VARCHAR
+                        uniprot VARCHAR,
+                        short_name VARCHAR
                     )
                 """)
 
     # 3. Create indices
     print("🔍 Creating database indices...")
     conn.execute("CREATE INDEX IF NOT EXISTS ix_pfam ON pfam(uniprot, seq_start, seq_end)")
-    conn.execute("CREATE INDEX IF NOT EXISTS ix_xref ON xref(prot_id)")
+    conn.execute("CREATE INDEX IF NOT EXISTS ix_xref_prot_id ON xref(prot_id)")
+    conn.execute("CREATE INDEX IF NOT EXISTS ix_xref_uniprot ON xref(uniprot)")
+    conn.execute("CREATE INDEX IF NOT EXISTS ix_xref_short_name ON xref(short_name)")
 
     # 4. Create metadata table
     print("📝 Creating metadata table...")

@@ -1,215 +1,203 @@
-# Filtros de Rango Genómico - region y gen_region
+# Genomic Range Filters - region and gen_region
 
-Los métodos **region** y **gen_region** permiten filtrar datos de PyMutation por ubicación genómica específica, ya sea por coordenadas cromosómicas o por nombre de gen.
+The **region** and **gen_region** methods allow filtering PyMutation data by specific genomic location, either by chromosomal coordinates or by gene name.
 
-## ¿Qué son los Filtros de Rango Genómico?
+## What are Genomic Range Filters?
 
-Son métodos que permiten extraer subconjuntos de mutaciones basados en su ubicación en el genoma, facilitando el análisis de regiones específicas de interés.
+These are methods that allow extracting mutation subsets based on their location in the genome, facilitating analysis of specific regions of interest.
 
-## Características Principales
+## Main Features
 
-- **Filtrado por coordenadas**: Especifica cromosoma, posición inicial y final
-- **Filtrado por gen**: Busca automáticamente las coordenadas de un gen específico
-- **Optimización con pyarrow**: Utiliza pyarrow para consultas rápidas cuando está disponible
-- **Preservación de metadatos**: Mantiene la información original y registra los filtros aplicados
-- **Validación automática**: Verifica que las coordenadas sean válidas
-- **Logging detallado**: Proporciona información sobre el proceso de filtrado
+- **Coordinate filtering**: Specify chromosome, start and end positions
+- **Gene filtering**: Automatically search for coordinates of a specific gene
+- **pyarrow optimization**: Uses pyarrow for fast queries when available
+- **Metadata preservation**: Maintains original information and records applied filters
+- **Automatic validation**: Verifies that coordinates are valid
+- **Detailed logging**: Provides information about the filtering process
 
-## Método region - Filtrado por Coordenadas
+## region Method - Coordinate-based Filtering
 
-### Uso Básico
+### Basic Usage
 
 ```python
 from pyMut.input import read_maf
 
-# Cargar datos
+# Load data
 py_mut = read_maf("mutations.maf")
 
-# Filtrar por región específica
-# Cromosoma 17, posiciones 7,500,000 a 7,600,000
+# Filter by specific region
+# Chromosome 17, positions 7,500,000 to 7,600,000
 tp53_region = py_mut.region("chr17", 7500000, 7600000)
 
-print(f"Mutaciones en región: {len(tp53_region.data)}")
+print(f"Mutations in region: {len(tp53_region.data)}")
 ```
 
-### Parámetros de region
+### region Parameters
 
-#### chrom (str) [requerido]
-- **Descripción**: Cromosoma a filtrar
-- **Formatos aceptados**: `"chr17"`, `"17"`, `"X"`, `"Y"`, `"chrX"`, `"chrY"`
-- **Ejemplo**: `"chr17"`
+#### chrom (str) [required]
+- **Description**: Chromosome to filter
+- **Accepted formats**: `"chr17"`, `"17"`, `"X"`, `"Y"`, `"chrX"`, `"chrY"`
+- **Example**: `"chr17"`
 
-#### start (int) [requerido]
-- **Descripción**: Posición inicial de la región (inclusiva)
-- **Coordenadas**: Basadas en 1 (estándar genómico)
-- **Ejemplo**: `7500000`
+#### start (int) [required]
+- **Description**: Start position of the region (inclusive)
+- **Coordinates**: 1-based (genomic standard)
+- **Example**: `7500000`
 
-#### end (int) [requerido]
-- **Descripción**: Posición final de la región (inclusiva)
-- **Coordenadas**: Basadas en 1 (estándar genómico)
-- **Ejemplo**: `7600000`
+#### end (int) [required]
+- **Description**: End position of the region (inclusive)
+- **Coordinates**: 1-based (genomic standard)
+- **Example**: `7600000`
 
-### Ejemplos de region
+### region Examples
 
 ```python
-# Región del gen TP53 (cromosoma 17)
+# TP53 gene region (chromosome 17)
 tp53_mutations = py_mut.region("chr17", 7571720, 7590868)
 
-# Región del gen BRCA1 (cromosoma 17)
+# BRCA1 gene region (chromosome 17)
 brca1_mutations = py_mut.region("17", 43044295, 43125483)
 
-# Cromosoma X completo (ejemplo de región grande)
+# Complete chromosome X (large region example)
 chrx_mutations = py_mut.region("X", 1, 156040895)
 
-# Región específica en cromosoma Y
-chry_region = py_mut.region("chrY", 2781479, 2781479)  # Posición específica
+# Specific region on chromosome Y
+chry_region = py_mut.region("chrY", 2781479, 2781479)  # Specific position
 ```
 
-## Método gen_region - Filtrado por Nombre de Gen
+## gen_region Method - Gene Name Filtering
 
-### Uso Básico
+### Basic Usage
 
 ```python
-# Filtrar por nombre de gen (automático)
+# Filter by gene name (automatic)
 tp53_mutations = py_mut.gen_region("TP53")
 brca1_mutations = py_mut.gen_region("BRCA1")
 
-print(f"Mutaciones en TP53: {len(tp53_mutations.data)}")
-print(f"Mutaciones en BRCA1: {len(brca1_mutations.data)}")
+print(f"Mutations in TP53: {len(tp53_mutations.data)}")
+print(f"Mutations in BRCA1: {len(brca1_mutations.data)}")
 ```
 
-### Parámetros de gen_region
+### gen_region Parameters
 
-#### gen_name (str) [requerido]
-- **Descripción**: Nombre del gen a buscar
-- **Formato**: Símbolo oficial del gen (HUGO)
-- **Ejemplos**: `"TP53"`, `"BRCA1"`, `"EGFR"`, `"KRAS"`
+#### gen_name (str) [required]
+- **Description**: Name of the gene to search
+- **Format**: Official gene symbol (HUGO)
+- **Examples**: `"TP53"`, `"BRCA1"`, `"EGFR"`, `"KRAS"`
 
-### Base de Datos de Genes
+### Gene Database
 
-El método utiliza una base de datos interna con información genómica:
+The method uses an internal database with genomic information:
 
 ```python
-# Genes soportados incluyen:
-genes_disponibles = [
-    "TP53",      # Cromosoma 17: 7,571,720-7,590,868
-    "BRCA1",     # Cromosoma 17: 43,044,295-43,125,483
-    "BRCA2",     # Cromosoma 13: 32,315,086-32,400,268
-    "EGFR",      # Cromosoma 7: 55,019,017-55,211,628
-    "KRAS",      # Cromosoma 12: 25,205,246-25,250,929
-    "PIK3CA",    # Cromosoma 3: 179,148,114-179,240,093
-    # ... y muchos más
+# Supported genes include:
+available_genes = [
+    "TP53",      # Chromosome 17: 7,571,720-7,590,868
+    "BRCA1",     # Chromosome 17: 43,044,295-43,125,483
+    "BRCA2",     # Chromosome 13: 32,315,086-32,400,268
+    "EGFR",      # Chromosome 7: 55,019,017-55,211,628
+    "KRAS",      # Chromosome 12: 25,205,246-25,250,929
+    "PIK3CA",    # Chromosome 3: 179,148,114-179,240,093
+    # ... and many more
 ]
 ```
 
-## Ejemplo Completo
+## Complete Example
 
 ```python
 from pyMut.input import read_maf
 import logging
 
-# Configurar logging para ver detalles
+# Configure logging to see details
 logging.basicConfig(level=logging.INFO)
 
-# Cargar datos TCGA
+# Load TCGA data
 py_mut = read_maf("src/pyMut/data/examples/tcga_laml.maf.gz")
-print(f"Mutaciones totales: {len(py_mut.data)}")
+print(f"Total mutations: {len(py_mut.data)}")
 
-# Análisis de genes específicos
-genes_interes = ["TP53", "KRAS", "PIK3CA", "EGFR"]
+# Analysis of specific genes
+genes_of_interest = ["TP53", "KRAS", "PIK3CA", "EGFR"]
 
-for gen in genes_interes:
+for gene in genes_of_interest:
     try:
-        # Filtrar por gen
-        gen_mutations = py_mut.gen_region(gen)
-        print(f"\n=== Análisis de {gen} ===")
-        print(f"Mutaciones encontradas: {len(gen_mutations.data)}")
+        # Filter by gene
+        gene_mutations = py_mut.gen_region(gene)
+        print(f"\n=== Analysis of {gene} ===")
+        print(f"Mutations found: {len(gene_mutations.data)}")
         
-        if len(gen_mutations.data) > 0:
-            # Tipos de mutaciones más comunes
-            tipos = gen_mutations.data['Variant_Classification'].value_counts()
-            print(f"Tipos de mutación:")
-            for tipo, count in tipos.head(3).items():
-                print(f"  - {tipo}: {count}")
+        if len(gene_mutations.data) > 0:
+            # Most common mutation types
+            types = gene_mutations.data['Variant_Classification'].value_counts()
+            print(f"Mutation types:")
+            for mutation_type, count in types.head(3).items():
+                print(f"  - {mutation_type}: {count}")
             
-            # Muestras afectadas
-            muestras = gen_mutations.data['Tumor_Sample_Barcode'].nunique()
-            print(f"Muestras afectadas: {muestras}")
+            # Affected samples
+            samples = gene_mutations.data['Tumor_Sample_Barcode'].nunique()
+            print(f"Affected samples: {samples}")
             
     except Exception as e:
-        print(f"❌ Error procesando {gen}: {e}")
+        print(f"❌ Error processing {gene}: {e}")
 
-# Análisis de región específica
-print(f"\n=== Análisis de Región Cromosómica ===")
-# Región rica en genes de cáncer en cromosoma 17
+# Specific region analysis
+print(f"\n=== Chromosomal Region Analysis ===")
+# Cancer gene-rich region on chromosome 17
 chr17_region = py_mut.region("chr17", 7000000, 8000000)
-print(f"Mutaciones en chr17:7M-8M: {len(chr17_region.data)}")
+print(f"Mutations in chr17:7M-8M: {len(chr17_region.data)}")
 
-# Genes en esta región
+# Genes in this region
 if len(chr17_region.data) > 0:
     genes_region = chr17_region.data['Hugo_Symbol'].value_counts()
-    print("Genes más mutados en la región:")
-    for gen, count in genes_region.head(5).items():
-        print(f"  - {gen}: {count} mutaciones")
+    print("Most mutated genes in the region:")
+    for gene, count in genes_region.head(5).items():
+        print(f"  - {gene}: {count} mutations")
 ```
 
-## Optimización con PyArrow
+## Coordinate Validation
 
 ```python
-# El filtrado utiliza pyarrow automáticamente para mejor rendimiento
+# Automatic validations performed:
 try:
-    # Conversión automática a tipos pyarrow
-    filtered = py_mut.region("chr17", 7500000, 7600000)
-    print("✅ Filtrado optimizado con pyarrow")
-except ImportError:
-    print("⚠️ pyarrow no disponible, usando pandas estándar")
-```
-
-## Validación de Coordenadas
-
-```python
-# Validaciones automáticas realizadas:
-try:
-    # Coordenadas válidas
+    # Valid coordinates
     valid_region = py_mut.region("chr1", 1000000, 2000000)
     
     # Error: start > end
     invalid_region = py_mut.region("chr1", 2000000, 1000000)
     
 except ValueError as e:
-    print(f"❌ Coordenadas inválidas: {e}")
+    print(f"❌ Invalid coordinates: {e}")
 
-# Error: cromosoma inexistente
+# Error: non-existent chromosome
 try:
     invalid_chr = py_mut.region("chr99", 1000000, 2000000)
 except KeyError as e:
-    print(f"❌ Cromosoma no encontrado: {e}")
+    print(f"❌ Chromosome not found: {e}")
 ```
 
-## Manejo de Metadatos
+## Metadata Handling
 
 ```python
-# Los filtros se registran automáticamente
+# Filters are automatically registered
 original = py_mut
 filtered = py_mut.region("chr17", 7500000, 7600000)
 
-print("Filtros aplicados:")
-for filtro in filtered.metadata.filters:
-    print(f"  - {filtro}")
+print("Applied filters:")
+for filter_info in filtered.metadata.filters:
+    print(f"  - {filter_info}")
 
-# Ejemplo de salida:
+# Example output:
 # - region:chr17:7500000-7600000
 ```
 
-## Casos de Uso Comunes
+## Common Use Cases
 
-### Análisis de Genes Candidatos
+### Candidate Gene Analysis
 
 ```python
-# Lista de genes de interés oncológico
+# List of oncological genes of interest
 cancer_genes = ["TP53", "KRAS", "PIK3CA", "EGFR", "BRAF", "APC"]
 
-# Analizar cada gen individualmente
+# Analyze each gene individually
 gene_analysis = {}
 for gene in cancer_genes:
     mutations = py_mut.gen_region(gene)
@@ -218,73 +206,50 @@ for gene in cancer_genes:
         'samples': mutations.data['Tumor_Sample_Barcode'].nunique() if len(mutations.data) > 0 else 0
     }
 
-# Resumen
+# Summary
 for gene, stats in gene_analysis.items():
-    print(f"{gene}: {stats['mutations']} mutaciones en {stats['samples']} muestras")
+    print(f"{gene}: {stats['mutations']} mutations in {stats['samples']} samples")
 ```
 
-### Análisis de Regiones Cromosómicas
+### Chromosomal Region Analysis
 
 ```python
-# Análisis de brazo cromosómico
-# Cromosoma 17p (brazo corto)
+# Chromosomal arm analysis
+# Chromosome 17p (short arm)
 chr17p = py_mut.region("chr17", 1, 22300000)
 
-# Cromosoma 17q (brazo largo)  
+# Chromosome 17q (long arm)  
 chr17q = py_mut.region("chr17", 22300001, 83257441)
 
-print(f"Mutaciones en 17p: {len(chr17p.data)}")
-print(f"Mutaciones en 17q: {len(chr17q.data)}")
+print(f"Mutations in 17p: {len(chr17p.data)}")
+print(f"Mutations in 17q: {len(chr17q.data)}")
 ```
 
-### Análisis de Hotspots
+### Hotspot Analysis
 
 ```python
-# Regiones hotspot conocidas
+# Known hotspot regions
 hotspots = {
-    "TP53_DBD": ("chr17", 7571720, 7590868),      # Dominio de unión a DNA
-    "KRAS_G12": ("chr12", 25245274, 25245276),    # Codón 12
-    "PIK3CA_E545": ("chr3", 179218303, 179218305) # Codón 545
+    "TP53_DBD": ("chr17", 7571720, 7590868),      # DNA binding domain
+    "KRAS_G12": ("chr12", 25245274, 25245276),    # Codon 12
+    "PIK3CA_E545": ("chr3", 179218303, 179218305) # Codon 545
 }
 
 for name, (chrom, start, end) in hotspots.items():
     hotspot_muts = py_mut.region(chrom, start, end)
-    print(f"{name}: {len(hotspot_muts.data)} mutaciones")
+    print(f"{name}: {len(hotspot_muts.data)} mutations")
 ```
 
-## Combinación con Otros Filtros
+## Combination with Other Filters
 
 ```python
-# Combinar filtros genómicos con filtros de muestra
-# 1. Filtrar por región
+# Combine genomic filters with sample filters
+# 1. Filter by region
 tp53_region = py_mut.region("chr17", 7571720, 7590868)
 
-# 2. Filtrar por muestras específicas
+# 2. Filter by specific samples
 specific_samples = ["TCGA-AB-2802", "TCGA-AB-2803"]
 tp53_samples = tp53_region.filter_by_chrom_sample(sample=specific_samples)
 
-print(f"Mutaciones TP53 en muestras específicas: {len(tp53_samples.data)}")
-```
-
-## Rendimiento y Optimización
-
-### Para datasets grandes
-```python
-# Filtrar primero por cromosoma para reducir datos
-chr17_only = py_mut.filter_by_chrom_sample(chrom="chr17")
-
-# Luego aplicar filtro de región más específico
-tp53_mutations = chr17_only.region("chr17", 7571720, 7590868)
-```
-
-### Monitoreo de rendimiento
-```python
-import time
-
-start_time = time.time()
-filtered = py_mut.region("chr17", 7500000, 7600000)
-end_time = time.time()
-
-print(f"Filtrado completado en {end_time - start_time:.2f} segundos")
-print(f"Mutaciones filtradas: {len(filtered.data)}")
+print(f"TP53 mutations in specific samples: {len(tp53_samples.data)}")
 ```
