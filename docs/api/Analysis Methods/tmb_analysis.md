@@ -1,306 +1,293 @@
-# TMB Analysis - Análisis de Carga Mutacional Tumoral
+# TMB Analysis - Tumor Mutation Burden Analysis
 
-El método **calculate_tmb_analysis** permite calcular la Carga Mutacional Tumoral (TMB - Tumor Mutation Burden) para cada muestra en un objeto PyMutation.
+The **calculate_tmb_analysis** method allows calculating the Tumor Mutation Burden (TMB) for each sample in a PyMutation object.
 
-## ¿Qué es el Análisis TMB?
+## What is TMB Analysis?
 
-El TMB es una métrica que cuantifica el número total de mutaciones en una muestra tumoral, normalizado por el tamaño del genoma interrogado. Es un biomarcador importante en oncología para predecir la respuesta a inmunoterapia.
+TMB is a metric that quantifies the total number of mutations in a tumor sample, normalized by the size of the interrogated genome. It is an important biomarker in oncology for predicting response to immunotherapy.
 
-## Características Principales
+## Main Features
 
-- **Cálculo automático por muestra**: Analiza cada muestra individualmente
-- **Detección automática de columnas**: Identifica automáticamente las columnas de clasificación de variantes
-- **Mutaciones no sinónimas**: Distingue entre mutaciones totales y no sinónimas
-- **Normalización por tamaño de genoma**: Calcula TMB por millón de bases
-- **Estadísticas globales**: Genera estadísticas descriptivas del conjunto de datos
-- **Exportación automática**: Guarda resultados en archivos TSV
+- **Automatic calculation per sample**: Analyzes each sample individually
+- **Automatic column detection**: Automatically identifies variant classification columns
+- **Non-synonymous mutations**: Distinguishes between total and non-synonymous mutations
+- **Genome size normalization**: Calculates TMB per million bases
+- **Global statistics**: Generates descriptive statistics of the dataset
+- **Automatic export**: Saves results to TSV files
 
-## Uso Básico
+## Basic Usage
 
 ```python
 from pyMut.io import read_maf
 
-# Cargar datos
+# Load data
 py_mut = read_maf("mutations.maf")
 
-# Análisis TMB básico
+# Basic TMB analysis
 tmb_results = py_mut.calculate_tmb_analysis()
 
-# Acceder a resultados
+# Access results
 analysis_df = tmb_results['analysis']
 statistics_df = tmb_results['statistics']
 
-print(f"Muestras analizadas: {len(analysis_df)}")
-print(f"TMB promedio: {analysis_df['TMB_Total_Normalized'].mean():.2f} mut/Mb")
+print(f"Samples analyzed: {len(analysis_df)}")
+print(f"Average TMB: {analysis_df['TMB_Total_Normalized'].mean():.2f} mut/Mb")
 ```
 
-## Parámetros
+## Parameters
 
-### variant_classification_column (str, opcional)
-- **Descripción**: Nombre de la columna con clasificación de variantes
-- **Detección automática**: Si es None, detecta automáticamente columnas como 'Variant_Classification'
-- **Ejemplo**: `"Variant_Classification"` o `"gencode_19_variant_classification"`
+### variant_classification_column (str, optional)
+- **Description**: Name of the column with variant classification
+- **Automatic detection**: If None, automatically detects columns like 'Variant_Classification'
+- **Example**: `"Variant_Classification"` or `"gencode_19_variant_classification"`
 
 ### genome_size_bp (int, default=60456963)
-- **Descripción**: Tamaño de la región interrogada en pares de bases
-- **WES (default)**: 60,456,963 bp (exoma completo)
-- **WGS**: ~3,000,000,000 bp (genoma completo)
-- **Paneles**: Tamaño específico del panel utilizado
+- **Description**: Size of the interrogated region in base pairs
+- **WES (default)**: 60,456,963 bp (complete exome)
+- **WGS**: ~3,000,000,000 bp (complete genome)
+- **Panels**: Specific size of the panel used
 
 ### output_dir (str, default=".")
-- **Descripción**: Directorio donde guardar los archivos de resultados
-- **Archivos generados**: `TMB_analysis.tsv` y `TMB_statistics.tsv`
+- **Description**: Directory where to save result files
+- **Generated files**: `TMB_analysis.tsv` and `TMB_statistics.tsv`
 
 ### save_files (bool, default=True)
-- **Descripción**: Si guardar los resultados en archivos TSV
-- **False**: Solo retorna los DataFrames sin guardar archivos
+- **Description**: Whether to save results to TSV files
+- **False**: Only returns DataFrames without saving files
 
-## Valor de Retorno
+## Return Value
 
-Retorna un diccionario con dos DataFrames:
+Returns a dictionary with two DataFrames:
 
 ```python
 {
-    'analysis': DataFrame,      # Análisis por muestra
-    'statistics': DataFrame     # Estadísticas globales
+    'analysis': DataFrame,      # Analysis per sample
+    'statistics': DataFrame     # Global statistics
 }
 ```
 
-### DataFrame 'analysis'
+### 'analysis' DataFrame
 ```
 Sample | Total_Mutations | Non_Synonymous_Mutations | TMB_Total_Normalized | TMB_Non_Synonymous_Normalized
 SAMPLE_001 | 45 | 32 | 0.744 | 0.529
 SAMPLE_002 | 123 | 89 | 2.034 | 1.472
 ```
 
-### DataFrame 'statistics'
+### 'statistics' DataFrame
 ```
 Metric | Count | Mean | Median | Min | Max | Q1 | Q3 | Std
 Total_Mutations | 100 | 67.5 | 45.0 | 12 | 234 | 32.0 | 89.0 | 45.2
 TMB_Total_Normalized | 100 | 1.117 | 0.744 | 0.198 | 3.871 | 0.529 | 1.472 | 0.748
 ```
 
-## Tipos de Mutaciones No Sinónimas
+## Non-Synonymous Mutation Types
 
-El análisis identifica automáticamente mutaciones con impacto biológico:
+The analysis automatically identifies mutations with biological impact:
 
 ```python
-# Tipos considerados no sinónimos
+# Types considered non-synonymous
 non_synonymous_types = {
-    'MISSENSE_MUTATION',        # Cambio de aminoácido
-    'NONSENSE_MUTATION',        # Codón de parada prematuro
-    'FRAME_SHIFT_DEL',          # Deleción que cambia marco
-    'FRAME_SHIFT_INS',          # Inserción que cambia marco
-    'NONSTOP_MUTATION',         # Pérdida de codón de parada
-    'TRANSLATION_START_SITE',   # Afecta sitio de inicio
-    'SPLICE_SITE',              # Afecta sitio de splicing
-    'IN_FRAME_DEL',             # Deleción en marco
-    'IN_FRAME_INS',             # Inserción en marco
-    'START_CODON_SNP',          # SNP en codón de inicio
-    'START_CODON_DEL',          # Deleción en codón de inicio
-    'START_CODON_INS',          # Inserción en codón de inicio
-    'STOP_CODON_DEL',           # Deleción en codón de parada
-    'STOP_CODON_INS'            # Inserción en codón de parada
+    'MISSENSE_MUTATION',        # Amino acid change
+    'NONSENSE_MUTATION',        # Premature stop codon
+    'FRAME_SHIFT_DEL',          # Frame-changing deletion
+    'FRAME_SHIFT_INS',          # Frame-changing insertion
+    'NONSTOP_MUTATION',         # Loss of stop codon
+    'TRANSLATION_START_SITE',   # Affects start site
+    'SPLICE_SITE',              # Affects splicing site
+    'IN_FRAME_DEL',             # In-frame deletion
+    'IN_FRAME_INS',             # In-frame insertion
+    'START_CODON_SNP',          # SNP in start codon
+    'START_CODON_DEL',          # Deletion in start codon
+    'START_CODON_INS',          # Insertion in start codon
+    'STOP_CODON_DEL',           # Deletion in stop codon
+    'STOP_CODON_INS'            # Insertion in stop codon
 }
 ```
 
-## Archivos de Resultados
+## Result Files
 
-El método genera automáticamente dos archivos TSV con los resultados del análisis:
+The method automatically generates two TSV files with analysis results:
 
-### TMB_analysis.tsv - Análisis por Muestra
+### TMB_analysis.tsv - Analysis per Sample
+Contains detailed results for each sample with columns:
+- **Sample**: Sample identifier
+- **Total_Mutations**: Total number of mutations
+- **Non_Synonymous_Mutations**: Number of non-synonymous mutations
+- **TMB_Total_Normalized**: TMB normalized by genome size (mut/Mb)
+- **TMB_Non_Synonymous_Normalized**: Non-synonymous TMB normalized (mut/Mb)
 
-| Sample | Total_Mutations | Non_Synonymous_Mutations | TMB_Total_Normalized | TMB_Non_Synonymous_Normalized |
-|--------|-----------------|--------------------------|---------------------|------------------------------|
-| TCGA-AB-2988 | 15 | 13 | 0.248110 | 0.215029 |
-| TCGA-AB-2869 | 12 | 8 | 0.198488 | 0.132326 |
-| TCGA-AB-3009 | 42 | 34 | 0.694709 | 0.562384 |
-| TCGA-AB-2830 | 17 | 13 | 0.281192 | 0.215029 |
-| TCGA-AB-2887 | 15 | 12 | 0.248110 | 0.198488 |
+### TMB_statistics.tsv - Global Statistics
+Contains descriptive statistics for the entire dataset:
+- **Count**: Number of samples
+- **Mean**: Average value
+- **Median**: Median value
+- **Min/Max**: Minimum and maximum values
+- **Q1/Q3**: First and third quartiles
+- **Std**: Standard deviation
 
-*Tabla mostrando las primeras 5 muestras del análisis TMB. El archivo completo contiene datos para todas las muestras analizadas.*
-
-### TMB_statistics.tsv - Estadísticas Globales
-
-| Metric | Count | Mean | Median | Min | Max | Q1 | Q3 | Std |
-|--------|-------|------|--------|-----|-----|----|----|-----|
-| Total_Mutations | 193 | 11.435233 | 11.000000 | 1.000000 | 42.000000 | 6.000000 | 15.000000 | 6.752870 |
-| Non_Synonymous_Mutations | 193 | 8.974093 | 9.000000 | 0.000000 | 34.000000 | 5.000000 | 12.000000 | 5.452862 |
-| TMB_Total_Normalized | 193 | 0.189147 | 0.181948 | 0.016541 | 0.694709 | 0.099244 | 0.248110 | 0.111697 |
-| TMB_Non_Synonymous_Normalized | 193 | 0.148438 | 0.148866 | 0.000000 | 0.562384 | 0.082703 | 0.198488 | 0.090194 |
-
-*Estadísticas descriptivas del conjunto completo de datos, incluyendo media, mediana, cuartiles y desviación estándar.*
-
-## Ejemplo Completo
+## Complete Example
 
 ```python
 from pyMut.io import read_maf
-import pandas as pd
+import os
 
-# Cargar datos MAF
+# Load TCGA data
 py_mut = read_maf("src/pyMut/data/examples/tcga_laml.maf.gz")
+print(f"Total mutations: {len(py_mut.data)}")
+print(f"Samples: {len(py_mut.samples)}")
 
-# Análisis TMB personalizado
+# Create output directory
+os.makedirs("tmb_results", exist_ok=True)
+
+# Complete TMB analysis
 tmb_results = py_mut.calculate_tmb_analysis(
     variant_classification_column="Variant_Classification",
-    genome_size_bp=60456963,  # WES estándar
-    output_dir="results/tmb_analysis",
+    genome_size_bp=60456963,  # WES standard
+    output_dir="tmb_results",
     save_files=True
 )
 
-# Explorar resultados
+# Access results
 analysis_df = tmb_results['analysis']
 statistics_df = tmb_results['statistics']
 
-# Estadísticas básicas
-print("=== RESUMEN TMB ===")
-print(f"Muestras analizadas: {len(analysis_df)}")
-print(f"TMB promedio: {analysis_df['TMB_Total_Normalized'].mean():.3f} mut/Mb")
-print(f"TMB mediano: {analysis_df['TMB_Total_Normalized'].median():.3f} mut/Mb")
+# Display summary
+print(f"\n=== TMB Analysis Summary ===")
+print(f"Samples analyzed: {len(analysis_df)}")
+print(f"Average TMB: {analysis_df['TMB_Total_Normalized'].mean():.3f} mut/Mb")
+print(f"Median TMB: {analysis_df['TMB_Total_Normalized'].median():.3f} mut/Mb")
+print(f"TMB range: {analysis_df['TMB_Total_Normalized'].min():.3f} - {analysis_df['TMB_Total_Normalized'].max():.3f} mut/Mb")
 
-# Identificar muestras con TMB alto (>10 mut/Mb)
-high_tmb = analysis_df[analysis_df['TMB_Total_Normalized'] > 10]
-print(f"Muestras con TMB alto (>10 mut/Mb): {len(high_tmb)}")
+# Identify high TMB samples
+high_tmb_threshold = 10  # mut/Mb
+high_tmb_samples = analysis_df[analysis_df['TMB_Total_Normalized'] > high_tmb_threshold]
+print(f"\nSamples with high TMB (>{high_tmb_threshold} mut/Mb): {len(high_tmb_samples)}")
 
-# Top 5 muestras con mayor TMB
-top_tmb = analysis_df.nlargest(5, 'TMB_Total_Normalized')
-print("\nTop 5 muestras con mayor TMB:")
-for _, row in top_tmb.iterrows():
-    print(f"  {row['Sample']}: {row['TMB_Total_Normalized']:.3f} mut/Mb")
+if len(high_tmb_samples) > 0:
+    print("Top 5 samples with highest TMB:")
+    top_samples = high_tmb_samples.nlargest(5, 'TMB_Total_Normalized')
+    for _, row in top_samples.iterrows():
+        print(f"  - {row['Sample']}: {row['TMB_Total_Normalized']:.3f} mut/Mb")
 
-# Visualización opcional
-import matplotlib.pyplot as plt
+# Non-synonymous vs total mutations
+print(f"\n=== Mutation Type Analysis ===")
+total_avg = analysis_df['Total_Mutations'].mean()
+nonsyn_avg = analysis_df['Non_Synonymous_Mutations'].mean()
+nonsyn_ratio = nonsyn_avg / total_avg if total_avg > 0 else 0
 
-plt.figure(figsize=(10, 6))
-plt.hist(analysis_df['TMB_Total_Normalized'], bins=30, alpha=0.7, edgecolor='black')
-plt.xlabel('TMB (mutaciones/Mb)')
-plt.ylabel('Número de muestras')
-plt.title('Distribución de TMB en el conjunto de datos')
-plt.axvline(analysis_df['TMB_Total_Normalized'].median(), color='red', 
-           linestyle='--', label=f'Mediana: {analysis_df["TMB_Total_Normalized"].median():.3f}')
-plt.legend()
-plt.savefig('results/tmb_distribution.png', dpi=300, bbox_inches='tight')
-plt.show()
-
-print("✅ Análisis TMB completado exitosamente!")
+print(f"Average total mutations per sample: {total_avg:.1f}")
+print(f"Average non-synonymous mutations per sample: {nonsyn_avg:.1f}")
+print(f"Non-synonymous ratio: {nonsyn_ratio:.2%}")
 ```
 
-## Configuración por Tipo de Secuenciación
+## Advanced Usage
 
-### Whole Exome Sequencing (WES)
+### Custom Genome Size
+
 ```python
-tmb_results = py_mut.calculate_tmb_analysis(
-    genome_size_bp=60456963  # ~60.5 Mb (default)
+# For whole genome sequencing
+wgs_results = py_mut.calculate_tmb_analysis(
+    genome_size_bp=3000000000,  # ~3 Gb for WGS
+    output_dir="tmb_wgs_results"
+)
+
+# For targeted panel (example: 1.2 Mb panel)
+panel_results = py_mut.calculate_tmb_analysis(
+    genome_size_bp=1200000,  # 1.2 Mb panel
+    output_dir="tmb_panel_results"
 )
 ```
 
-### Whole Genome Sequencing (WGS)
+### Custom Variant Classification Column
+
 ```python
-tmb_results = py_mut.calculate_tmb_analysis(
-    genome_size_bp=3000000000  # ~3 Gb
+# If using different column name
+custom_results = py_mut.calculate_tmb_analysis(
+    variant_classification_column="gencode_19_variant_classification",
+    output_dir="tmb_custom_results"
 )
 ```
 
-### Panel de Genes Específico
+### Memory-efficient Analysis (no file saving)
+
 ```python
-# Ejemplo: Panel de 500 genes (~1.5 Mb)
+# For large datasets, avoid file I/O
 tmb_results = py_mut.calculate_tmb_analysis(
-    genome_size_bp=1500000  # 1.5 Mb
+    save_files=False  # Only return DataFrames
 )
-```
 
-## Interpretación de Resultados
-
-### Valores TMB Típicos
-- **TMB bajo**: < 6 mutaciones/Mb
-- **TMB intermedio**: 6-20 mutaciones/Mb  
-- **TMB alto**: > 20 mutaciones/Mb
-
-### Contexto Clínico
-- **TMB alto**: Asociado con mejor respuesta a inmunoterapia
-- **Tipos de cáncer**: Melanoma y cáncer de pulmón suelen tener TMB más alto
-- **Microsatellite instability (MSI)**: Tumores MSI-H típicamente tienen TMB muy alto
-
-## Archivos de Salida
-
-### TMB_analysis.tsv
-Contiene el análisis detallado por muestra:
-```
-Sample	Total_Mutations	Non_Synonymous_Mutations	TMB_Total_Normalized	TMB_Non_Synonymous_Normalized
-TCGA-AB-2802	45	32	0.744063	0.529244
-TCGA-AB-2803	123	89	2.034127	1.472063
-```
-
-### TMB_statistics.tsv
-Contiene estadísticas descriptivas globales:
-```
-Metric	Count	Mean	Median	Min	Max	Q1	Q3	Std
-Total_Mutations	191	67.534031	45.000000	12	234	32.000000	89.000000	45.234567
-TMB_Total_Normalized	191	1.117234	0.744063	0.198456	3.871234	0.529244	1.472063	0.748123
-```
-
-## Validación y Control de Calidad
-
-### Verificar detección de columnas
-```python
-# Verificar qué columna se detectó automáticamente
-tmb_results = py_mut.calculate_tmb_analysis()
-# Revisar logs para ver: "Auto-detected variant classification column: ..."
-```
-
-### Validar resultados
-```python
+# Process results in memory
 analysis_df = tmb_results['analysis']
-
-# Verificar que no hay valores negativos
-assert (analysis_df['Total_Mutations'] >= 0).all()
-assert (analysis_df['TMB_Total_Normalized'] >= 0).all()
-
-# Verificar coherencia
-assert (analysis_df['Non_Synonymous_Mutations'] <= analysis_df['Total_Mutations']).all()
+# ... perform analysis ...
 ```
 
-## Manejo de Errores
+## TMB Interpretation
 
-### PyMutation inválido
+### Clinical Thresholds
 ```python
-try:
-    tmb_results = py_mut.calculate_tmb_analysis()
-except ValueError as e:
-    print(f"❌ Error en objeto PyMutation: {e}")
+# Common TMB thresholds in clinical practice
+def classify_tmb(tmb_value):
+    if tmb_value >= 20:
+        return "Very High"
+    elif tmb_value >= 10:
+        return "High"
+    elif tmb_value >= 6:
+        return "Intermediate"
+    else:
+        return "Low"
+
+# Apply classification
+analysis_df['TMB_Category'] = analysis_df['TMB_Total_Normalized'].apply(classify_tmb)
+category_counts = analysis_df['TMB_Category'].value_counts()
+print("TMB Distribution:")
+for category, count in category_counts.items():
+    print(f"  {category}: {count} samples")
 ```
 
-### Columna de clasificación no encontrada
+### Statistical Analysis
 ```python
-try:
-    tmb_results = py_mut.calculate_tmb_analysis(
-        variant_classification_column="columna_inexistente"
-    )
-except ValueError as e:
-    print(f"❌ Columna no encontrada: {e}")
+import numpy as np
+from scipy import stats
+
+# TMB distribution analysis
+tmb_values = analysis_df['TMB_Total_Normalized']
+
+# Test for normality
+shapiro_stat, shapiro_p = stats.shapiro(tmb_values)
+print(f"Shapiro-Wilk test p-value: {shapiro_p:.4f}")
+
+# Log transformation if needed
+if shapiro_p < 0.05:
+    log_tmb = np.log1p(tmb_values)  # log(1+x) to handle zeros
+    print("TMB distribution is not normal, consider log transformation")
+
+# Percentile analysis
+percentiles = [10, 25, 50, 75, 90, 95, 99]
+tmb_percentiles = np.percentile(tmb_values, percentiles)
+print("\nTMB Percentiles:")
+for p, value in zip(percentiles, tmb_percentiles):
+    print(f"  {p}th percentile: {value:.3f} mut/Mb")
 ```
 
-### Sin muestras válidas
-```python
-try:
-    tmb_results = py_mut.calculate_tmb_analysis()
-except ValueError as e:
-    print(f"❌ Sin muestras válidas: {e}")
-```
 
-## Optimización para Datasets Grandes
+## Performance Considerations
 
-```python
-# Para datasets muy grandes, desactivar guardado de archivos
-# y procesar en lotes si es necesario
-tmb_results = py_mut.calculate_tmb_analysis(
-    save_files=False  # Solo retorna DataFrames
-)
+- **Memory usage**: TMB analysis is memory-efficient and processes samples iteratively
+- **Genome size**: Ensure correct genome size for accurate normalization
+- **Column detection**: Automatic detection works for standard MAF formats
 
-# Procesar resultados en memoria
-analysis_df = tmb_results['analysis']
-# ... análisis personalizado ...
+## Common Use Cases
 
-# Guardar manualmente si es necesario
-analysis_df.to_csv("custom_tmb_analysis.tsv", sep='\t', index=False)
-```
+1. **Immunotherapy prediction**: Identify high TMB samples likely to respond to checkpoint inhibitors
+2. **Cohort characterization**: Describe TMB distribution in a patient cohort
+3. **Quality control**: Identify samples with unusual mutation patterns
+4. **Comparative analysis**: Compare TMB between different cancer types or treatments
+5. **Biomarker development**: Use TMB as a continuous or categorical biomarker
+
+## Technical Notes
+
+- TMB calculation follows standard clinical guidelines
+- Non-synonymous mutations are identified using standard variant classifications
+- Results are automatically saved with timestamps for reproducibility
+- The method handles missing or malformed variant classifications gracefully
+- Compatible with both MAF and VCF-derived data formats
