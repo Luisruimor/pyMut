@@ -153,6 +153,117 @@ FIELDS: Dict[str, List[str]] = {
         "PfamName",
         "PFAM_Name",
     ],
+    # Tipo de variante
+    "Variant_Type": [
+        "Variant_Type",
+        "VariantType",
+        "Mutation_Type",
+        "MutationType",
+    ],
+    # Cromosoma
+    "Chromosome": [
+        "Chromosome",
+        "Chr",
+        "CHROM",
+        "chromosome",
+        "chr",
+    ],
+    # Posición de inicio
+    "Start_Position": [
+        "Start_Position",
+        "Start_position",
+        "StartPosition",
+        "POS",
+        "Position",
+        "start_pos",
+        "start_position",
+    ],
+    # Alelo de referencia
+    "Reference_Allele": [
+        "Reference_Allele",
+        "Ref_Allele",
+        "REF",
+        "Reference",
+        "Ref",
+        "reference_allele",
+    ],
+    # Alelo tumoral 1
+    "Tumor_Seq_Allele1": [
+        "Tumor_Seq_Allele1",
+        "Tumor_Allele1",
+        "TumorAllele1",
+        "Allele1",
+        "tumor_seq_allele1",
+    ],
+    # Alelo tumoral 2
+    "Tumor_Seq_Allele2": [
+        "Tumor_Seq_Allele2",
+        "Tumor_Allele2",
+        "TumorAllele2",
+        "Allele2",
+        "ALT",
+        "tumor_seq_allele2",
+    ],
+    # Código de barras de muestra tumoral
+    "Tumor_Sample_Barcode": [
+        "Tumor_Sample_Barcode",
+        "TumorSampleBarcode",
+        "Tumor_Sample_ID",
+        "Sample_ID",
+        "SAMPLE",
+        "Sample",
+        "tumor_sample_barcode",
+    ],
+    # Chromosome
+    "Chromosome": [
+        "Chromosome",
+        "CHROM",
+        "Chr",
+        "CHR",
+        "chrom",
+        "chr",
+    ],
+    # Start Position
+    "Start_Position": [
+        "Start_Position",
+        "Start_position",
+        "POS",
+        "Position",
+        "Pos",
+        "pos",
+        "start",
+        "Start",
+    ],
+    # Reference Allele
+    "Reference_Allele": [
+        "Reference_Allele",
+        "REF",
+        "Ref",
+        "ref",
+        "Reference",
+        "reference",
+    ],
+    # Tumor Sequence Allele 2
+    "Tumor_Seq_Allele2": [
+        "Tumor_Seq_Allele2",
+        "ALT",
+        "Alt",
+        "alt",
+        "Alternative",
+        "alternative",
+        "Tumor_Allele",
+    ],
+    # Tumor Sample Barcode
+    "Tumor_Sample_Barcode": [
+        "Tumor_Sample_Barcode",
+        "Sample",
+        "sample",
+        "Sample_ID",
+        "SampleID",
+        "sample_id",
+        "Barcode",
+        "barcode",
+    ],
 }
 
 # ---------------------------------------------------------------------------

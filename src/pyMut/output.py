@@ -4,36 +4,9 @@ from typing import List
 import pandas as pd
 
 from .input import required_columns_MAF
+from .utils.format import reverse_format_chr
 
 logger = logging.getLogger(__name__)
-
-def _reverse_format_chr(chrom_str: str) -> str:
-    """
-    Reverse the chromosome formatting done by format_chr.
-
-    Converts standardized chromosome identifiers back to original format:
-    - Removes "chr" prefix
-    - Converts "X" to "23"
-    - Converts "Y" to "24"
-
-    Parameters
-    ----------
-    chrom_str : str
-        Standardized chromosome identifier.
-
-    Returns
-    -------
-    str
-        Original chromosome identifier format.
-    """
-    if chrom_str == "X":
-        return "23"
-    elif chrom_str == "Y":
-        return "24"
-    elif chrom_str.startswith("chr"):
-        return chrom_str[3:]  # Remove "chr" prefix
-    else:
-        return chrom_str
 
 
 def _load_maf_column_order() -> List[str]:
@@ -129,7 +102,7 @@ def to_maf(self, output_path: str | Path) -> None:
 
             # Create MAF row
             maf_row = {
-                "Chromosome": _reverse_format_chr(str(chrom)),
+                "Chromosome": reverse_format_chr(str(chrom)),
                 "Start_Position": int(pos),
                 "Reference_Allele": str(ref),
                 "Tumor_Seq_Allele1": str(allele1),
