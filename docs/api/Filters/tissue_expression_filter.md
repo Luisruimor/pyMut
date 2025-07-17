@@ -1,78 +1,78 @@
-# Tissue Expression Filter - Filtro de Expresión Tisular
+# Tissue Expression Filter
 
-El método **filter_by_tissue_expression** permite filtrar datos de mutaciones basándose en la expresión génica en tejidos específicos utilizando datos de consenso de RNA de cáncer.
+The **filter_by_tissue_expression** method allows filtering mutation data based on gene expression in specific tissues using cancer RNA consensus data.
 
-## ¿Qué es el Filtro de Expresión Tisular?
+## What is the Tissue Expression Filter?
 
-Este filtro permite identificar y filtrar mutaciones en genes que están suficientemente expresados (o no expresados) en tejidos/tipos de cáncer específicos. Utiliza datos de consenso de RNA de cáncer para determinar si un gen está "activado" en un tejido particular según un umbral de expresión definido.
+This filter allows identifying and filtering mutations in genes that are sufficiently expressed (or not expressed) in specific tissues/cancer types. It uses cancer RNA consensus data to determine if a gene is "active" in a particular tissue according to a defined expression threshold.
 
-## Características Principales
+## Main Features
 
-- **Filtrado por múltiples tejidos**: Permite especificar múltiples tejidos con umbrales independientes
-- **Detección automática de columnas**: Identifica automáticamente columnas de símbolos génicos
-- **Caching inteligente**: Los datos de expresión se cargan una vez y se mantienen en caché
-- **Filtrado bidireccional**: Puede filtrar genes expresados o no expresados
-- **Códigos TCGA**: Utiliza códigos estándar de TCGA para tipos de cáncer
-- **Validación robusta**: Validación completa de parámetros de entrada
+- **Multi-tissue filtering**: Allows specifying multiple tissues with independent thresholds
+- **Automatic column detection**: Automatically identifies gene symbol columns
+- **Smart caching**: Expression data is loaded once and kept in cache
+- **Bidirectional filtering**: Can filter expressed or non-expressed genes
+- **TCGA codes**: Uses standard TCGA codes for cancer types
+- **Robust validation**: Complete validation of input parameters
 
-## Uso Básico
+## Basic Usage
 
 ```python
 from pyMut.io import read_maf
 
-# Cargar datos
+# Load data
 py_mut = read_maf("mutations.maf")
 
-# Filtrar genes expresados en cáncer de vejiga (umbral 5)
+# Filter genes expressed in bladder cancer (threshold 5)
 filtered_mut = py_mut.filter_by_tissue_expression([('BLCA', 5)])
 
-# Filtrar genes NO expresados en adenocarcinoma de pulmón
+# Filter genes NOT expressed in lung adenocarcinoma
 not_expressed_mut = py_mut.filter_by_tissue_expression(
     [('LUAD', 4)], 
     keep_expressed=False
 )
 
-# Filtrar genes expresados en múltiples tejidos con diferentes umbrales
+# Filter genes expressed in multiple tissues with different thresholds
 multi_tissue_mut = py_mut.filter_by_tissue_expression([
-    ('BLCA', 5),    # Cáncer de vejiga, umbral 5
-    ('BRCA', 3),    # Cáncer de mama, umbral 3
-    ('LUAD', 4),    # Adenocarcinoma de pulmón, umbral 4
-    ('COAD', 6)     # Adenocarcinoma de colon, umbral 6
+    ('BLCA', 5),    # Bladder cancer, threshold 5
+    ('BRCA', 3),    # Breast cancer, threshold 3
+    ('LUAD', 4),    # Lung adenocarcinoma, threshold 4
+    ('COAD', 6)     # Colon adenocarcinoma, threshold 6
 ])
 
-print(f"Mutaciones originales: {len(py_mut.data)}")
-print(f"Mutaciones filtradas: {len(filtered_mut.data)}")
+print(f"Original mutations: {len(py_mut.data)}")
+print(f"Filtered mutations: {len(filtered_mut.data)}")
 ```
 
-## Parámetros
+## Parameters
 
-### tissues (List[Tuple[str, float]], requerido)
-- **Descripción**: Lista de tuplas con especificaciones de tejido y umbral
-- **Formato**: `[('código_tejido', umbral), ...]`
-- **Códigos TCGA**: Utiliza códigos estándar como 'BLCA', 'BRCA', 'LUAD', etc.
-- **Ejemplo**: `[('BLCA', 5), ('BRCA', 3)]`
+### tissues (List[Tuple[str, float]], required)
+- **Description**: List of tuples with tissue and threshold specifications
+- **Format**: `[('tissue_code', threshold), ...]`
+- **TCGA Codes**: Uses standard codes like 'BLCA', 'BRCA', 'LUAD', etc.
+- **Example**: `[('BLCA', 5), ('BRCA', 3)]`
 
 ### keep_expressed (bool, default=True)
-- **Descripción**: Determina qué mutaciones mantener
-- **True**: Mantiene genes expresados en al menos uno de los tejidos especificados
-- **False**: Mantiene genes NO expresados en ninguno de los tejidos especificados
+- **Description**: Determines which mutations to keep
+- **True**: Keeps genes expressed in at least one of the specified tissues
+- **False**: Keeps genes NOT expressed in any of the specified tissues
 
-## Valor de Retorno
+## Return Value
 
-Retorna un nuevo objeto **PyMutation** con los datos filtrados según los criterios de expresión tisular especificados.
+Returns a new **PyMutation** object with data filtered according to the specified tissue expression criteria.
 
 ```python
-# El objeto retornado mantiene la misma estructura
+# The returned object maintains the same structure
 filtered_mut = py_mut.filter_by_tissue_expression([('BLCA', 5)])
 print(type(filtered_mut))  # <class 'pyMut.core.PyMutation'>
 ```
 
-## Códigos de Tejido TCGA Soportados
+## Supported TCGA Tissue Codes
 
-El filtro utiliza códigos estándar de TCGA para diferentes tipos de cáncer:
+The filter uses standard TCGA codes for different cancer types:
 
 ```python
-# Ejemplos de códigos TCGA comunes
+# Examples of common TCGA codes
 tissue_codes = {
     'BLCA': 'Bladder Urothelial Carcinoma',
     'BRCA': 'Breast Invasive Carcinoma', 
@@ -84,116 +84,116 @@ tissue_codes = {
     'LIHC': 'Liver Hepatocellular Carcinoma',
     'STAD': 'Stomach Adenocarcinoma',
     'SKCM': 'Skin Cutaneous Melanoma'
-    # ... y muchos más
+    # ... and many more
 }
 ```
 
-## Función Auxiliar: tissue_expression
+## Helper Function: tissue_expression
 
-Además del método de filtrado, está disponible la función auxiliar `tissue_expression` para verificaciones individuales:
+In addition to the filtering method, the `tissue_expression` helper function is available for individual checks:
 
 ```python
 from pyMut.filters.tissue_expression import tissue_expression
 import pandas as pd
 
-# Verificar expresión usando símbolo génico directamente
+# Check expression using gene symbol directly
 is_expressed = tissue_expression("TSPAN6", ["BLCA", 5])
-print(f"TSPAN6 expresado en BLCA (umbral 5): {is_expressed}")
+print(f"TSPAN6 expressed in BLCA (threshold 5): {is_expressed}")
 
-# Verificar expresión usando una fila de datos
+# Check expression using a data row
 row = pd.Series({'Hugo_Symbol': 'TSPAN6', 'Chromosome': 'X'})
 is_expressed = tissue_expression(row, ["BRCA", 10])
-print(f"TSPAN6 expresado en BRCA (umbral 10): {is_expressed}")
+print(f"TSPAN6 expressed in BRCA (threshold 10): {is_expressed}")
 ```
 
-### Parámetros de tissue_expression
+### tissue_expression Parameters
 
-- **data**: `Union[str, pd.Series]` - Símbolo génico o fila de datos
-- **tissue**: `List[Union[str, float]]` - `[código_tejido, umbral]`
+- **data**: `Union[str, pd.Series]` - Gene symbol or data row
+- **tissue**: `List[Union[str, float]]` - `[tissue_code, threshold]`
 
-## Ejemplos Avanzados
+## Advanced Examples
 
-### Filtrado Condicional por Tipo de Cáncer
+### Conditional Filtering by Cancer Type
 
 ```python
-# Filtrar mutaciones relevantes para cáncer de mama
+# Filter mutations relevant to breast cancer
 breast_cancer_mut = py_mut.filter_by_tissue_expression([
-    ('BRCA', 5)  # Genes expresados en cáncer de mama
+    ('BRCA', 5)  # Genes expressed in breast cancer
 ])
 
-# Filtrar genes silenciados en cáncer de pulmón
+# Filter silenced genes in lung cancer
 lung_silenced_mut = py_mut.filter_by_tissue_expression([
     ('LUAD', 3),
     ('LUSC', 3)
 ], keep_expressed=False)
 ```
 
-### Análisis Multi-Tejido
+### Multi-Tissue Analysis
 
 ```python
-# Genes expresados en al menos uno de múltiples cánceres digestivos
+# Genes expressed in at least one of multiple digestive cancers
 digestive_cancers_mut = py_mut.filter_by_tissue_expression([
     ('COAD', 4),    # Colon
-    ('STAD', 4),    # Estómago  
-    ('LIHC', 5),    # Hígado
-    ('PAAD', 6)     # Páncreas
+    ('STAD', 4),    # Stomach  
+    ('LIHC', 5),    # Liver
+    ('PAAD', 6)     # Pancreas
 ])
 
-print(f"Mutaciones en genes expresados en cánceres digestivos: {len(digestive_cancers_mut.data)}")
+print(f"Mutations in genes expressed in digestive cancers: {len(digestive_cancers_mut.data)}")
 ```
 
-### Combinación con Otros Filtros
+### Combination with Other Filters
 
 ```python
-# Combinar filtro de expresión tisular con otros filtros
+# Combine tissue expression filter with other filters
 filtered_mut = (py_mut
     .filter_by_tissue_expression([('BRCA', 5)])
     .filter_by_pass()
     .filter_by_chromosome(['1', '2', '3']))
 
-print(f"Mutaciones después de filtros combinados: {len(filtered_mut.data)}")
+print(f"Mutations after combined filters: {len(filtered_mut.data)}")
 ```
 
-## Manejo de Errores
+## Error Handling
 
-El método incluye validación robusta y manejo de errores:
+The method includes robust validation and error handling:
 
 ```python
 try:
-    # Error: lista vacía
+    # Error: empty list
     py_mut.filter_by_tissue_expression([])
 except ValueError as e:
     print(f"Error: {e}")
 
 try:
-    # Error: formato incorrecto de tupla
+    # Error: incorrect tuple format
     py_mut.filter_by_tissue_expression([('BLCA', 5, 'extra')])
 except ValueError as e:
     print(f"Error: {e}")
 
 try:
-    # Error: código de tejido no es string
+    # Error: tissue code is not string
     py_mut.filter_by_tissue_expression([(123, 5)])
 except ValueError as e:
     print(f"Error: {e}")
 ```
 
-## Consideraciones de Rendimiento
+## Performance Considerations
 
-- **Caching**: Los datos de expresión se cargan una vez y se mantienen en caché
-- **Memoria**: El filtrado crea una copia de los datos, no modifica el objeto original
-- **Escalabilidad**: Eficiente para datasets grandes gracias al caching inteligente
+- **Caching**: Expression data is loaded once and kept in cache
+- **Memory**: Filtering creates a copy of the data, does not modify the original object
+- **Scalability**: Efficient for large datasets thanks to smart caching
 
-## Casos de Uso Comunes
+## Common Use Cases
 
-1. **Análisis específico de cáncer**: Filtrar mutaciones relevantes para un tipo de cáncer específico
-2. **Genes silenciados**: Identificar mutaciones en genes no expresados (posibles supresores tumorales)
-3. **Análisis comparativo**: Comparar patrones de mutación entre diferentes tipos de cáncer
-4. **Priorización de variantes**: Enfocar análisis en genes activos en tejidos relevantes
+1. **Cancer-specific analysis**: Filter mutations relevant to a specific cancer type
+2. **Silenced genes**: Identify mutations in non-expressed genes (potential tumor suppressors)
+3. **Comparative analysis**: Compare mutation patterns between different cancer types
+4. **Variant prioritization**: Focus analysis on genes active in relevant tissues
 
-## Notas Técnicas
+## Technical Notes
 
-- Los datos de expresión provienen de `rna_cancer_consensus.json`
-- Se detectan automáticamente columnas como 'Hugo_Symbol', 'Gene_Symbol', etc.
-- El filtrado preserva todos los metadatos del objeto PyMutation original
-- Compatible con datos en formato MAF y VCF convertidos
+- Expression data comes from `rna_cancer_consensus.json`
+- Automatically detects columns like 'Hugo_Symbol', 'Gene_Symbol', etc.
+- Filtering preserves all metadata from the original PyMutation object
+- Compatible with MAF format data and converted VCF
