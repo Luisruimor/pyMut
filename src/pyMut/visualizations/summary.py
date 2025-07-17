@@ -7,12 +7,8 @@ that show different statistics from mutation data.
 
 import pandas as pd
 import matplotlib.pyplot as plt
-import matplotlib.cm as cm
-import numpy as np
-import re
-from typing import List, Dict, Union, Optional, Tuple, Any
-from src.pyMut import PyMutation
-
+from typing import Dict, Optional, Tuple
+from ..core import PyMutation
 
 
 def create_variant_classification_plot(py_mut: PyMutation,
@@ -523,7 +519,7 @@ def create_summary_plot(py_mut: PyMutation,
     
     # Create the variant classification plot using the predefined color map
     var_class_ax = create_variant_classification_plot(
-        data, 
+        py_mut, 
         variant_column=variant_classification_col, 
         ax=axs[0, 0],
         color_map=variant_color_map,  # Pass the color map
@@ -531,10 +527,10 @@ def create_summary_plot(py_mut: PyMutation,
     )
     
     # Create the variant type plot
-    create_variant_type_plot(data, ax=axs[0, 1], set_title=True)
+    create_variant_type_plot(py_mut, ax=axs[0, 1], set_title=True)
     
     # Create the SNV class plot
-    create_snv_class_plot(data, 
+    create_snv_class_plot(py_mut, 
                          ref_column="REF",
                          alt_column="ALT",
                          ax=axs[0, 2],
@@ -543,7 +539,7 @@ def create_summary_plot(py_mut: PyMutation,
     # Create the variants per sample plot (TMB)
     # Passing the same color map used for the classification plot
     variants_ax = create_variants_per_sample_plot(
-        data,
+        py_mut,
         variant_column=variant_classification_col,
         sample_column=sample_column,
         ax=axs[1, 0],
@@ -554,7 +550,7 @@ def create_summary_plot(py_mut: PyMutation,
     
     # Create the variant classification summary plot
     var_boxplot_ax = create_variant_classification_summary_plot(
-        data,
+        py_mut,
         variant_column=variant_classification_col,
         sample_column=sample_column,
         ax=axs[1, 1],
@@ -565,7 +561,7 @@ def create_summary_plot(py_mut: PyMutation,
     
     # Create the top mutated genes plot
     top_genes_ax = create_top_mutated_genes_plot(
-        data,
+        py_mut,
         variant_column=variant_classification_col,
         gene_column=gene_column,
         sample_column=sample_column,

@@ -161,20 +161,20 @@ class PyMutation:
         from .utils.data_processing import extract_variant_classifications, extract_variant_types
 
         # Preprocess data to ensure we have the necessary columns
-        processed_data = extract_variant_classifications(
+        self.data = extract_variant_classifications(
             self.data, 
             variant_column=VARIANT_CLASSIFICATION_COLUMN,
             funcotation_column=FUNCOTATION_COLUMN
         )
 
-        processed_data = extract_variant_types(
-            processed_data,
+        self.data = extract_variant_types(
+            self.data,
             variant_column=VARIANT_TYPE_COLUMN,
             funcotation_column=FUNCOTATION_COLUMN
         )
 
         # Generate the summary plot
-        fig = create_summary_plot(processed_data, figsize, title, max_samples, top_genes_count)
+        fig = create_summary_plot(self, figsize, title, max_samples, top_genes_count)
 
         # If requested to show interactively
         if show_interactive:
@@ -201,7 +201,7 @@ class PyMutation:
         from .utils.data_processing import extract_variant_classifications
 
         # Preprocess data to ensure we have the necessary column
-        processed_data = extract_variant_classifications(
+        self.data = extract_variant_classifications(
             self.data, 
             variant_column="Variant_Classification",
             funcotation_column="FUNCOTATION"
@@ -211,7 +211,7 @@ class PyMutation:
         fig, ax = plt.subplots(figsize=figsize)
 
         # Generate the plot, passing set_title=False to avoid duplicate title
-        create_variant_classification_plot(processed_data, ax=ax, set_title=False)
+        create_variant_classification_plot(self, ax=ax, set_title=False)
 
         # Configure title
         if title:
@@ -244,7 +244,7 @@ class PyMutation:
         from .utils.data_processing import extract_variant_types
 
         # Preprocess data to ensure we have the necessary column
-        processed_data = extract_variant_types(
+        self.data = extract_variant_types(
             self.data,
             variant_column="Variant_Type",
             funcotation_column="FUNCOTATION"
@@ -254,7 +254,7 @@ class PyMutation:
         fig, ax = plt.subplots(figsize=figsize)
 
         # Generate the plot, passing set_title=False to avoid duplicate title
-        create_variant_type_plot(processed_data, ax=ax, set_title=False)
+        create_variant_type_plot(self, ax=ax, set_title=False)
 
         # Configure title
         if title:
@@ -291,7 +291,7 @@ class PyMutation:
 
         fig, ax = plt.subplots(figsize=figsize)
         create_snv_class_plot(
-            self.data, 
+            self, 
             ref_column=ref_column,
             alt_column=alt_column,
             ax=ax,
@@ -346,7 +346,7 @@ class PyMutation:
                     break
 
         # Ensure the variant classification column exists or is extracted
-        processed_data = extract_variant_classifications(
+        self.data = extract_variant_classifications(
             self.data, 
             variant_column=variant_column,
             funcotation_column="FUNCOTATION"
@@ -354,7 +354,7 @@ class PyMutation:
 
         fig, ax = plt.subplots(figsize=figsize)
         create_variants_per_sample_plot(
-            processed_data, 
+            self, 
             variant_column=variant_column,
             sample_column=sample_column,
             ax=ax,
@@ -405,24 +405,24 @@ class PyMutation:
         from .utils.data_processing import extract_variant_classifications
 
         # Ensure the variant classification column exists or is extracted
-        processed_data = extract_variant_classifications(
+        self.data = extract_variant_classifications(
             self.data, 
             variant_column=variant_column,
             funcotation_column="FUNCOTATION"
         )
 
         # Check if we're in wide format (samples as columns)
-        is_wide_format = sample_column not in processed_data.columns
+        is_wide_format = sample_column not in self.data.columns
         if is_wide_format:
             # Detect and show information about the format
-            sample_cols = [col for col in processed_data.columns if col.startswith('TCGA-') or 
+            sample_cols = [col for col in self.data.columns if col.startswith('TCGA-') or 
                            (isinstance(col, str) and col.count('-') >= 2)]
             if sample_cols:
                 print(f"Detected wide format with {len(sample_cols)} possible sample columns.")
 
         fig, ax = plt.subplots(figsize=figsize)
         create_variant_classification_summary_plot(
-            processed_data, 
+            self, 
             variant_column=variant_column,
             sample_column=sample_column,
             ax=ax,
@@ -506,7 +506,7 @@ class PyMutation:
                     break
 
         # Ensure the variant classification column exists or is extracted
-        processed_data = extract_variant_classifications(
+        self.data = extract_variant_classifications(
             self.data, 
             variant_column=variant_column,
             funcotation_column=FUNCOTATION_COLUMN
@@ -514,7 +514,7 @@ class PyMutation:
 
         fig, ax = plt.subplots(figsize=figsize)
         create_top_mutated_genes_plot(
-            processed_data, 
+            self, 
             mode=mode,
             variant_column=variant_column,
             gene_column=gene_column,

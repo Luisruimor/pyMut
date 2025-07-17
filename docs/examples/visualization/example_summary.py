@@ -41,15 +41,11 @@ BBOX_INCHES OPTIONS:
 """
 
 import os
-import sys
 import pandas as pd
 import matplotlib.pyplot as plt
 
-# Add src directory to path
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-
-# Import PyMutation
-from src.pyMut import PyMutation
+# Import PyMutation directly (now installed in development mode)
+from pyMut import PyMutation
 
 def main():
     """
@@ -62,11 +58,8 @@ def main():
     PyMutation.configure_high_quality_plots()
     print("✅ All figures will now be saved automatically in high quality!")
     
-    # Get the absolute path to the project directory
-    project_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-    
-    # Path to the example file
-    tsv_file = os.path.join(project_dir, "src", "pyMut", "data", "examples", "tcga_laml_converted.tsv")
+    # Path to the example file (using relative path from project root)
+    tsv_file = "src/pyMut/data/examples/tcga_laml_converted.tsv"
     
     # Check if the file exists
     if not os.path.exists(tsv_file):

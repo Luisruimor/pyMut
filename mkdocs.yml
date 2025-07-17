@@ -33,11 +33,24 @@ theme:
   icon:
     repo: fontawesome/brands/github
 
+# Include src directory in the pythonpath for the jupyter notebooks and the examples
+extra:
+  pythonpath:
+    - src
+
 # Plugins
 plugins:
   - search
   - mkdocs-jupyter:
-      jupyter_dirs: ['docs/examples']
+      # Where to find the jupyter notebooks
+      jupyter_dirs:
+        - 'docs/examples'
+      # Execute all cells in each build
+      execute: true
+      # Fail the build if there are exceptions
+      allow_errors: false
+      # Define the kernel to use
+      kernelspec: python3
 
 
 
@@ -103,4 +116,4 @@ nav:
           - VEP Annotation Merging: examples/annotation/merge_annotation.ipynb
 
 # Copyright
-copyright: Copyright &copy; 2024 pyMut Development Team
+copyright: Copyright &copy; 2025 pyMut Development Team
