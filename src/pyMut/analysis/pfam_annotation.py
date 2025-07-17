@@ -62,7 +62,7 @@ def resolve_uniprot_identifiers(df: pd.DataFrame, uniprot_column: str, db_conn: 
     Returns:
         Tuple of (DataFrame with uniprot_resolved column, resolution statistics)
     """
-    logger.info("Resolving UniProt identifiers to canonical accessions...")
+    logger.debug("Resolving UniProt identifiers to canonical accessions...")
     
     # Initialize statistics
     stats = {
@@ -150,7 +150,7 @@ def resolve_uniprot_identifiers(df: pd.DataFrame, uniprot_column: str, db_conn: 
 # MAF PFAM ANNOTATION LOGIC
 def _annotate_pfam_sql(df: pd.DataFrame, db_conn: duckdb.DuckDBPyConnection, aa_column: str, uniprot_alias: str) -> pd.DataFrame:
     """Annotate PFAM domains using SQL for larger datasets."""
-    logger.info("Using SQL for PFAM annotation...")
+    logger.debug("Using SQL for PFAM annotation...")
 
     db_conn.register('variants_temp', df)
 
@@ -210,7 +210,7 @@ def _annotate_with_database(self, df, db_conn, aa_column, uniprot_alias):
         df_work['seq_end'] = None
         return df_work
 
-    logger.info(f"Annotating {len(df_valid)} variants with PFAM domains...")
+    logger.debug(f"Annotating {len(df_valid)} variants with PFAM domains...")
 
     # Get all variants with PFAM annotations from SQL query using resolved accessions
     result_df = _annotate_pfam_sql(df_valid, db_conn, aa_column, 'uniprot_resolved')
@@ -240,7 +240,7 @@ def _annotate_with_database(self, df, db_conn, aa_column, uniprot_alias):
 
 def _annotate_with_vep_domains(self, df):
     """Parse PFAM from VEP_DOMAINS as fallback"""
-    logger.info("🔗 Extracting PFAM domains from VEP_DOMAINS column...")
+    logger.debug("Extracting PFAM domains from VEP_DOMAINS column...")
 
     # Check if VEP_DOMAINS column exists
     domains_series = col(df, 'Domains')
@@ -306,11 +306,11 @@ def _annotate_with_vep_domains(self, df):
     with_aa_pos = result_df['aa_pos'].notna().sum()
     with_pfam = result_df['pfam_id'].notna().sum()
 
-    logger.info(f"Processing summary:")
-    logger.info(f"   Total variants: {total_variants:,}")
-    logger.info(f"   With UniProt ID: {with_uniprot:,}")
-    logger.info(f"   With amino acid position: {with_aa_pos:,}")
-    logger.info(f"   With PFAM domains: {with_pfam:,}")
+    logger.debug(f"Processing summary:")
+    logger.debug(f"   Total variants: {total_variants:,}")
+    logger.debug(f"   With UniProt ID: {with_uniprot:,}")
+    logger.debug(f"   With amino acid position: {with_aa_pos:,}")
+    logger.debug(f"   With PFAM domains: {with_pfam:,}")
 
     return result_df
 
@@ -352,27 +352,27 @@ def annotate_pfam(self,
         has_vep_domains = col(df, 'Domains') is not None
         has_protein_change = col(df, 'Protein_Change') is not None
 
-        logger.info(f"Data availability check:")
-        logger.info(f"   UniProt column: {'Yes' if uniprot_alias else 'No'}")
-        logger.info(f"   AA position column: {'✓' if has_aa_pos else '✗'}")
-        logger.info(f"   VEP_DOMAINS: {'✓' if has_vep_domains else '✗'}")
-        logger.info(f"   Protein_Change: {'✓' if has_protein_change else '✗'}")
+        logger.debug(f"Data availability check:")
+        logger.debug(f"   UniProt column: {'Yes' if uniprot_alias else 'No'}")
+        logger.debug(f"   AA position column: {'Yes' if has_aa_pos else 'No'}")
+        logger.debug(f"   VEP_DOMAINS: {'Yes' if has_vep_domains else 'No'}")
+        logger.debug(f"   Protein_Change: {'Yes' if has_protein_change else 'No'}")
 
         # Extract missing columns if auto_extract=True
         if auto_extract:
             if uniprot_alias is None and has_vep_domains:
-                logger.info("🔗 Extracting UniProt IDs from VEP columns...")
+                logger.debug("Extracting UniProt IDs from VEP columns...")
                 df['uniprot'] = df.apply(lambda row: _extract_uniprot_id(self, row), axis=1)
                 uniprot_alias = 'uniprot'
 
             if not has_aa_pos and has_protein_change:
-                logger.info("🔗 Extracting amino acid positions from Protein_Change...")
+                logger.debug("Extracting amino acid positions from Protein_Change...")
                 df[aa_column] = df.apply(lambda row: _extract_aa_position(self, row), axis=1)
                 has_aa_pos = True
 
         # Choose annotation strategy
         if uniprot_alias and has_aa_pos and prefer_database:
-            logger.info("🎯 Using database annotation (most precise)")
+            logger.debug("Using database annotation (most precise)")
             result_df = _annotate_with_database(self, df, db_conn, aa_column, uniprot_alias)
             
             # Display resolution summary if available
@@ -384,7 +384,7 @@ def annotate_pfam(self,
                 logger.info(f"   Variants with PFAM annotations: {result_df['pfam_id'].notna().sum():,}")
 
         elif has_vep_domains:
-            logger.info("🔗 Using VEP_DOMAINS parsing (fallback)")
+            logger.debug("Using VEP_DOMAINS parsing (fallback)")
             result_df = _annotate_with_vep_domains(self, df)
 
         else:
@@ -426,7 +426,7 @@ def pfam_domains(self, *, aa_column: str = 'aa_pos', summarize_by: str = 'PfamDo
     Returns:
         DataFrame with summarized PFAM domain information
     """
-    logger.info(f"Summarizing PFAM domains (summarize_by={summarize_by}, top_n={top_n})")
+    logger.debug(f"Summarizing PFAM domains (summarize_by={summarize_by}, top_n={top_n})")
 
     # Use self.data instead of df parameter
     df = self.data
@@ -441,7 +441,7 @@ def pfam_domains(self, *, aa_column: str = 'aa_pos', summarize_by: str = 'PfamDo
     else:
         raise PfamAnnotationError("No se encontraron columnas PFAM. Ejecute primero annotate_pfam()")
 
-    logger.info(f"Using PFAM columns: {pfam_id_col}, {pfam_name_col}")
+    logger.debug(f"Using PFAM columns: {pfam_id_col}, {pfam_name_col}")
 
     # Filter data if needed
     df_work = df.copy()
@@ -465,7 +465,7 @@ def pfam_domains(self, *, aa_column: str = 'aa_pos', summarize_by: str = 'PfamDo
         logger.warning("No variants with PFAM domain annotations found")
         return pd.DataFrame()
 
-    logger.info(f"Found {len(df_pfam)} variants with PFAM domain annotations")
+    logger.debug(f"Found {len(df_pfam)} variants with PFAM domain annotations")
 
     if summarize_by == 'PfamDomain':
         # Group by PFAM domain
@@ -520,7 +520,7 @@ def pfam_domains(self, *, aa_column: str = 'aa_pos', summarize_by: str = 'PfamDo
     result = summary.head(top_n)
 
     if plot:
-        logger.info("Plot generation requested but not implemented yet")
+        logger.debug("Plot generation requested but not implemented yet")
         # TODO: Implement plotting functionality
         pass
 

@@ -53,7 +53,7 @@ def parse_idmapping_selected(mapping_file: Path, chunk_size: int = int(1e6)) -> 
     Returns:
         DataFrame with columns: prot_id, uniprot, short_name
     """
-    print(f"📊 Parsing UniProt ID mapping file: {mapping_file}")
+    print(f"Parsing UniProt ID mapping file: {mapping_file}")
 
     all_mappings = []
     total_lines = 0
@@ -116,13 +116,13 @@ def parse_idmapping_selected(mapping_file: Path, chunk_size: int = int(1e6)) -> 
             if chunk_data:
                 all_mappings.extend(chunk_data)
 
-        print(f"📊 Processed {total_lines:,} total lines")
-        print(f"📊 Kept {kept_lines:,} protein mappings")
+        print(f"Processed {total_lines:,} total lines")
+        print(f"Kept {kept_lines:,} protein mappings")
 
         if all_mappings:
             df = pd.DataFrame(all_mappings)
             df = df.drop_duplicates()
-            print(f"📊 Final unique mappings: {len(df):,}")
+            print(f"Final unique mappings: {len(df):,}")
             return df
         else:
             print("⚠️  No relevant mappings found")
@@ -148,7 +148,7 @@ def check_mapping_coverage(conn: duckdb.DuckDBPyConnection) -> bool:
         np_count = conn.execute("SELECT COUNT(*) FROM xref WHERE prot_id LIKE 'NP_%'").fetchone()[0]
         total_count = conn.execute("SELECT COUNT(*) FROM xref").fetchone()[0]
 
-        print(f"📊 Mapping coverage:")
+        print(f"Mapping coverage:")
         print(f"    Total mappings: {total_count:,}")
         print(f"    ENSP mappings: {ensp_count:,}")
         print(f"    NP_ mappings: {np_count:,}")
@@ -213,7 +213,7 @@ def build_embedded_db(force_rebuild: bool = False) -> str:
     if not pfam_file.exists():
         raise PfamAnnotationError(f"Pfam file not found: {pfam_file}")
 
-    print("📊 Loading Pfam data...")
+    print("Loading Pfam data...")
 
     chunk_size = int(1e6)
     total_rows = 0
@@ -273,13 +273,13 @@ def build_embedded_db(force_rebuild: bool = False) -> str:
             if chunk_count % 10 == 0:
                 print(f"  Processed {chunk_count} chunks...")
 
-    print(f"📊 Loaded {total_rows:,} Pfam domain annotations")
+    print(f"Loaded {total_rows:,} Pfam domain annotations")
 
     # 2. Read HUMAN_9606_idmapping_selected.tab.gz and create xref table
     mapping_file = resources_path / "mappings" / "HUMAN_9606_idmapping_selected.tab.gz"
     if not mapping_file.exists():
-        print(f"⚠️  Mapping file not found: {mapping_file}")
-        print("⚠️  Creating empty xref table.")
+        print(f"Mapping file not found: {mapping_file}")
+        print("Creating empty xref table.")
         print("📝  Note: Without UniProt mappings, Pfam annotation will be limited to variants")
         print("    that already have UniProt protein IDs in the input data.")
         conn.execute("DROP TABLE IF EXISTS xref")
