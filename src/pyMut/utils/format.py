@@ -96,6 +96,55 @@ def format_chr(string: str):
     else:
         return "chr" + string
 
+def reverse_format_chr(string: str) -> str:
+    """
+    Removes the 'chr' prefix from chromosome identifiers.
+
+    Converts chromosome identifiers by removing the 'chr' prefix:
+    - Converts "chr1" to "1"
+    - Converts "chrX" to "X"
+    - Converts "chrY" to "Y"
+    - Converts "chrM" to "MT"
+    - Converts "chrMT" to "MT"
+    - Leaves identifiers without 'chr' prefix unchanged
+
+    Parameters
+    ----------
+    string : str
+        Chromosome identifier to format.
+
+    Returns
+    -------
+    str
+        Chromosome identifier without 'chr' prefix.
+
+    Examples
+    --------
+    >>> reverse_format_chr("chr1")
+    '1'
+    >>> reverse_format_chr("chrX")
+    'X'
+    >>> reverse_format_chr("chrY")
+    'Y'
+    >>> reverse_format_chr("chrM")
+    'MT'
+    >>> reverse_format_chr("chrMT")
+    'MT'
+    >>> reverse_format_chr("X")
+    'X'
+    >>> reverse_format_chr("1")
+    '1'
+    """
+    if string.startswith("chr"):
+        # Remove the "chr" prefix
+        result = string[3:]
+        # Handle special case: chrM -> MT
+        if result == "M":
+            return "MT"
+        return result
+    else:
+        return string
+
 def normalize_variant_classification(df: pd.DataFrame) -> pd.DataFrame:
     """
     Converts values in any 'Variant Classification' column to uppercase,
