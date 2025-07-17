@@ -797,6 +797,9 @@ def read_vcf(
         # Pandas - direct processing
         info_df = _parse_info_column_vectorized(vcf["INFO"])
         vcf = pd.concat([vcf, info_df], axis=1)
+        
+        # Remove the original INFO column after expansion
+        vcf = vcf.drop(columns=["INFO"])
 
         logger.debug("INFO column expanded into %d columns in %.2f s", 
                     info_df.shape[1], time.time() - expand_start)
