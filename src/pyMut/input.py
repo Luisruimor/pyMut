@@ -114,12 +114,13 @@ def _vectorized_gt_to_alleles(gt_series: pd.Series, ref_series: pd.Series, alt_s
         ref = ref_array[i]
         alt = alt_array[i]
 
-        if not gt or gt in {".", "./.", ".|.", "nan"}:
+        gt_str = str(gt)
+        if gt_str in {".", "./.", ".|.", "nan", "None", ""}:
             result[i] = gt if gt != "nan" else "."
             continue
 
         # Keep only the part before ':' if it exists
-        gt_core = gt.split(":", 1)[0]
+        gt_core = gt_str.split(":", 1)[0]
 
         # Determine separator
         sep = "|" if "|" in gt_core else "/"
@@ -819,10 +820,115 @@ def read_vcf(
         except Exception as e:
             logger.warning("Error processing Funcotator annotations: %s", e)
 
+    # ─── 9.5) CSQ  ───────────────────────────────────
+    # First, identify the original sample columns from the header before INFO expansion
+    original_header_cols = header_cols
+    standard_vcf_cols_temp = {"CHROM", "POS", "ID", "REF", "ALT", "QUAL", "FILTER", "INFO", "FORMAT"}
+    original_sample_columns = [col for col in original_header_cols if col not in standard_vcf_cols_temp]
+    
+    # Check if there's a sample column named "CSQ" in the original header
+    has_csq_sample = "CSQ" in original_sample_columns
+    
+    csq_sample_new_name = None
+    if has_csq_sample and "CSQ" in vcf.columns:
+        logger.info("Detected CSQ naming conflict: sample named 'CSQ' conflicts with VEP annotations")
+        
+        # The CSQ column now contains INFO-derived data, but we need to separate sample vs INFO CSQ
+        # Rename the sample CSQ column to avoid conflict
+        csq_sample_new_name = "CSQ_sample"
+        counter = 1
+        while csq_sample_new_name in vcf.columns:
+            csq_sample_new_name = f"CSQ_sample_{counter}"
+            counter += 1
+        
+        # Create a new column for the sample CSQ data by extracting it from the original VCF
+        sample_csq_data = []
+        csq_sample_index = original_header_cols.index("CSQ")
+        
+        with _open_text_maybe_gzip(path) as fh:
+            line_count = 0
+            for line in fh:
+                if line.startswith("#"):
+                    continue
+                parts = line.strip().split("\t")
+                if len(parts) > csq_sample_index:
+                    sample_csq_data.append(parts[csq_sample_index])
+                else:
+                    sample_csq_data.append(".")
+                line_count += 1
+                if line_count >= len(vcf):  # Don't read more than we have rows
+                    break
+        
+        # Add the sample CSQ data as a new column
+        vcf[csq_sample_new_name] = sample_csq_data[:len(vcf)]
+        logger.info(f"Created sample CSQ column: {csq_sample_new_name}")
+    
+    # Expand VEP CSQ annotations
+    if "CSQ" in vcf.columns:
+        logger.info("Expanding VEP CSQ annotations into individual columns...")
+        try:
+            csq_expansion_start = time.time()
+            
+            # Get the CSQ format from meta-lines to understand the field structure
+            csq_format = None
+            for meta_line in meta_lines:
+                if meta_line.startswith('##INFO=<ID=CSQ') and 'Format:' in meta_line:
+                    # Extract format from description
+                    format_start = meta_line.find('Format: ') + 8
+                    format_end = meta_line.find('"', format_start)
+                    if format_end == -1:
+                        format_end = meta_line.find('>', format_start)
+                    csq_format = meta_line[format_start:format_end]
+                    break
+            
+            if csq_format:
+                csq_fields = [field.strip() for field in csq_format.split('|')]
+                logger.debug(f"Found CSQ format with {len(csq_fields)} fields: {csq_fields[:5]}...")
+                
+                # Expand CSQ annotations
+                csq_expanded_data = []
+                for idx, csq_value in enumerate(vcf["CSQ"]):
+                    row_data = {}
+                    if pd.notna(csq_value) and csq_value and csq_value != ".":
+                        # Split multiple CSQ entries (separated by commas)
+                        csq_entries = str(csq_value).split(',')
+                        # Take the first entry for now (could be enhanced to handle multiple)
+                        if csq_entries:
+                            csq_values = csq_entries[0].split('|')
+                            for i, field_name in enumerate(csq_fields):
+                                if i < len(csq_values):
+                                    value = csq_values[i].strip()
+                                    row_data[f"VEP_{field_name}"] = value if value else None
+                                else:
+                                    row_data[f"VEP_{field_name}"] = None
+                    else:
+                        # Fill with None for missing CSQ data
+                        for field_name in csq_fields:
+                            row_data[f"VEP_{field_name}"] = None
+                    
+                    csq_expanded_data.append(row_data)
+                
+                # Create DataFrame from expanded data
+                csq_expanded_df = pd.DataFrame(csq_expanded_data)
+                
+                # Add expanded columns to main DataFrame
+                vcf = pd.concat([vcf, csq_expanded_df], axis=1)
+                
+                # Remove the original CSQ column since it's now expanded
+                vcf = vcf.drop(columns=["CSQ"])
+                
+                logger.info(f"CSQ expanded into {len(csq_fields)} VEP annotation columns in %.2f s", 
+                           time.time() - csq_expansion_start)
+            else:
+                logger.warning("Could not find CSQ format in meta-lines, keeping CSQ as single column")
+                
+        except Exception as e:
+            logger.warning(f"Error expanding VEP CSQ annotations: {e}")
+
     # ─── 10) VECTORIZED GENOTYPE CONVERSION ─────────────────────────────────
     standard_vcf_cols = {"CHROM", "POS", "ID", "REF", "ALT", "QUAL", "FILTER", "INFO", "FORMAT"}
     all_columns = vcf.columns.tolist()
-    sample_columns = [col for col in all_columns if col not in standard_vcf_cols and not col.startswith(("AC", "AF", "AN", "DP", "FUNCOTATION"))]
+    sample_columns = [col for col in all_columns if col not in standard_vcf_cols and not col.startswith(("AC", "AF", "AN", "DP", "FUNCOTATION", "VEP_"))]
 
     logger.info("Detected %d sample columns. Starting vectorized genotype conversion...", len(sample_columns))
 
