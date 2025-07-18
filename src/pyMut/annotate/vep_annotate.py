@@ -35,9 +35,7 @@ def _extract_assembly_and_version_from_cache(cache_dir: Union[str, Path]) -> tup
 
 
 def _get_case_insensitive_column(columns: list, target_column: str) -> str:
-    """
-    Find a column name in a case-insensitive manner.
-    """
+    """Find column name case-insensitively."""
     column_map = {col.lower(): col for col in columns}
     target_lower = target_column.lower()
     if target_lower in column_map:
