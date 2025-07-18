@@ -3,6 +3,7 @@ import json
 import logging
 from typing import Union, List, Dict, Any, Optional, Tuple
 from pathlib import Path
+from ..utils.fields import find_alias, FIELDS
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -45,7 +46,42 @@ def _load_rna_cancer_consensus(file_path: Union[str, Path] = None) -> Dict[str, 
         return data
 
     except json.JSONDecodeError as e:
-        raise json.JSONDecodeError(f"Error parsing JSON file {file_path}: {e}")
+        raise json.JSONDecodeError(f"Error parsing JSON file {file_path}: {e}", e.doc, e.pos)
+
+
+def get_gene_symbol(row: pd.Series) -> Optional[str]:
+    """
+    Get gene symbol from a row by iterating through Hugo_Symbol field list from fields.py.
+    
+    Returns the first non-empty value that is not empty, dot, or dash.
+    If the value contains "&" (like "GENE1&GENE2"), returns only the first gene.
+    
+    Parameters
+    ----------
+    row : pd.Series
+        A row from mutation data
+        
+    Returns
+    -------
+    Optional[str]
+        The first valid gene symbol found, or None if no valid symbol is found
+    """
+    from ..utils.fields import FIELDS
+    
+    hugo_symbol_fields = FIELDS.get("Hugo_Symbol", [])
+    
+    for field in hugo_symbol_fields:
+        if field in row.index and pd.notna(row[field]):
+            value = str(row[field]).strip()
+            # Skip empty values, dots, and dashes
+            if value and value not in ["", ".", "-"]:
+                # If contains "&", return only the first gene
+                if "&" in value:
+                    value = value.split("&")[0].strip()
+                if value and value not in ["", ".", "-"]:
+                    return value
+    
+    return None
 
 
 def tissue_expression(data: Union[str, pd.Series], tissue: List[Union[str, float]]) -> bool:
@@ -122,20 +158,8 @@ def tissue_expression(data: Union[str, pd.Series], tissue: List[Union[str, float
         gene_symbol = data
 
     elif isinstance(data, pd.Series):
-        possible_gene_columns = ['Hugo_Symbol', 'HUGO_SYMBOL', 'Gene_Symbol', 'GENE_SYMBOL', 'Gene', 'GENE']
-
-        for col in possible_gene_columns:
-            if col in data.index and pd.notna(data[col]):
-                gene_symbol = str(data[col])
-                break
-
-        if gene_symbol is None:
-            for col in data.index:
-                if 'gene' in col.lower() or 'hugo' in col.lower():
-                    if pd.notna(data[col]):
-                        gene_symbol = str(data[col])
-                        break
-
+        gene_symbol = get_gene_symbol(data)
+        
         if gene_symbol is None:
             raise KeyError("Could not find gene symbol in the provided data row. Expected columns: Hugo_Symbol, Gene_Symbol, Gene, etc.")
 
@@ -223,13 +247,8 @@ def filter_by_tissue_expression(self, tissues: List[Tuple[str, float]], keep_exp
 
     for idx, row in filtered_data.iterrows():
         is_expressed_in_any_tissue = False
-        gene_symbol = None
 
-        possible_gene_columns = ['Hugo_Symbol', 'HUGO_SYMBOL', 'Gene_Symbol', 'GENE_SYMBOL', 'Gene', 'GENE']
-        for col in possible_gene_columns:
-            if col in row.index and pd.notna(row[col]):
-                gene_symbol = str(row[col])
-                break
+        gene_symbol = get_gene_symbol(row)
 
         tissue_results = {}
         for tissue_code, threshold in tissues:

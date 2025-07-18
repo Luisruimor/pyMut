@@ -14,14 +14,13 @@ import time
 from .core import PyMutation, MutationMetadata
 from .utils.format import format_rs, format_chr, normalize_variant_classification
 
-# Optional imports for advanced features
+# Optional imports
 try:
     import pyarrow as pa
     import pyarrow.compute as pc
     HAS_PYARROW = True
 except ImportError:
     HAS_PYARROW = False
-
 
 try:
     import cyvcf2
@@ -35,20 +34,16 @@ try:
 except ImportError:
     HAS_PSUTIL = False
 
-# ────────────────────────────────────────────────────────────────
-# LOGGER CONFIGURATION
-# ────────────────────────────────────────────────────────────────
+# Logger configuration
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)  # Change to DEBUG for more verbosity
+logger.setLevel(logging.INFO)
 if not logger.handlers:
     logging.basicConfig(
         format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
         level=logging.INFO,
     )
 
-# ────────────────────────────────────────────────────────────────
-# COLUMNS VALIDATION
-# ────────────────────────────────────────────────────────────────
+# Column validation
 required_columns_VCF: List[str] = ["CHROM", "POS", "ID", "REF", "ALT", "FILTER"]
 _required_canonical_VCF = {c.lower(): c for c in required_columns_VCF}
 
@@ -62,10 +57,7 @@ required_columns_MAF: List[str] = [
 ]
 _required_canonical_MAF = {c.lower(): c for c in required_columns_MAF}
 
-
-# ════════════════════════════════════════════════════════════════
-# UTILITY FUNCTIONS FOR OPTIMIZED VCF PROCESSING
-# ════════════════════════════════════════════════════════════════
+# Utility functions
 
 
 def _get_cache_path(file_path: Path, cache_dir: Optional[Path] = None) -> Path:
@@ -73,7 +65,7 @@ def _get_cache_path(file_path: Path, cache_dir: Optional[Path] = None) -> Path:
     if cache_dir is None:
         cache_dir = file_path.parent / ".pymut_cache"
 
-    cache_dir.mkdir(exist_ok=True)
+    cache_dir.mkdir(parents=True, exist_ok=True)
 
     # Create hash from file path and modification time
     file_stat = file_path.stat()
@@ -101,8 +93,7 @@ def _create_tabix_index(vcf_path: Path, create_index: bool = False) -> bool:
         return False
 
 def _vectorized_gt_to_alleles(gt_series: pd.Series, ref_series: pd.Series, alt_series: pd.Series) -> pd.Series:
-    """Vectorized conversion of genotypes to alleles using numpy operations."""
-    # Convert to numpy arrays for faster processing
+    """Convert genotypes to alleles using vectorized operations."""
     gt_array = gt_series.astype(str).values
     ref_array = ref_series.astype(str).values
     alt_array = alt_series.astype(str).values
@@ -114,20 +105,14 @@ def _vectorized_gt_to_alleles(gt_series: pd.Series, ref_series: pd.Series, alt_s
         ref = ref_array[i]
         alt = alt_array[i]
 
-        if not gt or gt in {".", "./.", ".|.", "nan"}:
+        gt_str = str(gt)
+        if gt_str in {".", "./.", ".|.", "nan", "None", ""}:
             result[i] = gt if gt != "nan" else "."
             continue
 
-        # Keep only the part before ':' if it exists
-        gt_core = gt.split(":", 1)[0]
-
-        # Determine separator
+        gt_core = gt_str.split(":", 1)[0]
         sep = "|" if "|" in gt_core else "/"
-
-        # Split alt alleles
         alt_list = alt.split(",") if alt else []
-
-        # Process genotype
         allele_indices = gt_core.replace("|", "/").split("/")
         translated = []
 
@@ -149,18 +134,14 @@ def _vectorized_gt_to_alleles(gt_series: pd.Series, ref_series: pd.Series, alt_s
     return pd.Series(result, index=gt_series.index)
 
 def _parse_info_column_vectorized(info_series: pd.Series) -> pd.DataFrame:
-    """Vectorized INFO column parsing using pyarrow if available."""
+    """Parse INFO column using pyarrow if available."""
     if not HAS_PYARROW:
         return _parse_info_column(info_series)
 
     try:
         # Convert to pyarrow for faster string operations
         arrow_series = pa.array(info_series.fillna(""))
-
-        # Split by semicolon
         split_info = pc.split_pattern(arrow_series, pattern=";")
-
-        # Process each row
         all_keys = set()
         parsed_data = []
 
@@ -194,11 +175,8 @@ def _log_system_information():
     logger.info("SYSTEM CONFIGURATION")
     logger.info("=" * 60)
 
-    # CPU Information
     cpu_count = os.cpu_count()
     logger.info("CPU: %d cores available", cpu_count)
-
-    # Memory Information
     if HAS_PSUTIL:
         memory_info = psutil.virtual_memory()
         total_gb = memory_info.total / (1024**3)
@@ -236,9 +214,7 @@ def _log_system_information():
 
     logger.info("=" * 60)
 
-# ════════════════════════════════════════════════════════════════
-# FUNCTIONS FOR MAF PROCESSING
-# ════════════════════════════════════════════════════════════════
+# MAF processing functions
 def _standardise_vcf_columns(vcf: pd.DataFrame) -> pd.DataFrame:
     """Normaliza nombres de columnas (insensible a mayúsculas) para VCF."""
     rename_map = {
@@ -400,10 +376,7 @@ def _parse_info_column(info_series: pd.Series) -> pd.DataFrame:
     info_df = pd.DataFrame(parsed.tolist())  # type: ignore[arg-type]
     return info_df
 
-# ════════════════════════════════════════════════════════════════
-# MAIN FUNCTIONS
-# ════════════════════════════════════════════════════════════════
-
+# Main functions
 
 def read_maf(path: str | Path, fasta: str | Path | None = None, cache_dir: Optional[str | Path] = None) -> PyMutation:
     """
@@ -451,7 +424,7 @@ def read_maf(path: str | Path, fasta: str | Path | None = None, cache_dir: Optio
 
     logger.info("Starting MAF reading: %s", path)
 
-    # ─── 1) CHECK CACHE ─────────────────────────────────────────────────────
+    # ─── 0) CHECK CACHE ─────────────────────────────────────────────────────
     cache_path = _get_cache_path(path, cache_dir_path)
     if cache_path.exists():
         logger.info("Loading from cache: %s", cache_path)
@@ -797,6 +770,9 @@ def read_vcf(
         # Pandas - direct processing
         info_df = _parse_info_column_vectorized(vcf["INFO"])
         vcf = pd.concat([vcf, info_df], axis=1)
+        
+        # Remove the original INFO column after expansion
+        vcf = vcf.drop(columns=["INFO"])
 
         logger.debug("INFO column expanded into %d columns in %.2f s", 
                     info_df.shape[1], time.time() - expand_start)
@@ -816,10 +792,112 @@ def read_vcf(
         except Exception as e:
             logger.warning("Error processing Funcotator annotations: %s", e)
 
+    # ─── 9.5) CSQ ───────────────────────────────────
+    # First, identify the original sample columns from the header before INFO expansion
+    original_header_cols = header_cols
+    standard_vcf_cols_temp = {"CHROM", "POS", "ID", "REF", "ALT", "QUAL", "FILTER", "INFO", "FORMAT"}
+    original_sample_columns = [col for col in original_header_cols if col not in standard_vcf_cols_temp]
+    
+    # Check if there's a sample column named "CSQ" in the original header
+    has_csq_sample = "CSQ" in original_sample_columns
+    
+    csq_sample_new_name = None
+    if has_csq_sample and "CSQ" in vcf.columns:
+        logger.info("Detected CSQ naming conflict: sample named 'CSQ' conflicts with VEP annotations")
+        
+        # The CSQ column now contains INFO-derived data, but we need to separate sample vs INFO CSQ
+        csq_sample_new_name = "CSQ_sample"
+        counter = 1
+        while csq_sample_new_name in vcf.columns:
+            csq_sample_new_name = f"CSQ_sample_{counter}"
+            counter += 1
+        
+        # Create a new column for the sample CSQ data by extracting it from the original VCF
+        sample_csq_data = []
+        csq_sample_index = original_header_cols.index("CSQ")
+        
+        with _open_text_maybe_gzip(path) as fh:
+            line_count = 0
+            for line in fh:
+                if line.startswith("#"):
+                    continue
+                parts = line.strip().split("\t")
+                if len(parts) > csq_sample_index:
+                    sample_csq_data.append(parts[csq_sample_index])
+                else:
+                    sample_csq_data.append(".")
+                line_count += 1
+                if line_count >= len(vcf):  # Don't read more than we have rows
+                    break
+        
+        # Add the sample CSQ data as a new column
+        vcf[csq_sample_new_name] = sample_csq_data[:len(vcf)]
+        logger.info(f"Created sample CSQ column: {csq_sample_new_name}")
+    
+    # Expand VEP CSQ annotations
+    if "CSQ" in vcf.columns:
+        logger.info("Expanding VEP CSQ annotations into individual columns...")
+        try:
+            csq_expansion_start = time.time()
+            
+            # Get the CSQ format from meta-lines to understand the field structure
+            csq_format = None
+            for meta_line in meta_lines:
+                if meta_line.startswith('##INFO=<ID=CSQ') and 'Format:' in meta_line:
+                    # Extract format from description
+                    format_start = meta_line.find('Format: ') + 8
+                    format_end = meta_line.find('"', format_start)
+                    if format_end == -1:
+                        format_end = meta_line.find('>', format_start)
+                    csq_format = meta_line[format_start:format_end]
+                    break
+            
+            if csq_format:
+                csq_fields = [field.strip() for field in csq_format.split('|')]
+                logger.debug(f"Found CSQ format with {len(csq_fields)} fields: {csq_fields[:5]}...")
+                
+                # Expand CSQ annotations
+                csq_expanded_data = []
+                for idx, csq_value in enumerate(vcf["CSQ"]):
+                    row_data = {}
+                    if pd.notna(csq_value) and csq_value and csq_value != ".":
+                        # Split multiple CSQ entries (separated by commas)
+                        csq_entries = str(csq_value).split(',')
+
+                        if csq_entries:
+                            csq_values = csq_entries[0].split('|')
+                            for i, field_name in enumerate(csq_fields):
+                                if i < len(csq_values):
+                                    value = csq_values[i].strip()
+                                    row_data[f"VEP_{field_name}"] = value if value else None
+                                else:
+                                    row_data[f"VEP_{field_name}"] = None
+                    else:
+                        # Fill with None for missing CSQ data
+                        for field_name in csq_fields:
+                            row_data[f"VEP_{field_name}"] = None
+                    
+                    csq_expanded_data.append(row_data)
+                
+
+                csq_expanded_df = pd.DataFrame(csq_expanded_data)
+                
+                vcf = pd.concat([vcf, csq_expanded_df], axis=1)
+
+                vcf = vcf.drop(columns=["CSQ"])
+                
+                logger.info(f"CSQ expanded into {len(csq_fields)} VEP annotation columns in %.2f s", 
+                           time.time() - csq_expansion_start)
+            else:
+                logger.warning("Could not find CSQ format in meta-lines, keeping CSQ as single column")
+                
+        except Exception as e:
+            logger.warning(f"Error expanding VEP CSQ annotations: {e}")
+
     # ─── 10) VECTORIZED GENOTYPE CONVERSION ─────────────────────────────────
     standard_vcf_cols = {"CHROM", "POS", "ID", "REF", "ALT", "QUAL", "FILTER", "INFO", "FORMAT"}
     all_columns = vcf.columns.tolist()
-    sample_columns = [col for col in all_columns if col not in standard_vcf_cols and not col.startswith(("AC", "AF", "AN", "DP", "FUNCOTATION"))]
+    sample_columns = [col for col in all_columns if col not in standard_vcf_cols and not col.startswith(("AC", "AF", "AN", "DP", "FUNCOTATION", "VEP_"))]
 
     logger.info("Detected %d sample columns. Starting vectorized genotype conversion...", len(sample_columns))
 
