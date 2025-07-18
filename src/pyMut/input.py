@@ -73,7 +73,7 @@ def _get_cache_path(file_path: Path, cache_dir: Optional[Path] = None) -> Path:
     if cache_dir is None:
         cache_dir = file_path.parent / ".pymut_cache"
 
-    cache_dir.mkdir(exist_ok=True)
+    cache_dir.mkdir(parents=True, exist_ok=True)
 
     # Create hash from file path and modification time
     file_stat = file_path.stat()

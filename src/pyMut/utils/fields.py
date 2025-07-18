@@ -42,11 +42,13 @@ FIELDS: Dict[str, List[str]] = {
     # Símbolo de gen (HGNC)
     "Hugo_Symbol": [
         "Hugo_Symbol",
+        "HUGO_SYMBOL",
         "VEP_SYMBOL",
         "SYMBOL",
-        "Gene",
-        "Gene_Name",
-        "GENE_SYMBOL"
+        "VEP_NEAREST",
+        "NEAREST",
+        "Gene_Symbol",
+        "GENE_SYMBOL",
     ],
     # Consecuencia funcional de la variante
     "Consequence": [
@@ -160,25 +162,31 @@ FIELDS: Dict[str, List[str]] = {
         "Mutation_Type",
         "MutationType",
     ],
-    # Cromosoma
+    # Cromosoma (CONSOLIDADO)
     "Chromosome": [
         "Chromosome",
         "Chr",
         "CHROM",
+        "CHR",
         "chromosome",
         "chr",
+        "chrom",
     ],
-    # Posición de inicio
+    # Posición de inicio (CONSOLIDADO)
     "Start_Position": [
         "Start_Position",
         "Start_position",
         "StartPosition",
         "POS",
         "Position",
+        "Pos",
+        "pos",
         "start_pos",
         "start_position",
+        "start",
+        "Start",
     ],
-    # Alelo de referencia
+    # Alelo de referencia (CONSOLIDADO)
     "Reference_Allele": [
         "Reference_Allele",
         "Ref_Allele",
@@ -186,6 +194,8 @@ FIELDS: Dict[str, List[str]] = {
         "Reference",
         "Ref",
         "reference_allele",
+        "ref",
+        "reference",
     ],
     # Alelo tumoral 1
     "Tumor_Seq_Allele1": [
@@ -195,74 +205,34 @@ FIELDS: Dict[str, List[str]] = {
         "Allele1",
         "tumor_seq_allele1",
     ],
-    # Alelo tumoral 2
+    # Alelo tumoral 2 (CONSOLIDADO)
     "Tumor_Seq_Allele2": [
         "Tumor_Seq_Allele2",
         "Tumor_Allele2",
         "TumorAllele2",
         "Allele2",
         "ALT",
-        "tumor_seq_allele2",
-    ],
-    # Código de barras de muestra tumoral
-    "Tumor_Sample_Barcode": [
-        "Tumor_Sample_Barcode",
-        "TumorSampleBarcode",
-        "Tumor_Sample_ID",
-        "Sample_ID",
-        "SAMPLE",
-        "Sample",
-        "tumor_sample_barcode",
-    ],
-    # Chromosome
-    "Chromosome": [
-        "Chromosome",
-        "CHROM",
-        "Chr",
-        "CHR",
-        "chrom",
-        "chr",
-    ],
-    # Start Position
-    "Start_Position": [
-        "Start_Position",
-        "Start_position",
-        "POS",
-        "Position",
-        "Pos",
-        "pos",
-        "start",
-        "Start",
-    ],
-    # Reference Allele
-    "Reference_Allele": [
-        "Reference_Allele",
-        "REF",
-        "Ref",
-        "ref",
-        "Reference",
-        "reference",
-    ],
-    # Tumor Sequence Allele 2
-    "Tumor_Seq_Allele2": [
-        "Tumor_Seq_Allele2",
-        "ALT",
         "Alt",
         "alt",
         "Alternative",
         "alternative",
         "Tumor_Allele",
+        "tumor_seq_allele2",
     ],
-    # Tumor Sample Barcode
+    # Código de barras de muestra tumoral (CONSOLIDADO)
     "Tumor_Sample_Barcode": [
         "Tumor_Sample_Barcode",
-        "Sample",
-        "sample",
+        "TumorSampleBarcode",
+        "Tumor_Sample_ID",
         "Sample_ID",
         "SampleID",
+        "SAMPLE",
+        "Sample",
+        "sample",
         "sample_id",
         "Barcode",
         "barcode",
+        "tumor_sample_barcode",
     ],
 }
 
