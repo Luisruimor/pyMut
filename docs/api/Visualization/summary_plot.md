@@ -44,8 +44,7 @@ fig = py_mut.summary_plot(
     title="Mi Análisis de Mutaciones",    # Título personalizado
     figsize=(16, 12),                     # Tamaño de figura
     max_samples=100,                      # Máximo muestras en TMB plot
-    top_genes_count=10,                   # Número de genes top a mostrar
-    show_interactive=True                 # Mostrar interactivamente
+    top_genes_count=10                    # Número de genes top a mostrar
 )
 ```
 

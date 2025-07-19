@@ -133,8 +133,7 @@ class PyMutation:
                    figsize: Tuple[int, int] = DEFAULT_SUMMARY_FIGSIZE,
                    title: str = DEFAULT_PLOT_TITLE,
                    max_samples: Optional[int] = 200,
-                   top_genes_count: int = DEFAULT_TOP_GENES_COUNT,
-                   show_interactive: bool = False) -> plt.Figure:
+                   top_genes_count: int = DEFAULT_TOP_GENES_COUNT) -> plt.Figure:
         """
         Generate a summary plot with general mutation statistics.
 
@@ -152,12 +151,11 @@ class PyMutation:
                         If None, all samples are shown.
             top_genes_count: Number of genes to show in the top mutated genes plot.
                         If there are fewer genes than this number, all will be shown.
-            show_interactive: If True, display the visualization in interactive mode.
 
         Returns:
             Matplotlib figure with the summary plot.
         """
-        from .visualizations.summary import create_summary_plot
+        from .visualizations.summary import _create_summary_plot
         from .utils.data_processing import extract_variant_classifications, extract_variant_types
 
         # Preprocess data to ensure we have the necessary columns
@@ -174,30 +172,25 @@ class PyMutation:
         )
 
         # Generate the summary plot
-        fig = create_summary_plot(self, figsize, title, max_samples, top_genes_count)
+        fig = _create_summary_plot(self, figsize, title, max_samples, top_genes_count)
 
-        # If requested to show interactively
-        if show_interactive:
-            self._show_figure_interactive(fig)
-
+        plt.close(fig)
         return fig
 
     def variant_classification_plot(self,
                                     figsize: Tuple[int, int] = DEFAULT_PLOT_FIGSIZE,
-                                    title: str = "Variant Classification",
-                                    show_interactive: bool = False) -> plt.Figure:
+                                    title: str = "Variant Classification") -> plt.Figure:
         """
         Generate a horizontal bar plot showing the distribution of variant classifications.
 
         Args:
             figsize: Figure size.
             title: Plot title.
-            show_interactive: If True, display the visualization in interactive mode.
 
         Returns:
             Matplotlib figure with the variant classification plot.
         """
-        from .visualizations.summary import create_variant_classification_plot
+        from .visualizations.summary import _create_variant_classification_plot
         from .utils.data_processing import extract_variant_classifications
 
         # Preprocess data to ensure we have the necessary column
@@ -211,7 +204,7 @@ class PyMutation:
         fig, ax = plt.subplots(figsize=figsize)
 
         # Generate the plot, passing set_title=False to avoid duplicate title
-        create_variant_classification_plot(self, ax=ax, set_title=False)
+        _create_variant_classification_plot(self, ax=ax, set_title=False)
 
         # Configure title
         if title:
@@ -219,28 +212,23 @@ class PyMutation:
 
         plt.tight_layout()
 
-        # If requested to show interactively
-        if show_interactive:
-            self._show_figure_interactive(fig)
-
+        plt.close(fig)
         return fig
 
     def variant_type_plot(self,
                           figsize: Tuple[int, int] = DEFAULT_PLOT_FIGSIZE,
-                          title: str = "Variant Type",
-                          show_interactive: bool = False) -> plt.Figure:
+                          title: str = "Variant Type") -> plt.Figure:
         """
         Generate a horizontal bar plot showing the distribution of variant types.
 
         Args:
             figsize: Figure size.
             title: Plot title.
-            show_interactive: If True, display the visualization in interactive mode.
 
         Returns:
             Matplotlib figure with the variant types plot.
         """
-        from .visualizations.summary import create_variant_type_plot
+        from .visualizations.summary import _create_variant_type_plot
         from .utils.data_processing import extract_variant_types
 
         # Preprocess data to ensure we have the necessary column
@@ -254,7 +242,7 @@ class PyMutation:
         fig, ax = plt.subplots(figsize=figsize)
 
         # Generate the plot, passing set_title=False to avoid duplicate title
-        create_variant_type_plot(self, ax=ax, set_title=False)
+        _create_variant_type_plot(self, ax=ax, set_title=False)
 
         # Configure title
         if title:
@@ -262,18 +250,14 @@ class PyMutation:
 
         plt.tight_layout()
 
-        # If requested to show interactively
-        if show_interactive:
-            self._show_figure_interactive(fig)
-
+        plt.close(fig)
         return fig
 
     def snv_class_plot(self,
                         figsize: Tuple[int, int] = DEFAULT_PLOT_FIGSIZE,
                         title: str = "SNV Class",
                         ref_column: str = "REF",
-                        alt_column: str = "ALT",
-                        show_interactive: bool = False) -> plt.Figure:
+                        alt_column: str = "ALT") -> plt.Figure:
         """
         Generate a horizontal bar plot showing the distribution of SNV classes.
 
@@ -282,15 +266,14 @@ class PyMutation:
             title: Plot title.
             ref_column: Name of the column containing the reference allele.
             alt_column: Name of the column containing the alternative allele.
-            show_interactive: If True, display the visualization in interactive mode.
 
         Returns:
             Matplotlib figure with the SNV classes plot.
         """
-        from .visualizations.summary import create_snv_class_plot
+        from .visualizations.summary import _create_snv_class_plot
 
         fig, ax = plt.subplots(figsize=figsize)
-        create_snv_class_plot(
+        _create_snv_class_plot(
             self, 
             ref_column=ref_column,
             alt_column=alt_column,
@@ -302,10 +285,7 @@ class PyMutation:
             fig.suptitle(title, fontsize=16, fontweight='bold')
         plt.tight_layout()
 
-        # If requested to show interactively
-        if show_interactive:
-            self._show_figure_interactive(fig)
-
+        plt.close(fig)
         return fig
 
     def variants_per_sample_plot(self,
@@ -313,8 +293,7 @@ class PyMutation:
                                  title: str = "Variants per Sample",
                                  variant_column: str = "Variant_Classification",
                                  sample_column: str = "Tumor_Sample_Barcode",
-                                 max_samples: Optional[int] = 200,
-                                 show_interactive: bool = False) -> plt.Figure:
+                                 max_samples: Optional[int] = 200) -> plt.Figure:
         """
         Generate a stacked bar plot showing the number of variants per sample (TMB)
         and their composition by variant type.
@@ -328,12 +307,11 @@ class PyMutation:
                           are stored as columns.
             max_samples: Maximum number of samples to show. If None, all are shown.
                         If there are more samples than this number, only the first max_samples are shown.
-            show_interactive: If True, display the visualization in interactive mode.
 
         Returns:
             Matplotlib figure with the variants per sample plot.
         """
-        from .visualizations.summary import create_variants_per_sample_plot
+        from .visualizations.summary import _create_variants_per_sample_plot
         from .utils.data_processing import extract_variant_classifications
 
         # If variant_column is not in columns, try to normalize it
@@ -353,7 +331,7 @@ class PyMutation:
         )
 
         fig, ax = plt.subplots(figsize=figsize)
-        create_variants_per_sample_plot(
+        _create_variants_per_sample_plot(
             self, 
             variant_column=variant_column,
             sample_column=sample_column,
@@ -370,10 +348,7 @@ class PyMutation:
 
         plt.tight_layout()
 
-        # If requested to show interactively
-        if show_interactive:
-            self._show_figure_interactive(fig)
-
+        plt.close(fig)
         return fig
 
 
@@ -381,8 +356,7 @@ class PyMutation:
                                            figsize: Tuple[int, int] = DEFAULT_PLOT_FIGSIZE,
                                            title: str = "Variant Classification Summary",
                                            variant_column: str = "Variant_Classification",
-                                           sample_column: str = "Tumor_Sample_Barcode",
-                                           show_interactive: bool = False) -> plt.Figure:
+                                           sample_column: str = "Tumor_Sample_Barcode") -> plt.Figure:
         """
         Generate a box-and-whiskers plot (boxplot) that summarizes, for each variant classification,
         the distribution (among samples) of the number of detected alternative alleles.
@@ -395,13 +369,12 @@ class PyMutation:
             title: Plot title.
             variant_column: Name of the column containing the variant classification.
             sample_column: Name of the column containing the sample identifier.
-                          If it doesn't exist, samples are assumed to be columns (wide format).
-            show_interactive: If True, display the visualization in interactive mode.
+                           If it doesn't exist, samples are assumed to be columns (wide format).
 
         Returns:
             Matplotlib figure with the box-and-whiskers plot.
         """
-        from .visualizations.summary import create_variant_classification_summary_plot
+        from .visualizations.summary import _create_variant_classification_summary_plot
         from .utils.data_processing import extract_variant_classifications
 
         # Ensure the variant classification column exists or is extracted
@@ -421,7 +394,7 @@ class PyMutation:
                 print(f"Detected wide format with {len(sample_cols)} possible sample columns.")
 
         fig, ax = plt.subplots(figsize=figsize)
-        create_variant_classification_summary_plot(
+        _create_variant_classification_summary_plot(
             self, 
             variant_column=variant_column,
             sample_column=sample_column,
@@ -436,10 +409,7 @@ class PyMutation:
 
         plt.tight_layout()
 
-        # If requested to show interactively
-        if show_interactive:
-            self._show_figure_interactive(fig)
-
+        plt.close(fig)
         return fig
 
 
@@ -450,8 +420,7 @@ class PyMutation:
                               variant_column: str = VARIANT_CLASSIFICATION_COLUMN,
                               gene_column: str = GENE_COLUMN,
                               sample_column: str = SAMPLE_COLUMN,
-                              count: int = DEFAULT_TOP_GENES_COUNT,
-                              show_interactive: bool = False) -> plt.Figure:
+                              count: int = DEFAULT_TOP_GENES_COUNT) -> plt.Figure:
         """
         Generate a horizontal bar plot showing the most mutated genes and the distribution
         of variants according to their classification.
@@ -466,7 +435,6 @@ class PyMutation:
             sample_column: Name of the column containing the sample identifier,
                           or prefix to identify sample columns if they are columns.
             count: Number of top genes to show.
-            show_interactive: If True, display the visualization in interactive mode.
 
         Returns:
             Matplotlib figure with the top mutated genes plot.
@@ -474,7 +442,7 @@ class PyMutation:
         Raises:
             ValueError: If 'count' is not a positive number or 'mode' is not a valid value.
         """
-        from .visualizations.summary import create_top_mutated_genes_plot
+        from .visualizations.summary import _create_top_mutated_genes_plot
         from .utils.data_processing import extract_variant_classifications
 
         # Validate parameters
@@ -513,7 +481,7 @@ class PyMutation:
         )
 
         fig, ax = plt.subplots(figsize=figsize)
-        create_top_mutated_genes_plot(
+        _create_top_mutated_genes_plot(
             self, 
             mode=mode,
             variant_column=variant_column,
@@ -540,68 +508,8 @@ class PyMutation:
         # Increase left margin to prevent text from being cut off
         plt.subplots_adjust(left=0.15, right=0.9)
 
-        # If requested to show interactively
-        if show_interactive:
-            self._show_figure_interactive(fig)
-
+        plt.close(fig)
         return fig
-
-    def _show_figure_interactive(self, figure: plt.Figure) -> None:
-        """
-        Display a specific figure in interactive mode without affecting other figures.
-
-        This private method is used internally to show only the specific figure
-        in interactive mode when using show_interactive=True in visualization methods.
-
-        Args:
-            figure: The specific figure to display in interactive mode.
-        """
-        # Save current interactive mode state
-        was_interactive = plt.isinteractive()
-
-        # Variable to control when the window is closed
-        window_closed = [False]  # Use list to make it mutable in inner function
-
-        def on_close(event):
-            """Callback executed when the window is closed."""
-            window_closed[0] = True
-
-        try:
-            # Enable interactive mode temporarily only if it wasn't active
-            if not was_interactive:
-                plt.ion()
-
-            # Connect the window close event
-            figure.canvas.mpl_connect('close_event', on_close)
-
-            # Show only this specific figure
-            figure.show()
-
-            # Force immediate figure render
-            figure.canvas.draw()
-            figure.canvas.flush_events()
-
-            # Inform the user
-            title_text = "Untitled"
-            if figure._suptitle and figure._suptitle.get_text():
-                title_text = figure._suptitle.get_text()
-
-            print(f"Figure '{title_text}' displayed in interactive mode.")
-            print("Close the window to continue with script execution.")
-
-            # Wait until user closes the window
-            # Use a loop that checks the window_closed variable
-            import time
-            while not window_closed[0] and plt.fignum_exists(figure.number):
-                # Use only time.sleep() without plt.pause() to avoid side effects
-                time.sleep(0.1)
-                # Allow matplotlib to process events minimally
-                figure.canvas.flush_events()
-
-        finally:
-            # Restore original interactive mode state only if we changed it
-            if not was_interactive:
-                plt.ioff()  # Disable interactive mode if it wasn't active before
 
 
 PyMutation.region = region
