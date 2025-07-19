@@ -246,6 +246,7 @@ def wrap_maf_vep_annotate_protein(maf_file: Union[str, Path],
         "--fasta", str(fasta_path),
         "--protein", "--uniprot", "--domains", "--symbol",
         "--pick",
+        "--keep_csq"
         "--output_file", str(output_path)
     ]
     
@@ -404,6 +405,7 @@ def wrap_vcf_vep_annotate_protein(vcf_file: Union[str, Path],
         "--fasta", str(fasta_path),
         "--protein", "--uniprot", "--domains", "--symbol",
         "--pick",
+        "--keep_csq"
         "--output_file", str(output_path)
     ]
     
@@ -541,6 +543,7 @@ def wrap_vcf_vep_annotate_gene(vcf_file: Union[str, Path],
         "--fasta", str(fasta_path),
         "--symbol",
         "--pick",
+        "--keep_csq",
         "--output_file", str(output_path)
     ]
     
@@ -555,6 +558,109 @@ def wrap_vcf_vep_annotate_gene(vcf_file: Union[str, Path],
     if not no_stats:
         vep_cmd.insert(-2, "--no_stats")
 
+
+    try:
+        logger.info(f"Running VEP gene annotation: {' '.join(vep_cmd)}")
+        result = subprocess.run(vep_cmd, check=True, capture_output=True, text=True)
+        logger.info("VEP gene annotation completed successfully")
+
+        if result.stderr:
+            logger.warning(f"VEP warnings/messages: {result.stderr}")
+
+        return True, f"VEP output file: {output_path}"
+
+    except (subprocess.CalledProcessError, FileNotFoundError) as e:
+        logger.error(f"VEP gene annotation failed: {e}")
+        if hasattr(e, 'stderr') and e.stderr:
+            logger.error(f"VEP error output: {e.stderr}")
+        return False, str(output_path)
+    except Exception as e:
+        logger.error(f"Unexpected error during VEP gene annotation: {e}")
+        return False, str(output_path)
+
+def wrap_vcf_vep_annotate_variant_classification(vcf_file: Union[str, Path],
+                                               cache_dir: Union[str, Path],
+                                               fasta: Union[str, Path],
+                                               output_file: Optional[Union[str, Path]] = None,
+                                               synonyms_file: Optional[Union[str, Path]] = None,
+                                               assembly: Optional[str] = None,
+                                               version: Optional[str] = None,
+                                               no_stats: bool = True,
+                                               keep_csq: bool = False) -> Tuple[bool, str]:
+    """
+
+    """
+    vcf_path = Path(vcf_file)
+    cache_path = Path(cache_dir)
+    fasta_path = Path(fasta)
+
+    # Validate input files
+    if not vcf_path.exists():
+        raise FileNotFoundError(f"VCF file not found: {vcf_path}")
+    if not cache_path.exists():
+        raise FileNotFoundError(f"Cache directory not found: {cache_path}")
+    if not fasta_path.exists():
+        raise FileNotFoundError(f"FASTA file not found: {fasta_path}")
+
+    logger.info(f"Starting VEP gene annotation for VCF file: {vcf_path}")
+
+    # Handle output file creation
+    if output_file is None:
+        timestamp = datetime.now().strftime("%H%M%d%m")
+        output_dir_name = f"vep_annotation_{timestamp}"
+        output_dir = vcf_path.parent / output_dir_name
+        output_dir.mkdir(exist_ok=True)
+
+        output_filename = f"{vcf_path.stem}_vep.vcf"
+        output_path = output_dir / output_filename
+    else:
+        output_path = Path(output_file)
+
+    # Extract assembly and version from cache if not provided
+    if assembly is None or version is None:
+        try:
+            extracted_assembly, extracted_version = _extract_assembly_and_version_from_cache(cache_path)
+            if assembly is None:
+                assembly = extracted_assembly
+            if version is None:
+                version = extracted_version
+            logger.info(f"Extracted from cache: assembly={assembly}, version={version}")
+        except ValueError as e:
+            logger.error(f"Failed to extract assembly/version from cache: {e}")
+            raise
+    else:
+        logger.info(f"Using provided: assembly={assembly}, version={version}")
+
+    # Handle chromosome synonyms file
+    if synonyms_file is None:
+        chr_synonyms_path = cache_path / "homo_sapiens" / f"{version}_{assembly}" / "chr_synonyms.txt"
+        logger.info(f"Auto-constructed chr synonyms path: {chr_synonyms_path}")
+    else:
+        chr_synonyms_path = Path(synonyms_file)
+        logger.info(f"Using provided chr synonyms path: {chr_synonyms_path}")
+
+    vep_cmd = [
+        "vep",
+        "--input_file", str(vcf_path),
+        "--output_file", str(output_path),
+        "--vcf",
+        "--offline",
+        "--cache",
+        "--cache_version", version,
+        "--dir_cache", str(cache_path),
+        "--assembly", assembly,
+        "--fasta", str(fasta_path),
+        "--variant_class",
+        "--fields", "Consequence,VARIANT_CLASS"
+    ]
+
+    # Add --no_stats only when no_stats is False
+    if not no_stats:
+        vep_cmd.insert(-1, "--no_stats")
+    
+    # Add --keep_csq when keep_csq is True
+    if keep_csq:
+        vep_cmd.insert(-1, "--keep_csq")
 
     try:
         logger.info(f"Running VEP gene annotation: {' '.join(vep_cmd)}")
