@@ -246,12 +246,13 @@ def wrap_maf_vep_annotate_protein(maf_file: Union[str, Path],
         "--fasta", str(fasta_path),
         "--protein", "--uniprot", "--domains", "--symbol",
         "--pick",
-        "--keep_csq"
+        "--keep_csq",
+        "--force_overwrite",
         "--output_file", str(output_path)
     ]
     
-    # Add --no_stats only when no_stats is False
-    if not no_stats:
+    # Add --no_stats when no_stats is True
+    if no_stats:
         vep_cmd.insert(-2, "--no_stats")
 
     try:
@@ -405,12 +406,13 @@ def wrap_vcf_vep_annotate_protein(vcf_file: Union[str, Path],
         "--fasta", str(fasta_path),
         "--protein", "--uniprot", "--domains", "--symbol",
         "--pick",
-        "--keep_csq"
+        "--keep_csq",
+        "--force_overwrite",
         "--output_file", str(output_path)
     ]
     
-    # Add --no_stats only when no_stats is False
-    if not no_stats:
+    # Add --no_stats when no_stats is True
+    if no_stats:
         vep_cmd.insert(-2, "--no_stats")
 
     try:
@@ -544,6 +546,7 @@ def wrap_vcf_vep_annotate_gene(vcf_file: Union[str, Path],
         "--symbol",
         "--pick",
         "--keep_csq",
+        "--force_overwrite",
         "--output_file", str(output_path)
     ]
     
@@ -554,8 +557,8 @@ def wrap_vcf_vep_annotate_gene(vcf_file: Union[str, Path],
         vep_cmd.insert(-2, "--distance")
         vep_cmd.insert(-2, str(distance))
     
-    # Add --no_stats only when no_stats is False
-    if not no_stats:
+    # Add --no_stats when no_stats is True
+    if no_stats:
         vep_cmd.insert(-2, "--no_stats")
 
 
