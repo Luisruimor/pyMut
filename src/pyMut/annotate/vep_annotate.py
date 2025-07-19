@@ -208,7 +208,7 @@ def wrap_maf_vep_annotate_protein(maf_file: Union[str, Path],
         output_dir = maf_path.parent / output_dir_name
         output_dir.mkdir(exist_ok=True)
 
-        output_filename = f"{maf_path.stem}_vep.txt"
+        output_filename = f"{maf_path.stem}_vep_protein.txt"
         output_path = output_dir / output_filename
     else:
         output_path = Path(output_file)
@@ -364,7 +364,7 @@ def wrap_vcf_vep_annotate_protein(vcf_file: Union[str, Path],
         output_dir = vcf_path.parent / output_dir_name
         output_dir.mkdir(exist_ok=True)
 
-        output_filename = f"{vcf_path.stem}_vep.vcf"
+        output_filename = f"{vcf_path.stem}_vep_protein.vcf"
         output_path = output_dir / output_filename
     else:
         output_path = Path(output_file)
@@ -503,7 +503,7 @@ def wrap_vcf_vep_annotate_gene(vcf_file: Union[str, Path],
         output_dir = vcf_path.parent / output_dir_name
         output_dir.mkdir(exist_ok=True)
 
-        output_filename = f"{vcf_path.stem}_vep.vcf"
+        output_filename = f"{vcf_path.stem}_vep_gene.vcf"
         output_path = output_dir / output_filename
     else:
         output_path = Path(output_file)
@@ -614,7 +614,7 @@ def wrap_vcf_vep_annotate_variant_classification(vcf_file: Union[str, Path],
         output_dir = vcf_path.parent / output_dir_name
         output_dir.mkdir(exist_ok=True)
 
-        output_filename = f"{vcf_path.stem}_vep.vcf"
+        output_filename = f"{vcf_path.stem}_vep_variant_class.vcf"
         output_path = output_dir / output_filename
     else:
         output_path = Path(output_file)
