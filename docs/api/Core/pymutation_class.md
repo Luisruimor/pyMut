@@ -95,7 +95,6 @@ fig = py_mut.summary_plot(
     figsize=(16, 12),
     max_samples=100,
     top_genes_count=15,
-    show_interactive=True
 )
 fig.savefig("summary_analysis.png")
 ```

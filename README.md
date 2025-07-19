@@ -146,12 +146,6 @@ fig.savefig("plot.svg", bbox_inches='tight')           # SVG for editing
 
 ## 🔬 Advanced Features
 
-### Interactive Mode
-```python
-# Display plots interactively for exploration
-py_mut.summary_plot(show_interactive=True)
-```
-
 ### Custom Parameters
 ```python
 # Highly customizable visualizations

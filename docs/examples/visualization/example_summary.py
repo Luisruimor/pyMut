@@ -83,7 +83,6 @@ def main():
     #     figsize=(16, 12),                 # Figure size in inches (width, height)
     #     max_samples=50,                   # Maximum number of samples to display
     #     top_genes_count=5,                # Number of genes to show in Top Mutated Genes (default is 10)
-    #     show_interactive=True             # Whether to show the plot interactively
     # )
     
     # Save the figure (automatically high quality!)
@@ -115,7 +114,6 @@ def main():
     # vc_fig = py_mut.variant_classification_plot(
     #     figsize=(12, 6),                  # Figure size in inches (width, height)
     #     title="Variant Classification",   # Custom title for the plot
-    #     show_interactive=True             # Whether to show the plot interactively
     # )
 
     # Save the figure (automatically high quality!)
@@ -136,7 +134,6 @@ def main():
     # vt_fig = py_mut.variant_type_plot(
     #     figsize=(12, 6),                  # Figure size in inches (width, height)
     #     title="Variant Type",             # Custom title for the plot
-    #     show_interactive=True             # Whether to show the plot interactively
     # )
     
     # Save the figure (automatically high quality!)
@@ -159,7 +156,6 @@ def main():
     #     title="SNV Class",                # Custom title for the plot
     #     ref_column="REF",                 # Column containing reference allele
     #     alt_column="ALT",                 # Column containing alternate allele
-    #     show_interactive=True             # Whether to show the plot interactively
     # )
     
     # Save the figure (automatically high quality!)
@@ -183,7 +179,6 @@ def main():
     #     title="Variants per Sample",          # Custom title for the plot
     #     variant_column="Variant_Classification", # Column with variant classification
     #     sample_column="Tumor_Sample_Barcode", # Column with sample ID
-    #     show_interactive=True                 # Whether to show the plot interactively
     # )
     
     # Save the figure (automatically high quality!)
@@ -206,7 +201,6 @@ def main():
     #     title="Variant Classification Summary", # Custom title for the plot
     #     variant_column="Variant_Classification", # Column with variant classification
     #     sample_column="Tumor_Sample_Barcode", # Column with sample ID
-    #     show_interactive=True                 # Whether to show the plot interactively
     # )
     
     # Save the figure (automatically high quality!)
@@ -232,7 +226,6 @@ def main():
     #     gene_column="Hugo_Symbol",            # Column with gene symbol
     #     sample_column="Tumor_Sample_Barcode", # Column with sample ID
     #     count=10,                             # Number of genes to show (default 10, shows all if less)
-    #     show_interactive=True                 # Whether to show the plot interactively
     # )
     
     # Save the figure (automatically high quality!)
@@ -258,7 +251,6 @@ def main():
     #     gene_column="Hugo_Symbol",            # Column with gene symbol
     #     sample_column="Tumor_Sample_Barcode", # Column with sample ID
     #     count=15,                             # Number of genes to show
-    #     show_interactive=True                 # Whether to show the plot interactively
     # )
     
     # Save the figure (automatically high quality!)
