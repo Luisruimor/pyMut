@@ -11,7 +11,7 @@ from typing import Dict, Optional, Tuple
 from ..core import PyMutation
 
 
-def create_variant_classification_plot(py_mut: PyMutation,
+def _create_variant_classification_plot(py_mut: PyMutation,
                                      variant_column: str = "Variant_Classification",
                                      ax: Optional[plt.Axes] = None,
                                      color_map: Optional[Dict] = None,
@@ -71,7 +71,7 @@ def create_variant_classification_plot(py_mut: PyMutation,
     return ax
 
 
-def create_variant_type_plot(py_mut: PyMutation,
+def _create_variant_type_plot(py_mut: PyMutation,
                            variant_column: str = "Variant_Type",
                            ax: Optional[plt.Axes] = None,
                            set_title: bool = True) -> plt.Axes:
@@ -134,7 +134,7 @@ def create_variant_type_plot(py_mut: PyMutation,
     return ax
 
 
-def create_snv_class_plot(py_mut: PyMutation,
+def _create_snv_class_plot(py_mut: PyMutation,
                         ref_column: str = "REF",
                         alt_column: str = "ALT",
                         ax: Optional[plt.Axes] = None,
@@ -230,7 +230,7 @@ def create_snv_class_plot(py_mut: PyMutation,
     return ax
 
 
-def create_variant_classification_summary_plot(py_mut: PyMutation,
+def _create_variant_classification_summary_plot(py_mut: PyMutation,
                                              variant_column: str = "Variant_Classification",
                                              sample_column: str = "Tumor_Sample_Barcode",
                                              ax: Optional[plt.Axes] = None,
@@ -466,7 +466,7 @@ def create_variant_classification_summary_plot(py_mut: PyMutation,
     return ax
 
 
-def create_summary_plot(py_mut: PyMutation,
+def _create_summary_plot(py_mut: PyMutation,
                       figsize: Tuple[int, int] = (16, 12),
                       title: str = "Mutation Summary",
                       max_samples: Optional[int] = 200,
@@ -518,7 +518,7 @@ def create_summary_plot(py_mut: PyMutation,
     variant_color_map = {variant: cmap(i % 20) for i, variant in enumerate(unique_variants) if pd.notna(variant)}
     
     # Create the variant classification plot using the predefined color map
-    var_class_ax = create_variant_classification_plot(
+    var_class_ax = _create_variant_classification_plot(
         py_mut, 
         variant_column=variant_classification_col, 
         ax=axs[0, 0],
@@ -527,10 +527,10 @@ def create_summary_plot(py_mut: PyMutation,
     )
     
     # Create the variant type plot
-    create_variant_type_plot(py_mut, ax=axs[0, 1], set_title=True)
+    _create_variant_type_plot(py_mut, ax=axs[0, 1], set_title=True)
     
     # Create the SNV class plot
-    create_snv_class_plot(py_mut, 
+    _create_snv_class_plot(py_mut, 
                          ref_column="REF",
                          alt_column="ALT",
                          ax=axs[0, 2],
@@ -538,7 +538,7 @@ def create_summary_plot(py_mut: PyMutation,
     
     # Create the variants per sample plot (TMB)
     # Passing the same color map used for the classification plot
-    variants_ax = create_variants_per_sample_plot(
+    variants_ax = _create_variants_per_sample_plot(
         py_mut,
         variant_column=variant_classification_col,
         sample_column=sample_column,
@@ -549,7 +549,7 @@ def create_summary_plot(py_mut: PyMutation,
     )
     
     # Create the variant classification summary plot
-    var_boxplot_ax = create_variant_classification_summary_plot(
+    var_boxplot_ax = _create_variant_classification_summary_plot(
         py_mut,
         variant_column=variant_classification_col,
         sample_column=sample_column,
@@ -560,7 +560,7 @@ def create_summary_plot(py_mut: PyMutation,
     )
     
     # Create the top mutated genes plot
-    top_genes_ax = create_top_mutated_genes_plot(
+    top_genes_ax = _create_top_mutated_genes_plot(
         py_mut,
         variant_column=variant_classification_col,
         gene_column=gene_column,
@@ -618,7 +618,7 @@ def create_summary_plot(py_mut: PyMutation,
     return fig
 
 
-def create_variants_per_sample_plot(py_mut: PyMutation,
+def _create_variants_per_sample_plot(py_mut: PyMutation,
                                    variant_column: str = "Variant_Classification",
                                    sample_column: str = "Tumor_Sample_Barcode",
                                    ax: Optional[plt.Axes] = None,
@@ -801,7 +801,7 @@ def create_variants_per_sample_plot(py_mut: PyMutation,
     return ax
 
 
-def create_top_mutated_genes_plot(py_mut: PyMutation,
+def _create_top_mutated_genes_plot(py_mut: PyMutation,
                                mode: str = "variants",
                                variant_column: str = "Variant_Classification",
                                gene_column: str = "Hugo_Symbol",

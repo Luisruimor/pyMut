@@ -18,6 +18,14 @@ pyMut provides comprehensive mutation visualization capabilities:
 - **Variant Classification Summary**: Boxplot analysis across samples
 - **Top Mutated Genes**: Most frequently mutated genes with two analysis modes
 
+### 🧬 **Waterfall Plot (Oncoplot)**
+- **Mutation Matrix**: Genes × Samples heatmap showing mutation patterns
+- **Smart Gene Ranking**: Automatically selects most frequently mutated genes
+- **Sample Prioritization**: Orders samples by mutation burden
+- **Multi-hit Detection**: Identifies samples with multiple mutation types
+- **Color-coded Variants**: Distinct colors for each mutation classification
+- **Automatic Sample Detection**: Supports TCGA and custom sample formats
+
 ### 🎨 **Professional Visualization Features**
 - **High-quality graphics** with publication-ready output (DPI 300+)
 - **Consistent color schemes** across all visualizations
@@ -63,6 +71,14 @@ summary_fig = py_mut.summary_plot(
     top_genes_count=10
 )
 summary_fig.savefig("mutation_summary.png")  # Automatically high quality!
+
+# Generate waterfall plot (oncoplot)
+waterfall_fig = py_mut.waterfall_plot(
+    title="Mutation Landscape Oncoplot",
+    top_genes_count=30,
+    max_samples=180
+)
+waterfall_fig.savefig("oncoplot.png")
 ```
 
 ### Individual Visualizations
@@ -74,6 +90,15 @@ tmb_fig = py_mut.variants_per_sample_plot(
     max_samples=100
 )
 tmb_fig.savefig("tmb_analysis.png")
+
+# Waterfall plot with custom parameters
+waterfall_fig = py_mut.waterfall_plot(
+    title="Top 20 Cancer Genes Mutation Pattern",
+    top_genes_count=20,
+    max_samples=100,
+    figsize=(18, 10)
+)
+waterfall_fig.savefig("cancer_genes_oncoplot.png")
 
 # Top mutated genes (by variant count)
 genes_fig = py_mut.top_mutated_genes_plot(
@@ -145,12 +170,6 @@ fig.savefig("plot.svg", bbox_inches='tight')           # SVG for editing
 ```
 
 ## 🔬 Advanced Features
-
-### Interactive Mode
-```python
-# Display plots interactively for exploration
-py_mut.summary_plot(show_interactive=True)
-```
 
 ### Custom Parameters
 ```python

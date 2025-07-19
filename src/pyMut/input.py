@@ -169,51 +169,6 @@ def _parse_info_column_vectorized(info_series: pd.Series) -> pd.DataFrame:
         return _parse_info_column(info_series)
 
 
-def _log_system_information():
-    """Log system information including memory and CPU details."""
-    logger.info("=" * 60)
-    logger.info("SYSTEM CONFIGURATION")
-    logger.info("=" * 60)
-
-    cpu_count = os.cpu_count()
-    logger.info("CPU: %d cores available", cpu_count)
-    if HAS_PSUTIL:
-        memory_info = psutil.virtual_memory()
-        total_gb = memory_info.total / (1024**3)
-        available_gb = memory_info.available / (1024**3)
-        used_gb = memory_info.used / (1024**3)
-        percent_used = memory_info.percent
-
-        logger.info("MEMORY:")
-        logger.info("  Total: %.2f GB", total_gb)
-        logger.info("  Available: %.2f GB", available_gb)
-        logger.info("  Used: %.2f GB (%.1f%%)", used_gb, percent_used)
-
-        # Disk usage for current directory
-        try:
-            disk_usage = psutil.disk_usage('.')
-            disk_total_gb = disk_usage.total / (1024**3)
-            disk_free_gb = disk_usage.free / (1024**3)
-            disk_used_gb = disk_usage.used / (1024**3)
-            disk_percent = (disk_used_gb / disk_total_gb) * 100
-
-            logger.info("DISK (current directory):")
-            logger.info("  Total: %.2f GB", disk_total_gb)
-            logger.info("  Free: %.2f GB", disk_free_gb)
-            logger.info("  Used: %.2f GB (%.1f%%)", disk_used_gb, disk_percent)
-        except Exception as e:
-            logger.debug("Could not get disk usage: %s", e)
-    else:
-        logger.info("MEMORY: psutil not available, cannot get detailed memory info")
-
-    # Available libraries
-    logger.info("AVAILABLE LIBRARIES:")
-    logger.info("  PyArrow: %s", "✓" if HAS_PYARROW else "✗")
-    logger.info("  cyvcf2: %s", "✓" if HAS_CYVCF2 else "✗")
-    logger.info("  psutil: %s", "✓" if HAS_PSUTIL else "✗")
-
-    logger.info("=" * 60)
-
 # MAF processing functions
 def _standardise_vcf_columns(vcf: pd.DataFrame) -> pd.DataFrame:
     """Normaliza nombres de columnas (insensible a mayúsculas) para VCF."""
@@ -648,9 +603,6 @@ def read_vcf(
     cache_dir_path = Path(cache_dir) if cache_dir else None
 
     logger.info("Starting optimized VCF reading: %s", path)
-
-    # Log comprehensive system information
-    _log_system_information()
 
     # ─── 1) CHECK CACHE ─────────────────────────────────────────────────────
     cache_path = _get_cache_path(path, cache_dir_path)
