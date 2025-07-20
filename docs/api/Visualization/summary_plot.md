@@ -166,8 +166,7 @@ summary_fig = py_mut.summary_plot(
     title="TCGA-LAML Mutation Landscape Analysis",
     figsize=(20, 16),           # Figura grande para publicación
     max_samples=150,            # Mostrar hasta 150 muestras
-    top_genes_count=20,         # Top 20 genes más mutados
-    show_interactive=False      # No mostrar ventana interactiva
+    top_genes_count=20          # Top 20 genes más mutados
 )
 
 # Guardar en múltiples formatos

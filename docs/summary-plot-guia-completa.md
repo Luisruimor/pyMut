@@ -23,8 +23,8 @@ def summary_plot(self,
                figsize: Tuple[int, int] = (16, 12),
                title: str = "Mutation Summary",
                max_samples: Optional[int] = 200,
-               top_genes_count: int = 10,
-               show_interactive: bool = False) -> plt.Figure
+               top_genes_count: int = 10
+               ) -> plt.Figure
 ```
 
 **Parámetros detallados:**
@@ -48,9 +48,6 @@ def summary_plot(self,
   - Rango recomendado: 5-25 genes
   - Si hay menos genes que el especificado, muestra todos
 
-- `show_interactive`: Control de visualización
-  - False: Solo genera la figura (recomendado para scripts)
-  - True: Abre ventana interactiva usando manejo event-driven
 
 ## Subvisualizaciones Detalladas
 
@@ -300,27 +297,6 @@ py_mut.save_figure(fig, "summary.png", dpi=600)  # Ultra alta calidad
 | SVG     | Edición, vectorial | N/A | Pequeño |
 | TIFF    | Impresión profesional | 600 | Muy grande |
 
-## Manejo Interactivo
-
-### Event-Driven Approach
-
-pyMut implementa un sistema de ventanas interactivas que evita los problemas comunes de matplotlib:
-
-```python
-def _show_figure_interactive(self, figure):
-    """Muestra figura usando enfoque event-driven"""
-    # Configura callback para cierre de ventana
-    # Maneja eventos sin bloquear la aplicación
-    # Permite cerrar ventanas sin cuelgues
-```
-
-### Ventajas del Sistema
-
-1. **No Global State**: No afecta otras figuras
-2. **Responsive Windows**: Ventanas que responden correctamente
-3. **Proper Cleanup**: Limpieza automática de recursos
-4. **No Hanging**: Sin bloqueos de aplicación
-
 ## Casos de Uso Avanzados
 
 ### 1. Análisis Comparativo de Cohorts
@@ -495,9 +471,6 @@ PyMutation.configure_high_quality_plots()
 
 # Análisis interactivo
 py_mut = PyMutation(data)
-
-# Ver interactivamente
-fig = py_mut.summary_plot(show_interactive=True)
 
 # Guardar para reporte
 fig.savefig("notebook_summary.png")

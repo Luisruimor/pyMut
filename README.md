@@ -29,7 +29,6 @@ pyMut provides comprehensive mutation visualization capabilities:
 ### 🎨 **Professional Visualization Features**
 - **High-quality graphics** with publication-ready output (DPI 300+)
 - **Consistent color schemes** across all visualizations
-- **Interactive mode** for data exploration
 - **Automatic format detection** (wide vs long format)
 - **Flexible customization** options
 
@@ -253,7 +252,6 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 | Language | Python 🐍 | R | R |
 | Installation | `pip install` | Complex R setup | Complex R setup |
 | Data Format | Auto-detection | Manual preparation | Manual preparation |
-| Interactive | ✅ | ❌ | ❌ |
 | High-Quality Output | Auto-configuration | Manual setup | Manual setup |
 | Testing | 17 comprehensive tests | Limited | Limited |
 | Documentation | Complete | Partial | Limited |

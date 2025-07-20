@@ -85,8 +85,7 @@ fig = py_mut.oncoplot(
     title="Paisaje Mutacional - TCGA LAML",
     top_genes_count=20,
     max_samples=100,
-    figsize=(16, 10),
-    show_interactive=True
+    figsize=(16, 10)
 )
 ```
 
@@ -104,7 +103,6 @@ fig = py_mut.oncoplot(
 | `alt_column` | `str` | `"ALT"` | Columna con alelos alternativos |
 | `top_genes_count` | `int` | `10` | Número de genes más mutados a mostrar |
 | `max_samples` | `int` | `180` | Número máximo de muestras a mostrar |
-| `show_interactive` | `bool` | `False` | Mostrar en ventana interactiva |
 
 ### Validación de Parámetros
 
@@ -218,8 +216,7 @@ for fmt in ['png', 'pdf', 'svg']:
 # Para exploración interactiva
 fig = py_mut.oncoplot(
     title="Exploración Interactiva",
-    top_genes_count=25,
-    show_interactive=True  # Abre ventana interactiva
+    top_genes_count=25
 )
 ```
 

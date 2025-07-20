@@ -249,14 +249,6 @@ class TestPyMutationOncoplot(unittest.TestCase):
         
         with self.assertRaises(ValueError):
             py_mut_incomplete.oncoplot()
-    
-    def test_oncoplot_interactive_mode(self):
-        """Test oncoplot interactive mode."""
-        with patch.object(self.py_mut, '_show_figure_interactive') as mock_show_interactive:
-            fig = self.py_mut.oncoplot(show_interactive=True)
-            self.assertIsInstance(fig, plt.Figure)
-            mock_show_interactive.assert_called_once()
-            plt.close(fig)
 
 
 class TestOncoplotIntegration(unittest.TestCase):
@@ -352,8 +344,7 @@ class TestOncoplotSidePanel:
             figsize=(16, 10),
             title="Test Oncoplot with Side Panel",
             top_genes_count=4,
-            max_samples=3,
-            show_interactive=False
+            max_samples=3
         )
         
         # Verify figure exists and has expected structure
@@ -391,8 +382,7 @@ class TestOncoplotSidePanel:
         py_mut = PyMutation(data)
         figure = py_mut.oncoplot(
             top_genes_count=3,
-            max_samples=3,
-            show_interactive=False
+            max_samples=3
         )
         
         # Verify figure was created successfully
@@ -475,7 +465,7 @@ class TestOncoplotWaterfallOrdering(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    # Configure matplotlib for tests (non-interactive mode)
+    # Configure matplotlib for tests
     import matplotlib
     matplotlib.use('Agg')
     
