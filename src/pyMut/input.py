@@ -1023,6 +1023,10 @@ def read_vcf(
     else:
         logger.debug("VEP_Consequence or VEP_VARIANT_CLASS columns not found, skipping Variant_Classification generation")
 
+    # ─── 9.7) NORMALIZE VARIANT_CLASSIFICATION TO UPPERCASE ─────────────────
+    vcf = normalize_variant_classification(vcf)
+    logger.debug("Variant_Classification values normalized to uppercase")
+
     # ─── 10) VECTORIZED GENOTYPE CONVERSION ─────────────────────────────────
     standard_vcf_cols = {"CHROM", "POS", "ID", "REF", "ALT", "QUAL", "FILTER", "INFO", "FORMAT"}
     all_columns = vcf.columns.tolist()
