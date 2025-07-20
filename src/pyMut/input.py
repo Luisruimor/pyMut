@@ -217,6 +217,104 @@ def _classify_variant(row):
     # --- otros (raro) ----------------------------------------------------
     return 'RNA'
 
+def _map_vep_variant_class_to_maf_variant_type(row):
+    """
+    Map VEP variant_class to MAF Variant_Type according to translation rules.
+    
+    Translation rules:
+    - SNV → SNP
+    - substitution → ONP (with length rules for DNP/TNP)
+    - insertion → INS
+    - deletion → DEL
+    - indel → IND (new category)
+    - inversion → INV
+    - copy_number_variation → CNV
+    - If no rule matches → UNKNOWN
+    
+    Length rules for alleles (REF vs ALT):
+    - If len(REF) == len(ALT) and length = 1 → SNP
+    - If equal lengths ≥ 2 → substitution; subdivide as:
+      • 2 bp → DNP  • 3 bp → TNP  • ≥ 4 bp → ONP
+    - If len(REF) == 0 after VCF normalization → INS
+    - If len(ALT) == 0 → DEL
+    - If both lengths > 0 and different → true mixed indel → IND
+    
+    Parameters
+    ----------
+    row : pd.Series
+        Row containing 'VEP_VARIANT_CLASS', 'REF', 'ALT' columns
+    
+    Returns
+    -------
+    str
+        Variant_Type in MAF format
+    """
+    vep_variant_class = row.get('VEP_VARIANT_CLASS', '')
+    ref = str(row.get('REF', ''))
+    alt = str(row.get('ALT', ''))
+    
+    # Handle missing or empty values
+    if not vep_variant_class or vep_variant_class in ['', '.', 'nan', 'None']:
+        vep_variant_class = ''
+    if not ref or ref in ['.', 'nan', 'None']:
+        ref = ''
+    if not alt or alt in ['.', 'nan', 'None']:
+        alt = ''
+    
+    # Calculate lengths
+    ref_len = len(ref)
+    alt_len = len(alt)
+    
+    # First, handle specific VEP variant classes that should not be overridden by length rules
+    vep_to_maf_map = {
+        'SNV': 'SNP',
+        'insertion': 'INS',
+        'deletion': 'DEL',
+        'indel': 'IND',
+        'inversion': 'INV',
+        'copy_number_variation': 'CNV'
+    }
+    
+    # If we have a direct VEP mapping (except substitution), use it
+    if vep_variant_class in vep_to_maf_map:
+        return vep_to_maf_map[vep_variant_class]
+    
+    # Handle substitution with length-based rules
+    if vep_variant_class == 'substitution':
+        if ref_len == alt_len:
+            if ref_len == 1:
+                return 'SNP'
+            elif ref_len == 2:
+                return 'DNP'
+            elif ref_len == 3:
+                return 'TNP'
+            else:  # >= 4
+                return 'ONP'
+        else:
+            # Different lengths for substitution - treat as mixed indel
+            return 'IND'
+    
+    # If no VEP class or unknown VEP class, apply length-based rules as fallback
+    # This handles cases where VEP_VARIANT_CLASS is missing, empty, or not in our known mappings
+    if ref_len == alt_len and ref_len == 1:
+        return 'SNP'
+    elif ref_len == alt_len and ref_len >= 2:
+        if ref_len == 2:
+            return 'DNP'
+        elif ref_len == 3:
+            return 'TNP'
+        else:
+            return 'ONP'
+    elif ref_len == 0:
+        return 'INS'
+    elif alt_len == 0:
+        return 'DEL'
+    elif ref_len > 0 and alt_len > 0 and ref_len != alt_len:
+        return 'IND'
+    
+    # If nothing matches, return UNKNOWN
+    return 'UNKNOWN'
+
 def _vectorized_gt_to_alleles(gt_series: pd.Series, ref_series: pd.Series, alt_series: pd.Series) -> pd.Series:
     """Convert genotypes to alleles using vectorized operations."""
     gt_array = gt_series.astype(str).values
@@ -946,13 +1044,13 @@ def read_vcf(
                             for i, field_name in enumerate(csq_fields):
                                 if i < len(csq_values):
                                     value = csq_values[i].strip()
-                                    row_data[f"VEP_{field_name}"] = value if value else None
+                                    row_data[f"VEP_{field_name}"] = value if value else ""
                                 else:
-                                    row_data[f"VEP_{field_name}"] = None
+                                    row_data[f"VEP_{field_name}"] = ""
                     else:
-                        # Fill with None for missing CSQ data
+                        # Fill with empty strings for missing CSQ data
                         for field_name in csq_fields:
-                            row_data[f"VEP_{field_name}"] = None
+                            row_data[f"VEP_{field_name}"] = ""
                     
                     csq_expanded_data.append(row_data)
                 
@@ -971,8 +1069,65 @@ def read_vcf(
         except Exception as e:
             logger.warning(f"Error expanding VEP CSQ annotations: {e}")
 
+    # ─── 9.5.5) GENERATE HUGO_SYMBOL FROM VEP_SYMBOL AND VEP_NEAREST ────────
+    # Check if Hugo_Symbol already exists
+    if 'Hugo_Symbol' in vcf.columns:
+        logger.info("Hugo_Symbol column already exists, skipping generation")
+    else:
+        logger.info("Generating Hugo_Symbol column from VEP_SYMBOL and VEP_NEAREST...")
+        try:
+            hugo_symbol_start = time.time()
+            
+            has_vep_symbol = 'VEP_SYMBOL' in vcf.columns
+            has_vep_nearest = 'VEP_NEAREST' in vcf.columns
+            
+            if has_vep_symbol or has_vep_nearest:
+                # Generate Hugo_Symbol based on VEP_SYMBOL and VEP_NEAREST availability and values
+                vcf['Hugo_Symbol'] = ''
+                
+                # Get VEP_SYMBOL and VEP_NEAREST columns, handling missing columns
+                vep_symbol_series = vcf['VEP_SYMBOL'] if has_vep_symbol else pd.Series([''] * len(vcf), index=vcf.index)
+                vep_nearest_series = vcf['VEP_NEAREST'] if has_vep_nearest else pd.Series([''] * len(vcf), index=vcf.index)
+                
+                # Convert None, NaN, or null-like values to empty strings for comparison
+                vep_symbol_clean = vep_symbol_series.fillna('').astype(str)
+                vep_symbol_clean = vep_symbol_clean.replace(['None', 'null', 'NULL'], '')
+                
+                vep_nearest_clean = vep_nearest_series.fillna('').astype(str)
+                vep_nearest_clean = vep_nearest_clean.replace(['None', 'null', 'NULL'], '')
+                
+                # Apply the logic from the requirements
+                if has_vep_symbol and not has_vep_nearest:
+                    # Only VEP_SYMBOL exists, use it
+                    vcf['Hugo_Symbol'] = vep_symbol_clean
+                elif has_vep_symbol and has_vep_nearest:
+                    # Both exist, use VEP_SYMBOL unless it's empty, then use VEP_NEAREST
+                    vcf['Hugo_Symbol'] = vep_symbol_clean.where(vep_symbol_clean != '', vep_nearest_clean)
+                elif not has_vep_symbol and has_vep_nearest:
+                    # Only VEP_NEAREST exists, use it
+                    vcf['Hugo_Symbol'] = vep_nearest_clean
+                else:
+                    # Neither exists (this case shouldn't happen due to the if condition above)
+                    vcf['Hugo_Symbol'] = ''
+                
+                logger.info("Hugo_Symbol column generated in %.2f s", 
+                           time.time() - hugo_symbol_start)
+                logger.debug(f"Hugo_Symbol: VEP_SYMBOL available: {has_vep_symbol}, VEP_NEAREST available: {has_vep_nearest}")
+                
+                # Log some statistics
+                non_empty_count = (vcf['Hugo_Symbol'] != '').sum()
+                logger.debug(f"Hugo_Symbol: {non_empty_count} non-empty values out of {len(vcf)} total rows")
+            else:
+                logger.debug("Neither VEP_SYMBOL nor VEP_NEAREST columns found, skipping Hugo_Symbol generation")
+                
+        except Exception as e:
+            logger.warning(f"Error generating Hugo_Symbol: {e}")
+
     # ─── 9.6) GENERATE VARIANT_CLASSIFICATION FROM VEP DATA ─────────────────
-    if "VEP_Consequence" in vcf.columns and "VEP_VARIANT_CLASS" in vcf.columns:
+    # Check if Variant_Classification already exists
+    if 'Variant_Classification' in vcf.columns:
+        logger.info("Variant_Classification column already exists, skipping generation")
+    elif "VEP_Consequence" in vcf.columns and "VEP_VARIANT_CLASS" in vcf.columns:
         logger.info("Generating Variant_Classification from VEP_Consequence and VEP_VARIANT_CLASS...")
         try:
             variant_classification_start = time.time()
@@ -1027,10 +1182,56 @@ def read_vcf(
     vcf = normalize_variant_classification(vcf)
     logger.debug("Variant_Classification values normalized to uppercase")
 
+    # ─── 9.8) GENERATE VARIANT_TYPE FROM VEP VARIANT_CLASS ──────────────────
+    # Check if Variant_Type already exists
+    if 'Variant_Type' in vcf.columns:
+        logger.info("Variant_Type column already exists, skipping generation")
+    elif "VEP_VARIANT_CLASS" in vcf.columns:
+        logger.info("Generating Variant_Type from VEP_VARIANT_CLASS...")
+        try:
+            variant_type_start = time.time()
+            
+            # Apply variant type mapping function
+            vcf['Variant_Type'] = vcf.apply(_map_vep_variant_class_to_maf_variant_type, axis=1)
+            
+            # Fill any NaN values with 'UNKNOWN'
+            vcf['Variant_Type'] = vcf['Variant_Type'].fillna('UNKNOWN')
+            
+            # Convert to categorical for memory efficiency and ordering
+            unique_variant_types = vcf['Variant_Type'].unique()
+            logger.debug(f"Unique Variant_Type values: {unique_variant_types}")
+            
+            # Define ordered categories for Variant_Type
+            variant_type_categories = [
+                'SNP', 'DNP', 'TNP', 'ONP',  # Substitutions
+                'INS', 'DEL', 'IND',         # Indels
+                'INV', 'CNV',                # Structural variants
+                'UNKNOWN'                    # Fallback
+            ]
+            
+            # Add any unique values that aren't in our predefined categories
+            for val in unique_variant_types:
+                if val not in variant_type_categories and pd.notna(val):
+                    variant_type_categories.append(val)
+            
+            vcf['Variant_Type'] = pd.Categorical(
+                vcf['Variant_Type'],
+                categories=variant_type_categories,
+                ordered=True
+            )
+            
+            logger.info("Variant_Type generated in %.2f s", 
+                       time.time() - variant_type_start)
+            
+        except Exception as e:
+            logger.warning(f"Error generating Variant_Type: {e}")
+    else:
+        logger.debug("VEP_VARIANT_CLASS column not found, skipping Variant_Type generation")
+
     # ─── 10) VECTORIZED GENOTYPE CONVERSION ─────────────────────────────────
     standard_vcf_cols = {"CHROM", "POS", "ID", "REF", "ALT", "QUAL", "FILTER", "INFO", "FORMAT"}
     all_columns = vcf.columns.tolist()
-    sample_columns = [col for col in all_columns if col not in standard_vcf_cols and not col.startswith(("AC", "AF", "AN", "DP", "FUNCOTATION", "VEP_")) and col != "Variant_Classification"]
+    sample_columns = [col for col in all_columns if col not in standard_vcf_cols and not col.startswith(("AC", "AF", "AN", "DP", "FUNCOTATION", "VEP_")) and col not in ("Variant_Classification", "Variant_Type", "Hugo_Symbol")]
 
     logger.info("Detected %d sample columns. Starting vectorized genotype conversion...", len(sample_columns))
 

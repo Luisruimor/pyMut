@@ -11,8 +11,7 @@ from src.pyMut.annotate.vep_annotate import (
     _get_case_insensitive_column,
     _maf_to_region,
     wrap_maf_vep_annotate_protein,
-    wrap_vcf_vep_annotate_protein,
-    wrap_vcf_vep_annotate_gene
+    wrap_vcf_vep_annotate_unified
 )
 
 # Real file paths (relative to project root)
@@ -241,64 +240,6 @@ class TestWrapMafVepAnnotateProtein:
             Path(region_path).unlink()
 
 
-class TestWrapVcfVepAnnotateProtein:
-    """Tests for wrap_vcf_vep_annotate_protein function using real files"""
-    
-    def test_successful_annotation_with_real_files(self):
-        """Test VCF protein annotation with real files"""
-        # Skip test if VEP is not available
-        try:
-            subprocess.run(["vep", "--help"], check=True, capture_output=True)
-        except (subprocess.CalledProcessError, FileNotFoundError):
-            pytest.skip("VEP not available")
-        
-        # Check if real files exist
-        if not all(Path(f).exists() for f in [VCF_FILE, VCF_CACHE_DIR, VCF_FASTA]):
-            pytest.skip("Required real files not found")
-        
-        success, result = wrap_vcf_vep_annotate_protein(
-            VCF_FILE, VCF_CACHE_DIR, VCF_FASTA
-        )
-        
-        # The function should complete successfully
-        assert success is True
-        assert "VEP output file:" in result
-    
-    def test_no_stats_parameter_with_real_files(self):
-        """Test no_stats parameter with real files"""
-        # Skip test if VEP is not available or files don't exist
-        try:
-            subprocess.run(["vep", "--help"], check=True, capture_output=True)
-        except (subprocess.CalledProcessError, FileNotFoundError):
-            pytest.skip("VEP not available")
-        
-        if not all(Path(f).exists() for f in [VCF_FILE, VCF_CACHE_DIR, VCF_FASTA]):
-            pytest.skip("Required real files not found")
-        
-        # Test with no_stats=True (default)
-        success, result = wrap_vcf_vep_annotate_protein(
-            VCF_FILE, VCF_CACHE_DIR, VCF_FASTA, no_stats=True
-        )
-        assert success is True
-        
-        # Test with no_stats=False
-        success, result = wrap_vcf_vep_annotate_protein(
-            VCF_FILE, VCF_CACHE_DIR, VCF_FASTA, no_stats=False
-        )
-        assert success is True
-    
-    def test_missing_files_raise_filenotfounderror(self):
-        """Test missing files raise FileNotFoundError"""
-        with pytest.raises(FileNotFoundError, match="VCF file not found"):
-            wrap_vcf_vep_annotate_protein("nonexistent.vcf", VCF_CACHE_DIR, VCF_FASTA)
-        
-        with pytest.raises(FileNotFoundError, match="Cache directory not found"):
-            wrap_vcf_vep_annotate_protein(VCF_FILE, "nonexistent_cache", VCF_FASTA)
-        
-        with pytest.raises(FileNotFoundError, match="FASTA file not found"):
-            wrap_vcf_vep_annotate_protein(VCF_FILE, VCF_CACHE_DIR, "nonexistent.fa")
-
-
 class TestWrapVcfVepAnnotateGene:
     """Tests for wrap_vcf_vep_annotate_gene function using real files"""
     
@@ -314,8 +255,8 @@ class TestWrapVcfVepAnnotateGene:
         if not all(Path(f).exists() for f in [VCF_FILE, VCF_CACHE_DIR, VCF_FASTA]):
             pytest.skip("Required real files not found")
         
-        success, result = wrap_vcf_vep_annotate_gene(
-            VCF_FILE, VCF_CACHE_DIR, VCF_FASTA
+        success, result = wrap_vcf_vep_annotate_unified(
+            VCF_FILE, VCF_CACHE_DIR, VCF_FASTA, annotate_gene=True
         )
         
         # The function should complete successfully
@@ -333,8 +274,8 @@ class TestWrapVcfVepAnnotateGene:
         if not all(Path(f).exists() for f in [VCF_FILE, VCF_CACHE_DIR, VCF_FASTA]):
             pytest.skip("Required real files not found")
         
-        success, result = wrap_vcf_vep_annotate_gene(
-            VCF_FILE, VCF_CACHE_DIR, VCF_FASTA, distance=10000
+        success, result = wrap_vcf_vep_annotate_unified(
+            VCF_FILE, VCF_CACHE_DIR, VCF_FASTA, annotate_gene=True, distance=10000
         )
         
         assert success is True
@@ -352,27 +293,173 @@ class TestWrapVcfVepAnnotateGene:
             pytest.skip("Required real files not found")
         
         # Test with no_stats=True (default)
-        success, result = wrap_vcf_vep_annotate_gene(
-            VCF_FILE, VCF_CACHE_DIR, VCF_FASTA, no_stats=True
+        success, result = wrap_vcf_vep_annotate_unified(
+            VCF_FILE, VCF_CACHE_DIR, VCF_FASTA, annotate_gene=True, no_stats=True
         )
         assert success is True
         
         # Test with no_stats=False
-        success, result = wrap_vcf_vep_annotate_gene(
-            VCF_FILE, VCF_CACHE_DIR, VCF_FASTA, no_stats=False
+        success, result = wrap_vcf_vep_annotate_unified(
+            VCF_FILE, VCF_CACHE_DIR, VCF_FASTA, annotate_gene=True, no_stats=False
         )
         assert success is True
     
     def test_missing_files_raise_filenotfounderror(self):
         """Test missing files raise FileNotFoundError"""
         with pytest.raises(FileNotFoundError, match="VCF file not found"):
-            wrap_vcf_vep_annotate_gene("nonexistent.vcf", VCF_CACHE_DIR, VCF_FASTA)
+            wrap_vcf_vep_annotate_unified("nonexistent.vcf", VCF_CACHE_DIR, VCF_FASTA, annotate_gene=True)
         
         with pytest.raises(FileNotFoundError, match="Cache directory not found"):
-            wrap_vcf_vep_annotate_gene(VCF_FILE, "nonexistent_cache", VCF_FASTA)
+            wrap_vcf_vep_annotate_unified(VCF_FILE, "nonexistent_cache", VCF_FASTA, annotate_gene=True)
         
         with pytest.raises(FileNotFoundError, match="FASTA file not found"):
-            wrap_vcf_vep_annotate_gene(VCF_FILE, VCF_CACHE_DIR, "nonexistent.fa")
+            wrap_vcf_vep_annotate_unified(VCF_FILE, VCF_CACHE_DIR, "nonexistent.fa", annotate_gene=True)
+
+
+class TestWrapVcfVepAnnotateUnified:
+    """Tests for wrap_vcf_vep_annotate_unified function"""
+    
+    def test_validation_no_annotation_enabled(self):
+        """Test that ValueError is raised when no annotation is enabled"""
+        with pytest.raises(ValueError, match="At least one annotation option must be enabled"):
+            wrap_vcf_vep_annotate_unified(
+                VCF_FILE, VCF_CACHE_DIR, VCF_FASTA,
+                annotate_protein=False, annotate_gene=False, annotate_variant_class=False
+            )
+    
+    def test_protein_annotation_only(self):
+        """Test protein annotation only"""
+        # Skip test if VEP is not available or files don't exist
+        try:
+            subprocess.run(["vep", "--help"], check=True, capture_output=True)
+        except (subprocess.CalledProcessError, FileNotFoundError):
+            pytest.skip("VEP not available")
+        
+        if not all(Path(f).exists() for f in [VCF_FILE, VCF_CACHE_DIR, VCF_FASTA]):
+            pytest.skip("Required real files not found")
+        
+        success, result = wrap_vcf_vep_annotate_unified(
+            VCF_FILE, VCF_CACHE_DIR, VCF_FASTA, annotate_protein=True
+        )
+        
+        assert success is True
+        assert "VEP output file:" in result
+        assert "protein" in result.lower()
+    
+    def test_gene_annotation_only(self):
+        """Test gene annotation only"""
+        # Skip test if VEP is not available or files don't exist
+        try:
+            subprocess.run(["vep", "--help"], check=True, capture_output=True)
+        except (subprocess.CalledProcessError, FileNotFoundError):
+            pytest.skip("VEP not available")
+        
+        if not all(Path(f).exists() for f in [VCF_FILE, VCF_CACHE_DIR, VCF_FASTA]):
+            pytest.skip("Required real files not found")
+        
+        success, result = wrap_vcf_vep_annotate_unified(
+            VCF_FILE, VCF_CACHE_DIR, VCF_FASTA, annotate_gene=True
+        )
+        
+        assert success is True
+        assert "VEP output file:" in result
+        assert "gene" in result.lower()
+    
+    def test_variant_class_annotation_only(self):
+        """Test variant class annotation only"""
+        # Skip test if VEP is not available or files don't exist
+        try:
+            subprocess.run(["vep", "--help"], check=True, capture_output=True)
+        except (subprocess.CalledProcessError, FileNotFoundError):
+            pytest.skip("VEP not available")
+        
+        if not all(Path(f).exists() for f in [VCF_FILE, VCF_CACHE_DIR, VCF_FASTA]):
+            pytest.skip("Required real files not found")
+        
+        success, result = wrap_vcf_vep_annotate_unified(
+            VCF_FILE, VCF_CACHE_DIR, VCF_FASTA, annotate_variant_class=True
+        )
+        
+        assert success is True
+        assert "VEP output file:" in result
+        assert "variant_class" in result.lower()
+    
+    def test_combined_annotations(self):
+        """Test combining multiple annotation types"""
+        # Skip test if VEP is not available or files don't exist
+        try:
+            subprocess.run(["vep", "--help"], check=True, capture_output=True)
+        except (subprocess.CalledProcessError, FileNotFoundError):
+            pytest.skip("VEP not available")
+        
+        if not all(Path(f).exists() for f in [VCF_FILE, VCF_CACHE_DIR, VCF_FASTA]):
+            pytest.skip("Required real files not found")
+        
+        success, result = wrap_vcf_vep_annotate_unified(
+            VCF_FILE, VCF_CACHE_DIR, VCF_FASTA,
+            annotate_protein=True, annotate_gene=True, annotate_variant_class=True
+        )
+        
+        assert success is True
+        assert "VEP output file:" in result
+        assert "protein" in result.lower()
+        assert "gene" in result.lower()
+        assert "variant_class" in result.lower()
+    
+    def test_gene_annotation_with_distance(self):
+        """Test gene annotation with distance parameter"""
+        # Skip test if VEP is not available or files don't exist
+        try:
+            subprocess.run(["vep", "--help"], check=True, capture_output=True)
+        except (subprocess.CalledProcessError, FileNotFoundError):
+            pytest.skip("VEP not available")
+        
+        if not all(Path(f).exists() for f in [VCF_FILE, VCF_CACHE_DIR, VCF_FASTA]):
+            pytest.skip("Required real files not found")
+        
+        success, result = wrap_vcf_vep_annotate_unified(
+            VCF_FILE, VCF_CACHE_DIR, VCF_FASTA, 
+            annotate_gene=True, distance=5000
+        )
+        
+        assert success is True
+        assert "VEP output file:" in result
+    
+    def test_no_stats_parameter(self):
+        """Test no_stats parameter"""
+        # Skip test if VEP is not available or files don't exist
+        try:
+            subprocess.run(["vep", "--help"], check=True, capture_output=True)
+        except (subprocess.CalledProcessError, FileNotFoundError):
+            pytest.skip("VEP not available")
+        
+        if not all(Path(f).exists() for f in [VCF_FILE, VCF_CACHE_DIR, VCF_FASTA]):
+            pytest.skip("Required real files not found")
+        
+        # Test with no_stats=True (default)
+        success, result = wrap_vcf_vep_annotate_unified(
+            VCF_FILE, VCF_CACHE_DIR, VCF_FASTA, 
+            annotate_protein=True, no_stats=True
+        )
+        assert success is True
+        
+        # Test with no_stats=False
+        success, result = wrap_vcf_vep_annotate_unified(
+            VCF_FILE, VCF_CACHE_DIR, VCF_FASTA, 
+            annotate_protein=True, no_stats=False
+        )
+        assert success is True
+    
+    def test_missing_files_raise_filenotfounderror(self):
+        """Test missing files raise FileNotFoundError"""
+        with pytest.raises(FileNotFoundError, match="VCF file not found"):
+            wrap_vcf_vep_annotate_unified("nonexistent.vcf", VCF_CACHE_DIR, VCF_FASTA, annotate_protein=True)
+        
+        with pytest.raises(FileNotFoundError, match="Cache directory not found"):
+            wrap_vcf_vep_annotate_unified(VCF_FILE, "nonexistent_cache", VCF_FASTA, annotate_protein=True)
+        
+        with pytest.raises(FileNotFoundError, match="FASTA file not found"):
+            wrap_vcf_vep_annotate_unified(VCF_FILE, VCF_CACHE_DIR, "nonexistent.fa", annotate_protein=True)
 
 
 class TestGeneralLogging:
