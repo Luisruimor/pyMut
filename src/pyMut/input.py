@@ -1070,57 +1070,64 @@ def read_vcf(
             logger.warning(f"Error expanding VEP CSQ annotations: {e}")
 
     # ─── 9.5.5) GENERATE HUGO_SYMBOL FROM VEP_SYMBOL AND VEP_NEAREST ────────
-    logger.info("Generating Hugo_Symbol column from VEP_SYMBOL and VEP_NEAREST...")
-    try:
-        hugo_symbol_start = time.time()
-        
-        has_vep_symbol = 'VEP_SYMBOL' in vcf.columns
-        has_vep_nearest = 'VEP_NEAREST' in vcf.columns
-        
-        if has_vep_symbol or has_vep_nearest:
-            def generate_hugo_symbol(row):
-                """Generate Hugo_Symbol based on VEP_SYMBOL and VEP_NEAREST availability and values."""
-                vep_symbol = row.get('VEP_SYMBOL', '') if has_vep_symbol else ''
-                vep_nearest = row.get('VEP_NEAREST', '') if has_vep_nearest else ''
+    # Check if Hugo_Symbol already exists
+    if 'Hugo_Symbol' in vcf.columns:
+        logger.info("Hugo_Symbol column already exists, skipping generation")
+    else:
+        logger.info("Generating Hugo_Symbol column from VEP_SYMBOL and VEP_NEAREST...")
+        try:
+            hugo_symbol_start = time.time()
+            
+            has_vep_symbol = 'VEP_SYMBOL' in vcf.columns
+            has_vep_nearest = 'VEP_NEAREST' in vcf.columns
+            
+            if has_vep_symbol or has_vep_nearest:
+                # Generate Hugo_Symbol based on VEP_SYMBOL and VEP_NEAREST availability and values
+                vcf['Hugo_Symbol'] = ''
+                
+                # Get VEP_SYMBOL and VEP_NEAREST columns, handling missing columns
+                vep_symbol_series = vcf['VEP_SYMBOL'] if has_vep_symbol else pd.Series([''] * len(vcf), index=vcf.index)
+                vep_nearest_series = vcf['VEP_NEAREST'] if has_vep_nearest else pd.Series([''] * len(vcf), index=vcf.index)
                 
                 # Convert None, NaN, or null-like values to empty strings for comparison
-                if pd.isna(vep_symbol) or vep_symbol in [None, 'None', 'null', 'NULL']:
-                    vep_symbol = ''
-                if pd.isna(vep_nearest) or vep_nearest in [None, 'None', 'null', 'NULL']:
-                    vep_nearest = ''
+                vep_symbol_clean = vep_symbol_series.fillna('').astype(str)
+                vep_symbol_clean = vep_symbol_clean.replace(['None', 'null', 'NULL'], '')
+                
+                vep_nearest_clean = vep_nearest_series.fillna('').astype(str)
+                vep_nearest_clean = vep_nearest_clean.replace(['None', 'null', 'NULL'], '')
                 
                 # Apply the logic from the requirements
                 if has_vep_symbol and not has_vep_nearest:
                     # Only VEP_SYMBOL exists, use it
-                    return vep_symbol
+                    vcf['Hugo_Symbol'] = vep_symbol_clean
                 elif has_vep_symbol and has_vep_nearest:
                     # Both exist, use VEP_SYMBOL unless it's empty, then use VEP_NEAREST
-                    return vep_symbol if vep_symbol else vep_nearest
+                    vcf['Hugo_Symbol'] = vep_symbol_clean.where(vep_symbol_clean != '', vep_nearest_clean)
                 elif not has_vep_symbol and has_vep_nearest:
                     # Only VEP_NEAREST exists, use it
-                    return vep_nearest
+                    vcf['Hugo_Symbol'] = vep_nearest_clean
                 else:
-                    # Neither exists
-                    return ''
-            
-            # Apply the function to generate Hugo_Symbol
-            vcf['Hugo_Symbol'] = vcf.apply(generate_hugo_symbol, axis=1)
-            
-            logger.info("Hugo_Symbol column generated in %.2f s", 
-                       time.time() - hugo_symbol_start)
-            logger.debug(f"Hugo_Symbol: VEP_SYMBOL available: {has_vep_symbol}, VEP_NEAREST available: {has_vep_nearest}")
-            
-            # Log some statistics
-            non_empty_count = (vcf['Hugo_Symbol'] != '').sum()
-            logger.debug(f"Hugo_Symbol: {non_empty_count} non-empty values out of {len(vcf)} total rows")
-        else:
-            logger.debug("Neither VEP_SYMBOL nor VEP_NEAREST columns found, skipping Hugo_Symbol generation")
-            
-    except Exception as e:
-        logger.warning(f"Error generating Hugo_Symbol: {e}")
+                    # Neither exists (this case shouldn't happen due to the if condition above)
+                    vcf['Hugo_Symbol'] = ''
+                
+                logger.info("Hugo_Symbol column generated in %.2f s", 
+                           time.time() - hugo_symbol_start)
+                logger.debug(f"Hugo_Symbol: VEP_SYMBOL available: {has_vep_symbol}, VEP_NEAREST available: {has_vep_nearest}")
+                
+                # Log some statistics
+                non_empty_count = (vcf['Hugo_Symbol'] != '').sum()
+                logger.debug(f"Hugo_Symbol: {non_empty_count} non-empty values out of {len(vcf)} total rows")
+            else:
+                logger.debug("Neither VEP_SYMBOL nor VEP_NEAREST columns found, skipping Hugo_Symbol generation")
+                
+        except Exception as e:
+            logger.warning(f"Error generating Hugo_Symbol: {e}")
 
     # ─── 9.6) GENERATE VARIANT_CLASSIFICATION FROM VEP DATA ─────────────────
-    if "VEP_Consequence" in vcf.columns and "VEP_VARIANT_CLASS" in vcf.columns:
+    # Check if Variant_Classification already exists
+    if 'Variant_Classification' in vcf.columns:
+        logger.info("Variant_Classification column already exists, skipping generation")
+    elif "VEP_Consequence" in vcf.columns and "VEP_VARIANT_CLASS" in vcf.columns:
         logger.info("Generating Variant_Classification from VEP_Consequence and VEP_VARIANT_CLASS...")
         try:
             variant_classification_start = time.time()
@@ -1176,7 +1183,10 @@ def read_vcf(
     logger.debug("Variant_Classification values normalized to uppercase")
 
     # ─── 9.8) GENERATE VARIANT_TYPE FROM VEP VARIANT_CLASS ──────────────────
-    if "VEP_VARIANT_CLASS" in vcf.columns:
+    # Check if Variant_Type already exists
+    if 'Variant_Type' in vcf.columns:
+        logger.info("Variant_Type column already exists, skipping generation")
+    elif "VEP_VARIANT_CLASS" in vcf.columns:
         logger.info("Generating Variant_Type from VEP_VARIANT_CLASS...")
         try:
             variant_type_start = time.time()
