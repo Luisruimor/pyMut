@@ -21,7 +21,7 @@ Main functions:
 """
 
 import warnings
-from typing import Dict, List, Optional, Set, Tuple, Union
+from typing import Dict, List, Optional, Set, Tuple, Union, TYPE_CHECKING
 
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
@@ -34,8 +34,8 @@ from ..utils.constants import (
     DEFAULT_ONCOPLOT_FIGSIZE, DEFAULT_ONCOPLOT_TOP_GENES, DEFAULT_ONCOPLOT_MAX_SAMPLES
 )
 
-# Importar la función de top mutated genes del módulo summary
-from .summary import create_top_mutated_genes_plot
+if TYPE_CHECKING:
+    from ..core import PyMutation
 
 def is_mutated(genotype: str, ref: str, alt: str) -> bool:
     """
@@ -329,7 +329,7 @@ def process_mutation_matrix(data: pd.DataFrame,
     
     return mutation_matrix, mutation_counts
 
-def create_oncoplot_plot(data: pd.DataFrame,
+def _create_oncoplot_plot(py_mut: 'PyMutation',
                          gene_column: str = GENE_COLUMN,
                          variant_column: str = VARIANT_CLASSIFICATION_COLUMN,
                          ref_column: str = REF_COLUMN,
@@ -350,7 +350,7 @@ def create_oncoplot_plot(data: pd.DataFrame,
     - Waterfall/cascade sorting algorithm for visual effect
     
     Args:
-        data: DataFrame with mutation data
+        py_mut: PyMutation object with mutation data.
         gene_column: Name of the gene column (default 'Hugo_Symbol')
         variant_column: Name of the variant classification column
         ref_column: Name of the reference allele column
@@ -371,6 +371,7 @@ def create_oncoplot_plot(data: pd.DataFrame,
         >>> fig = create_oncoplot_plot(mutation_data, top_genes_count=20)
         >>> fig.savefig('complete_oncoplot.png', dpi=300, bbox_inches='tight')
     """
+    data = py_mut.data
     try:
         # Process data into mutation matrix
         mutation_matrix, mutation_counts = process_mutation_matrix(
@@ -414,7 +415,7 @@ def create_oncoplot_plot(data: pd.DataFrame,
         value_to_num = {value: i for i, value in enumerate(unique_values)}
         
         # Convert to numeric matrix (0 = 'None', >0 = mutation)
-        numeric_matrix = plot_matrix.applymap(lambda x: value_to_num[x])
+        numeric_matrix = plot_matrix.replace(value_to_num)
         waterfall_matrix = numeric_matrix.copy()
         
         # STEP 2: Sort genes by frequency (as in maftools)
@@ -619,6 +620,11 @@ def create_oncoplot_plot(data: pd.DataFrame,
                 # Therefore, we reverse the DataFrame to match visually
                 df_stacked = df_stacked.iloc[::-1]  # Reverse row order
                 
+                # Ensure numeric columns are float to avoid FutureWarning
+                for col in df_stacked.columns:
+                    if pd.api.types.is_numeric_dtype(df_stacked[col]):
+                        df_stacked[col] = df_stacked[col].astype(float)
+                
                 # Calculate totals and percentages for each gene
                 gene_totals = df_stacked.sum(axis=1)
                 total_samples = len(plot_matrix.columns)
@@ -629,8 +635,9 @@ def create_oncoplot_plot(data: pd.DataFrame,
                     total_affected = gene_totals[gene]
                     percentage = (total_affected / total_samples) * 100
                     # Scale each variant proportionally so sum equals total percentage
-                    if total_affected > 0:
+                    if total_affected > 0: # Avoid division by zero
                         scaling_factor = percentage / total_affected
+                        # Apply scaling directly to the row
                         df_percentage.loc[gene] = df_percentage.loc[gene] * scaling_factor
                 
                 # Create color mapping synchronized with main heatmap
