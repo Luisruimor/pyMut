@@ -25,6 +25,7 @@ from .filters.tissue_expression import filter_by_tissue_expression
 from .analysis.pfam_annotation import (
     annotate_pfam, pfam_domains,
 )
+from .annotate.cosmic_cancer_annotate import knownCancer
 
 class MutationMetadata:
     """
@@ -638,3 +639,4 @@ PyMutation.filter_by_chrom_sample = filter_by_chrom_sample
 PyMutation.filter_by_tissue_expression = filter_by_tissue_expression
 PyMutation.annotate_pfam = annotate_pfam
 PyMutation.pfam_domains = pfam_domains
+PyMutation.cosmic_cancer_annotate = knownCancer
