@@ -217,6 +217,104 @@ def _classify_variant(row):
     # --- otros (raro) ----------------------------------------------------
     return 'RNA'
 
+def _map_vep_variant_class_to_maf_variant_type(row):
+    """
+    Map VEP variant_class to MAF Variant_Type according to translation rules.
+    
+    Translation rules:
+    - SNV → SNP
+    - substitution → ONP (with length rules for DNP/TNP)
+    - insertion → INS
+    - deletion → DEL
+    - indel → IND (new category)
+    - inversion → INV
+    - copy_number_variation → CNV
+    - If no rule matches → UNKNOWN
+    
+    Length rules for alleles (REF vs ALT):
+    - If len(REF) == len(ALT) and length = 1 → SNP
+    - If equal lengths ≥ 2 → substitution; subdivide as:
+      • 2 bp → DNP  • 3 bp → TNP  • ≥ 4 bp → ONP
+    - If len(REF) == 0 after VCF normalization → INS
+    - If len(ALT) == 0 → DEL
+    - If both lengths > 0 and different → true mixed indel → IND
+    
+    Parameters
+    ----------
+    row : pd.Series
+        Row containing 'VEP_VARIANT_CLASS', 'REF', 'ALT' columns
+    
+    Returns
+    -------
+    str
+        Variant_Type in MAF format
+    """
+    vep_variant_class = row.get('VEP_VARIANT_CLASS', '')
+    ref = str(row.get('REF', ''))
+    alt = str(row.get('ALT', ''))
+    
+    # Handle missing or empty values
+    if not vep_variant_class or vep_variant_class in ['', '.', 'nan', 'None']:
+        vep_variant_class = ''
+    if not ref or ref in ['.', 'nan', 'None']:
+        ref = ''
+    if not alt or alt in ['.', 'nan', 'None']:
+        alt = ''
+    
+    # Calculate lengths
+    ref_len = len(ref)
+    alt_len = len(alt)
+    
+    # First, handle specific VEP variant classes that should not be overridden by length rules
+    vep_to_maf_map = {
+        'SNV': 'SNP',
+        'insertion': 'INS',
+        'deletion': 'DEL',
+        'indel': 'IND',
+        'inversion': 'INV',
+        'copy_number_variation': 'CNV'
+    }
+    
+    # If we have a direct VEP mapping (except substitution), use it
+    if vep_variant_class in vep_to_maf_map:
+        return vep_to_maf_map[vep_variant_class]
+    
+    # Handle substitution with length-based rules
+    if vep_variant_class == 'substitution':
+        if ref_len == alt_len:
+            if ref_len == 1:
+                return 'SNP'
+            elif ref_len == 2:
+                return 'DNP'
+            elif ref_len == 3:
+                return 'TNP'
+            else:  # >= 4
+                return 'ONP'
+        else:
+            # Different lengths for substitution - treat as mixed indel
+            return 'IND'
+    
+    # If no VEP class or unknown VEP class, apply length-based rules as fallback
+    # This handles cases where VEP_VARIANT_CLASS is missing, empty, or not in our known mappings
+    if ref_len == alt_len and ref_len == 1:
+        return 'SNP'
+    elif ref_len == alt_len and ref_len >= 2:
+        if ref_len == 2:
+            return 'DNP'
+        elif ref_len == 3:
+            return 'TNP'
+        else:
+            return 'ONP'
+    elif ref_len == 0:
+        return 'INS'
+    elif alt_len == 0:
+        return 'DEL'
+    elif ref_len > 0 and alt_len > 0 and ref_len != alt_len:
+        return 'IND'
+    
+    # If nothing matches, return UNKNOWN
+    return 'UNKNOWN'
+
 def _vectorized_gt_to_alleles(gt_series: pd.Series, ref_series: pd.Series, alt_series: pd.Series) -> pd.Series:
     """Convert genotypes to alleles using vectorized operations."""
     gt_array = gt_series.astype(str).values
@@ -1027,10 +1125,53 @@ def read_vcf(
     vcf = normalize_variant_classification(vcf)
     logger.debug("Variant_Classification values normalized to uppercase")
 
+    # ─── 9.8) GENERATE VARIANT_TYPE FROM VEP VARIANT_CLASS ──────────────────
+    if "VEP_VARIANT_CLASS" in vcf.columns:
+        logger.info("Generating Variant_Type from VEP_VARIANT_CLASS...")
+        try:
+            variant_type_start = time.time()
+            
+            # Apply variant type mapping function
+            vcf['Variant_Type'] = vcf.apply(_map_vep_variant_class_to_maf_variant_type, axis=1)
+            
+            # Fill any NaN values with 'UNKNOWN'
+            vcf['Variant_Type'] = vcf['Variant_Type'].fillna('UNKNOWN')
+            
+            # Convert to categorical for memory efficiency and ordering
+            unique_variant_types = vcf['Variant_Type'].unique()
+            logger.debug(f"Unique Variant_Type values: {unique_variant_types}")
+            
+            # Define ordered categories for Variant_Type
+            variant_type_categories = [
+                'SNP', 'DNP', 'TNP', 'ONP',  # Substitutions
+                'INS', 'DEL', 'IND',         # Indels
+                'INV', 'CNV',                # Structural variants
+                'UNKNOWN'                    # Fallback
+            ]
+            
+            # Add any unique values that aren't in our predefined categories
+            for val in unique_variant_types:
+                if val not in variant_type_categories and pd.notna(val):
+                    variant_type_categories.append(val)
+            
+            vcf['Variant_Type'] = pd.Categorical(
+                vcf['Variant_Type'],
+                categories=variant_type_categories,
+                ordered=True
+            )
+            
+            logger.info("Variant_Type generated in %.2f s", 
+                       time.time() - variant_type_start)
+            
+        except Exception as e:
+            logger.warning(f"Error generating Variant_Type: {e}")
+    else:
+        logger.debug("VEP_VARIANT_CLASS column not found, skipping Variant_Type generation")
+
     # ─── 10) VECTORIZED GENOTYPE CONVERSION ─────────────────────────────────
     standard_vcf_cols = {"CHROM", "POS", "ID", "REF", "ALT", "QUAL", "FILTER", "INFO", "FORMAT"}
     all_columns = vcf.columns.tolist()
-    sample_columns = [col for col in all_columns if col not in standard_vcf_cols and not col.startswith(("AC", "AF", "AN", "DP", "FUNCOTATION", "VEP_")) and col != "Variant_Classification"]
+    sample_columns = [col for col in all_columns if col not in standard_vcf_cols and not col.startswith(("AC", "AF", "AN", "DP", "FUNCOTATION", "VEP_")) and col not in ("Variant_Classification", "Variant_Type")]
 
     logger.info("Detected %d sample columns. Starting vectorized genotype conversion...", len(sample_columns))
 
