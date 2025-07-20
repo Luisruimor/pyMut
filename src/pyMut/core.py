@@ -639,4 +639,4 @@ PyMutation.filter_by_chrom_sample = filter_by_chrom_sample
 PyMutation.filter_by_tissue_expression = filter_by_tissue_expression
 PyMutation.annotate_pfam = annotate_pfam
 PyMutation.pfam_domains = pfam_domains
-PyMutation.cosmic_cancer_annotate = knownCancer
+PyMutation.knownCancer = knownCancer

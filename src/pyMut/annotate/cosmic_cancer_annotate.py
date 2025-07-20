@@ -262,7 +262,7 @@ def _apply_synonyms_mapping(maf_df: pd.DataFrame, maf_join_col: str, synonyms_di
         maf_df['_mapped_gene_symbol'] = maf_df[maf_join_col]
         return maf_df
 
-    logger.info("Applying synonyms mapping to MAF data...")
+    logger.info("Applying synonyms mapping to PyMutation data...")
 
     maf_df = maf_df.copy()
     maf_df['_mapped_gene_symbol'] = maf_df[maf_join_col].map(
@@ -294,10 +294,10 @@ def _annotate_with_pandas(
 
     maf_join_col = find_alias(maf_df.columns, join_column)
     if maf_join_col is None:
-        logger.error(f"Join column '{join_column}' not found in MAF file. Available columns: {list(maf_df.columns)}")
-        raise ValueError(f"Join column '{join_column}' not found in MAF file. Available columns: {list(maf_df.columns)}")
+        logger.error(f"Join column '{join_column}' not found in data file. Available columns: {list(maf_df.columns)}")
+        raise ValueError(f"Join column '{join_column}' not found in data file. Available columns: {list(maf_df.columns)}")
 
-    logger.info(f"Using MAF join column: {maf_join_col}")
+    logger.info(f"Using join column: {maf_join_col}")
 
     logger.info(f"Reading annotation table: {annotation_table}")
     annotation_df = _read_file_auto(annotation_table, sep='\t', low_memory=False)
@@ -333,7 +333,13 @@ def _annotate_with_pandas(
 
     cosmic_columns = [col for col in result_df.columns if col.startswith('COSMIC_')]
     for col in cosmic_columns:
-        result_df[col] = result_df[col].fillna("")
+        # Always use empty string for COSMIC_TIER to ensure Is_Oncogene_any calculates correctly
+        if col == 'COSMIC_TIER':
+            result_df[col] = result_df[col].fillna("")
+        elif pd.api.types.is_numeric_dtype(result_df[col]):
+            result_df[col] = result_df[col].fillna(pd.NA)
+        else:
+            result_df[col] = result_df[col].fillna("")
 
     logger.info(f"COSMIC annotation completed: {result_df.shape[0]} rows, {result_df.shape[1]} columns")
     logger.info(f"Added {len(cosmic_columns)} COSMIC annotation columns")
@@ -374,7 +380,10 @@ def _annotate_with_pandas(
 
         oncokb_columns = [col for col in result_df.columns if col.startswith('OncoKB_')]
         for col in oncokb_columns:
-            result_df[col] = result_df[col].fillna("")
+            if pd.api.types.is_numeric_dtype(result_df[col]):
+                result_df[col] = result_df[col].fillna(pd.NA)
+            else:
+                result_df[col] = result_df[col].fillna("")
 
         logger.info(f"OncoKB annotation completed: {result_df.shape[0]} rows, {result_df.shape[1]} columns")
         logger.info(f"Added {len(oncokb_columns)} OncoKB annotation columns")
@@ -402,10 +411,10 @@ def _annotate_with_duckdb(
 
     maf_join_col = find_alias(maf_df.columns, join_column)
     if maf_join_col is None:
-        logger.error(f"Join column '{join_column}' not found in MAF file. Available columns: {list(maf_df.columns)}")
-        raise ValueError(f"Join column '{join_column}' not found in MAF file. Available columns: {list(maf_df.columns)}")
+        logger.error(f"Join column '{join_column}' not found in data file. Available columns: {list(maf_df.columns)}")
+        raise ValueError(f"Join column '{join_column}' not found in data file. Available columns: {list(maf_df.columns)}")
 
-    logger.info(f"Using MAF join column: {maf_join_col}")
+    logger.info(f"Using join column: {maf_join_col}")
 
     logger.info(f"Reading annotation table: {annotation_table}")
     annotation_df = _read_file_auto(annotation_table, sep='\t', low_memory=False)
@@ -445,7 +454,13 @@ def _annotate_with_duckdb(
 
         cosmic_columns = [col for col in result_df.columns if col.startswith('COSMIC_')]
         for col in cosmic_columns:
-            result_df[col] = result_df[col].fillna("")
+            # Always use empty string for COSMIC_TIER to ensure Is_Oncogene_any calculates correctly
+            if col == 'COSMIC_TIER':
+                result_df[col] = result_df[col].fillna("")
+            elif pd.api.types.is_numeric_dtype(result_df[col]):
+                result_df[col] = result_df[col].fillna(pd.NA)
+            else:
+                result_df[col] = result_df[col].fillna("")
 
         logger.info(f"COSMIC annotation completed: {result_df.shape[0]} rows, {result_df.shape[1]} columns")
         logger.info(f"Added {len(cosmic_columns)} COSMIC annotation columns")
@@ -487,7 +502,10 @@ def _annotate_with_duckdb(
 
             oncokb_columns = [col for col in result_df.columns if col.startswith('OncoKB_')]
             for col in oncokb_columns:
-                result_df[col] = result_df[col].fillna("")
+                if pd.api.types.is_numeric_dtype(result_df[col]):
+                    result_df[col] = result_df[col].fillna(pd.NA)
+                else:
+                    result_df[col] = result_df[col].fillna("")
 
             logger.info(f"OncoKB annotation completed: {result_df.shape[0]} rows, {result_df.shape[1]} columns")
             logger.info(f"Added {len(oncokb_columns)} OncoKB annotation columns")
@@ -551,28 +569,28 @@ def knownCancer(
     # Calculate DataFrame memory usage to decide backend
     data_memory_mb = self.data.memory_usage(deep=True).sum() / (1024 * 1024)
     data_memory_gb = data_memory_mb / 1024
-    use_duckdb = data_memory_gb > 2.0
+    # use_duckdb = data_memory_gb > 2.0  # DuckDB option disabled
     
     logger.info(f"DataFrame memory usage: {data_memory_gb:.2f} GB")
-    logger.info(f"Using {'DuckDB' if use_duckdb else 'pandas'} backend for annotation")
+    logger.info(f"Using pandas backend for annotation")
 
-    # Get full annotations using the appropriate backend
-    if use_duckdb:
-        full_df = _annotate_with_duckdb(
-            data=self.data,
-            annotation_table=Path(annotation_table),
-            join_column=join_column,
-            synonyms_column="SYNONYMS",
-            oncokb_table=Path(oncokb_table) if oncokb_table else None
-        )
-    else:
-        full_df = _annotate_with_pandas(
-            data=self.data,
-            annotation_table=Path(annotation_table),
-            join_column=join_column,
-            synonyms_column="SYNONYMS",
-            oncokb_table=Path(oncokb_table) if oncokb_table else None
-        )
+    # Get full annotations using pandas backend
+    # if use_duckdb:  # DuckDB option disabled
+    #     full_df = _annotate_with_duckdb(
+    #         data=self.data,
+    #         annotation_table=Path(annotation_table),
+    #         join_column=join_column,
+    #         synonyms_column="SYNONYMS",
+    #         oncokb_table=Path(oncokb_table) if oncokb_table else None
+    #     )
+    # else:
+    full_df = _annotate_with_pandas(
+        data=self.data,
+        annotation_table=Path(annotation_table),
+        join_column=join_column,
+        synonyms_column="SYNONYMS",
+        oncokb_table=Path(oncokb_table) if oncokb_table else None
+    )
 
     # Define the specific columns we want to keep
     target_columns = [
@@ -588,7 +606,7 @@ def knownCancer(
         "OncoKB_Vogelstein"
     ]
 
-    # Get original MAF columns
+    # Get original data columns
     original_columns = [col for col in full_df.columns if not (col.startswith('COSMIC_') or col.startswith('OncoKB_'))]
 
     # Filter to keep only original columns plus target annotation columns
@@ -606,8 +624,17 @@ def knownCancer(
     oncokb_is_oncogene_bool = oncokb_oncogene.astype(str).str.lower().isin(['true', '1', 'yes'])
 
     # COSMIC annotation exists if ROLE_IN_CANCER or TIER is not empty
-    cosmic_role_has_annotation = cosmic_role.astype(str).str.strip() != ''
-    cosmic_tier_has_annotation = cosmic_tier.astype(str).str.strip() != ''
+    # Handle pd.NA values and "<NA>" strings as empty
+    def _is_not_empty_or_na(series):
+        """Check if series has meaningful values (not empty, not NA, not '<NA>')"""
+        return (
+            series.notna() & 
+            (series.astype(str).str.strip() != '') & 
+            (series.astype(str).str.strip() != '<NA>')
+        )
+    
+    cosmic_role_has_annotation = _is_not_empty_or_na(cosmic_role)
+    cosmic_tier_has_annotation = _is_not_empty_or_na(cosmic_tier)
     cosmic_has_annotation = cosmic_role_has_annotation | cosmic_tier_has_annotation
 
     # Is_Oncogene_any is True if either source indicates oncogene status
