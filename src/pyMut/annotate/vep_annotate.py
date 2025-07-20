@@ -435,53 +435,43 @@ def wrap_vcf_vep_annotate_protein(vcf_file: Union[str, Path],
         return False, str(output_path)
 
 
-def wrap_vcf_vep_annotate_gene(vcf_file: Union[str, Path],
-                               cache_dir: Union[str, Path],
-                               fasta: Union[str, Path],
-                               output_file: Optional[Union[str, Path]] = None,
-                               synonyms_file: Optional[Union[str, Path]] = None,
-                               assembly: Optional[str] = None,
-                               version: Optional[str] = None,
-                               no_stats: bool = True,
-                               distance: Optional[int] = None) -> Tuple[bool, str]:
+def wrap_vcf_vep_annotate_unified(vcf_file: Union[str, Path],
+                                cache_dir: Union[str, Path],
+                                fasta: Union[str, Path],
+                                output_file: Optional[Union[str, Path]] = None,
+                                synonyms_file: Optional[Union[str, Path]] = None,
+                                assembly: Optional[str] = None,
+                                version: Optional[str] = None,
+                                no_stats: bool = True,
+                                # New parameters to control annotations
+                                annotate_protein: bool = False,
+                                annotate_gene: bool = False,
+                                annotate_variant_class: bool = False,
+                                distance: Optional[int] = None) -> Tuple[bool, str]:
     """
-    Wrapper method for VEP gene annotation that accepts VCF files directly.
-
-    This method runs VEP annotation directly on VCF files without intermediate conversion,
-    since VEP natively recognizes VCF format (detects header and ALT/REF fields).
-    VEP annotation uses the following fixed parameters:
-    - --vcf (output in VCF format and detects VCF input)
-    - --offline --cache
-    - --symbol
-    - --nearest symbol --distance <distance> (when distance parameter is provided)
-    - --synonyms (automatically constructed from cache directory or provided explicitly)
-    - --pick
-    - --no_stats (only when no_stats=False)
-
-    Assembly and cache version can be provided explicitly or automatically extracted from the cache directory name.
-    The chr_synonyms file path can be provided explicitly or automatically constructed as: cache_dir/homo_sapiens/{version}_{assembly}/chr_synonyms.txt
-
+    Unified method for VEP annotation that allows combining different types of annotation.
+    
     Args:
-        vcf_file: Path to the VCF file to annotate (.vcf or .vcf.gz)
+        vcf_file: Path to the VCF file to annotate
         cache_dir: Path to the VEP cache directory
         fasta: Path to the reference FASTA file
-        output_file: Path to the output file (optional). If None, creates a directory
-                    in the same location as vcf_file with format 'vep_annotation_HHMMDDMMYYYY'
-        synonyms_file: Path to the chromosome synonyms file (optional). If None, automatically
-                      constructed from cache directory structure
-        assembly: Genome assembly name (optional). If None, automatically extracted from cache directory name
-        version: VEP cache version (optional). If None, automatically extracted from cache directory name
-        no_stats: Whether to disable VEP statistics generation (default: True). When True, --no_stats flag is omitted
-        distance: Distance for nearest gene search (optional). When provided, uses --nearest symbol --distance <distance>
-
+        output_file: Path to the output file (optional)
+        synonyms_file: Path to the chromosome synonyms file (optional)
+        assembly: Genome assembly name (optional)
+        version: VEP cache version (optional)
+        no_stats: Whether to disable VEP statistics generation
+        annotate_protein: Whether to include protein annotation (--protein --uniprot --domains --symbol)
+        annotate_gene: Whether to include gene annotation (--symbol)
+        annotate_variant_class: Whether to include variant classification (--variant_class)
+        distance: Distance for nearest gene search (only for annotate_gene)
+    
     Returns:
-        Tuple[bool, str]: (success_status, output_info) where success_status is True 
-                         if annotation was successful, and output_info contains the VEP output file path
-
-    Raises:
-        ValueError: If cache directory name format is invalid and assembly/version not provided
-        FileNotFoundError: If required files don't exist
+        Tuple[bool, str]: (success_status, output_info)
     """
+    # Validation: at least one annotation must be enabled
+    if not any([annotate_protein, annotate_gene, annotate_variant_class]):
+        raise ValueError("At least one annotation option must be enabled")
+    
     vcf_path = Path(vcf_file)
     cache_path = Path(cache_dir)
     fasta_path = Path(fasta)
@@ -494,7 +484,7 @@ def wrap_vcf_vep_annotate_gene(vcf_file: Union[str, Path],
     if not fasta_path.exists():
         raise FileNotFoundError(f"FASTA file not found: {fasta_path}")
 
-    logger.info(f"Starting VEP gene annotation for VCF file: {vcf_path}")
+    logger.info(f"Starting unified VEP annotation for VCF file: {vcf_path}")
 
     # Handle output file creation
     if output_file is None:
@@ -503,7 +493,16 @@ def wrap_vcf_vep_annotate_gene(vcf_file: Union[str, Path],
         output_dir = vcf_path.parent / output_dir_name
         output_dir.mkdir(exist_ok=True)
 
-        output_filename = f"{vcf_path.stem}_vep_gene.vcf"
+        # Create descriptive name based on selected annotations
+        annotations = []
+        if annotate_protein:
+            annotations.append("protein")
+        if annotate_gene:
+            annotations.append("gene")
+        if annotate_variant_class:
+            annotations.append("variant_class")
+        
+        output_filename = f"{vcf_path.stem}_vep_{'_'.join(annotations)}.vcf"
         output_path = output_dir / output_filename
     else:
         output_path = Path(output_file)
@@ -531,11 +530,11 @@ def wrap_vcf_vep_annotate_gene(vcf_file: Union[str, Path],
         chr_synonyms_path = Path(synonyms_file)
         logger.info(f"Using provided chr synonyms path: {chr_synonyms_path}")
 
-    # Construct VEP command for VCF input with gene annotation parameters
+    # Build base VEP command
     vep_cmd = [
         "vep",
         "--input_file", str(vcf_path),
-        "--vcf",  # VCF output and detects VCF input
+        "--vcf",
         "--offline",
         "--cache",
         "--cache_version", version,
@@ -543,130 +542,35 @@ def wrap_vcf_vep_annotate_gene(vcf_file: Union[str, Path],
         "--assembly", assembly,
         "--synonyms", str(chr_synonyms_path),
         "--fasta", str(fasta_path),
-        "--symbol",
         "--pick",
-        "--keep_csq",
         "--force_overwrite",
         "--output_file", str(output_path)
     ]
+
+    # Add specific parameters based on selected options
+    if annotate_protein:
+        vep_cmd.extend(["--protein", "--uniprot", "--domains", "--symbol"])
     
-    # Add --nearest symbol --distance <distance> when distance is provided
-    if distance is not None:
-        vep_cmd.insert(-2, "--nearest")
-        vep_cmd.insert(-2, "symbol")
-        vep_cmd.insert(-2, "--distance")
-        vep_cmd.insert(-2, str(distance))
+    if annotate_gene:
+        if not annotate_protein:  # Avoid duplicating --symbol
+            vep_cmd.append("--symbol")
+        
+        # Add distance parameters if specified
+        if distance is not None:
+            vep_cmd.extend(["--nearest", "symbol", "--distance", str(distance)])
+    
+    if annotate_variant_class:
+        # Add --variant_class WITHOUT --fields to get all variant class fields
+        vep_cmd.append("--variant_class")
     
     # Add --no_stats when no_stats is True
     if no_stats:
-        vep_cmd.insert(-2, "--no_stats")
-
-
-    try:
-        logger.info(f"Running VEP gene annotation: {' '.join(vep_cmd)}")
-        result = subprocess.run(vep_cmd, check=True, capture_output=True, text=True)
-        logger.info("VEP gene annotation completed successfully")
-
-        if result.stderr:
-            logger.warning(f"VEP warnings/messages: {result.stderr}")
-
-        return True, f"VEP output file: {output_path}"
-
-    except (subprocess.CalledProcessError, FileNotFoundError) as e:
-        logger.error(f"VEP gene annotation failed: {e}")
-        if hasattr(e, 'stderr') and e.stderr:
-            logger.error(f"VEP error output: {e.stderr}")
-        return False, str(output_path)
-    except Exception as e:
-        logger.error(f"Unexpected error during VEP gene annotation: {e}")
-        return False, str(output_path)
-
-def wrap_vcf_vep_annotate_variant_classification(vcf_file: Union[str, Path],
-                                               cache_dir: Union[str, Path],
-                                               fasta: Union[str, Path],
-                                               output_file: Optional[Union[str, Path]] = None,
-                                               synonyms_file: Optional[Union[str, Path]] = None,
-                                               assembly: Optional[str] = None,
-                                               version: Optional[str] = None,
-                                               no_stats: bool = True) -> Tuple[bool, str]:
-    """
-
-    """
-    vcf_path = Path(vcf_file)
-    cache_path = Path(cache_dir)
-    fasta_path = Path(fasta)
-
-    # Validate input files
-    if not vcf_path.exists():
-        raise FileNotFoundError(f"VCF file not found: {vcf_path}")
-    if not cache_path.exists():
-        raise FileNotFoundError(f"Cache directory not found: {cache_path}")
-    if not fasta_path.exists():
-        raise FileNotFoundError(f"FASTA file not found: {fasta_path}")
-
-    logger.info(f"Starting VEP gene annotation for VCF file: {vcf_path}")
-
-    # Handle output file creation
-    if output_file is None:
-        timestamp = datetime.now().strftime("%H%M%d%m")
-        output_dir_name = f"vep_annotation_{timestamp}"
-        output_dir = vcf_path.parent / output_dir_name
-        output_dir.mkdir(exist_ok=True)
-
-        output_filename = f"{vcf_path.stem}_vep_variant_class.vcf"
-        output_path = output_dir / output_filename
-    else:
-        output_path = Path(output_file)
-
-    # Extract assembly and version from cache if not provided
-    if assembly is None or version is None:
-        try:
-            extracted_assembly, extracted_version = _extract_assembly_and_version_from_cache(cache_path)
-            if assembly is None:
-                assembly = extracted_assembly
-            if version is None:
-                version = extracted_version
-            logger.info(f"Extracted from cache: assembly={assembly}, version={version}")
-        except ValueError as e:
-            logger.error(f"Failed to extract assembly/version from cache: {e}")
-            raise
-    else:
-        logger.info(f"Using provided: assembly={assembly}, version={version}")
-
-    # Handle chromosome synonyms file
-    if synonyms_file is None:
-        chr_synonyms_path = cache_path / "homo_sapiens" / f"{version}_{assembly}" / "chr_synonyms.txt"
-        logger.info(f"Auto-constructed chr synonyms path: {chr_synonyms_path}")
-    else:
-        chr_synonyms_path = Path(synonyms_file)
-        logger.info(f"Using provided chr synonyms path: {chr_synonyms_path}")
-
-    vep_cmd = [
-        "vep",
-        "--input_file", str(vcf_path),
-        "--output_file", str(output_path),
-        "--vcf",
-        "--offline",
-        "--cache",
-        "--cache_version", version,
-        "--dir_cache", str(cache_path),
-        "--assembly", assembly,
-        "--fasta", str(fasta_path),
-        "--variant_class",
-        "--fields", "Consequence,VARIANT_CLASS"
-    ]
-
-    # Add --no_stats only when no_stats is False
-    if not no_stats:
         vep_cmd.append("--no_stats")
-    
-    # Always add --keep_csq
-    vep_cmd.append("--keep_csq")
 
     try:
-        logger.info(f"Running VEP gene annotation: {' '.join(vep_cmd)}")
+        logger.info(f"Running unified VEP annotation: {' '.join(vep_cmd)}")
         result = subprocess.run(vep_cmd, check=True, capture_output=True, text=True)
-        logger.info("VEP gene annotation completed successfully")
+        logger.info("Unified VEP annotation completed successfully")
 
         if result.stderr:
             logger.warning(f"VEP warnings/messages: {result.stderr}")
@@ -674,10 +578,10 @@ def wrap_vcf_vep_annotate_variant_classification(vcf_file: Union[str, Path],
         return True, f"VEP output file: {output_path}"
 
     except (subprocess.CalledProcessError, FileNotFoundError) as e:
-        logger.error(f"VEP gene annotation failed: {e}")
+        logger.error(f"Unified VEP annotation failed: {e}")
         if hasattr(e, 'stderr') and e.stderr:
             logger.error(f"VEP error output: {e.stderr}")
         return False, str(output_path)
     except Exception as e:
-        logger.error(f"Unexpected error during VEP gene annotation: {e}")
+        logger.error(f"Unexpected error during unified VEP annotation: {e}")
         return False, str(output_path)
