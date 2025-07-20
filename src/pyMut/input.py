@@ -1044,13 +1044,13 @@ def read_vcf(
                             for i, field_name in enumerate(csq_fields):
                                 if i < len(csq_values):
                                     value = csq_values[i].strip()
-                                    row_data[f"VEP_{field_name}"] = value if value else None
+                                    row_data[f"VEP_{field_name}"] = value if value else ""
                                 else:
-                                    row_data[f"VEP_{field_name}"] = None
+                                    row_data[f"VEP_{field_name}"] = ""
                     else:
-                        # Fill with None for missing CSQ data
+                        # Fill with empty strings for missing CSQ data
                         for field_name in csq_fields:
-                            row_data[f"VEP_{field_name}"] = None
+                            row_data[f"VEP_{field_name}"] = ""
                     
                     csq_expanded_data.append(row_data)
                 
@@ -1068,6 +1068,56 @@ def read_vcf(
                 
         except Exception as e:
             logger.warning(f"Error expanding VEP CSQ annotations: {e}")
+
+    # ─── 9.5.5) GENERATE HUGO_SYMBOL FROM VEP_SYMBOL AND VEP_NEAREST ────────
+    logger.info("Generating Hugo_Symbol column from VEP_SYMBOL and VEP_NEAREST...")
+    try:
+        hugo_symbol_start = time.time()
+        
+        has_vep_symbol = 'VEP_SYMBOL' in vcf.columns
+        has_vep_nearest = 'VEP_NEAREST' in vcf.columns
+        
+        if has_vep_symbol or has_vep_nearest:
+            def generate_hugo_symbol(row):
+                """Generate Hugo_Symbol based on VEP_SYMBOL and VEP_NEAREST availability and values."""
+                vep_symbol = row.get('VEP_SYMBOL', '') if has_vep_symbol else ''
+                vep_nearest = row.get('VEP_NEAREST', '') if has_vep_nearest else ''
+                
+                # Convert None, NaN, or null-like values to empty strings for comparison
+                if pd.isna(vep_symbol) or vep_symbol in [None, 'None', 'null', 'NULL']:
+                    vep_symbol = ''
+                if pd.isna(vep_nearest) or vep_nearest in [None, 'None', 'null', 'NULL']:
+                    vep_nearest = ''
+                
+                # Apply the logic from the requirements
+                if has_vep_symbol and not has_vep_nearest:
+                    # Only VEP_SYMBOL exists, use it
+                    return vep_symbol
+                elif has_vep_symbol and has_vep_nearest:
+                    # Both exist, use VEP_SYMBOL unless it's empty, then use VEP_NEAREST
+                    return vep_symbol if vep_symbol else vep_nearest
+                elif not has_vep_symbol and has_vep_nearest:
+                    # Only VEP_NEAREST exists, use it
+                    return vep_nearest
+                else:
+                    # Neither exists
+                    return ''
+            
+            # Apply the function to generate Hugo_Symbol
+            vcf['Hugo_Symbol'] = vcf.apply(generate_hugo_symbol, axis=1)
+            
+            logger.info("Hugo_Symbol column generated in %.2f s", 
+                       time.time() - hugo_symbol_start)
+            logger.debug(f"Hugo_Symbol: VEP_SYMBOL available: {has_vep_symbol}, VEP_NEAREST available: {has_vep_nearest}")
+            
+            # Log some statistics
+            non_empty_count = (vcf['Hugo_Symbol'] != '').sum()
+            logger.debug(f"Hugo_Symbol: {non_empty_count} non-empty values out of {len(vcf)} total rows")
+        else:
+            logger.debug("Neither VEP_SYMBOL nor VEP_NEAREST columns found, skipping Hugo_Symbol generation")
+            
+    except Exception as e:
+        logger.warning(f"Error generating Hugo_Symbol: {e}")
 
     # ─── 9.6) GENERATE VARIANT_CLASSIFICATION FROM VEP DATA ─────────────────
     if "VEP_Consequence" in vcf.columns and "VEP_VARIANT_CLASS" in vcf.columns:
@@ -1171,7 +1221,7 @@ def read_vcf(
     # ─── 10) VECTORIZED GENOTYPE CONVERSION ─────────────────────────────────
     standard_vcf_cols = {"CHROM", "POS", "ID", "REF", "ALT", "QUAL", "FILTER", "INFO", "FORMAT"}
     all_columns = vcf.columns.tolist()
-    sample_columns = [col for col in all_columns if col not in standard_vcf_cols and not col.startswith(("AC", "AF", "AN", "DP", "FUNCOTATION", "VEP_")) and col not in ("Variant_Classification", "Variant_Type")]
+    sample_columns = [col for col in all_columns if col not in standard_vcf_cols and not col.startswith(("AC", "AF", "AN", "DP", "FUNCOTATION", "VEP_")) and col not in ("Variant_Classification", "Variant_Type", "Hugo_Symbol")]
 
     logger.info("Detected %d sample columns. Starting vectorized genotype conversion...", len(sample_columns))
 
