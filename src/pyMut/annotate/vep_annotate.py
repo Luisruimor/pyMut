@@ -588,8 +588,7 @@ def wrap_vcf_vep_annotate_variant_classification(vcf_file: Union[str, Path],
                                                synonyms_file: Optional[Union[str, Path]] = None,
                                                assembly: Optional[str] = None,
                                                version: Optional[str] = None,
-                                               no_stats: bool = True,
-                                               keep_csq: bool = False) -> Tuple[bool, str]:
+                                               no_stats: bool = True) -> Tuple[bool, str]:
     """
 
     """
@@ -659,11 +658,10 @@ def wrap_vcf_vep_annotate_variant_classification(vcf_file: Union[str, Path],
 
     # Add --no_stats only when no_stats is False
     if not no_stats:
-        vep_cmd.insert(-1, "--no_stats")
+        vep_cmd.append("--no_stats")
     
-    # Add --keep_csq when keep_csq is True
-    if keep_csq:
-        vep_cmd.insert(-1, "--keep_csq")
+    # Always add --keep_csq
+    vep_cmd.append("--keep_csq")
 
     try:
         logger.info(f"Running VEP gene annotation: {' '.join(vep_cmd)}")
