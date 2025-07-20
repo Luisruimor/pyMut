@@ -236,8 +236,8 @@ class TestFilterByTissueExpression:
         te_module._rna_cancer_consensus_cache = None
         
         # Create test PyMutation instances
-        self.vcf_path = "/home/luisruimore/Escritorio/TFG/src/pyMut/data/examples/VCF/subset_1k_variants_ALL.chr10.shapeit2_integrated_snvindels_v2a_27022019.GRCh38.phased_VEP_annotated.vcf"
-        self.maf_path = "/home/luisruimore/Escritorio/TFG/src/pyMut/data/examples/MAF/tcga_laml_VEP_annotated.maf.gz"
+        self.vcf_path = "/pyMut/data/examples/VCF/subset_1k_variants_ALL.chr10.shapeit2_integrated_snvindels_v2a_27022019.GRCh38.phased_VEP_annotated.vcf"
+        self.maf_path = "/pyMut/data/examples/MAF/tcga_laml_VEP_annotated.maf.gz"
     
     def test_raises_valueerror_when_tissues_empty(self):
         """Test raises ValueError when tissues list is empty"""
@@ -467,7 +467,7 @@ class TestIntegrationWithRealData:
     @pytest.mark.slow
     def test_vcf_mutation_filtering(self):
         """Test filtering with real VCF PyMutation instance"""
-        vcf_path = "/home/luisruimore/Escritorio/TFG/src/pyMut/data/examples/VCF/subset_1k_variants_ALL.chr10.shapeit2_integrated_snvindels_v2a_27022019.GRCh38.phased_VEP_annotated.vcf"
+        vcf_path = "/pyMut/data/examples/VCF/subset_1k_variants_ALL.chr10.shapeit2_integrated_snvindels_v2a_27022019.GRCh38.phased_VEP_annotated.vcf"
         
         # This test requires the actual read_vcf function to work
         try:
@@ -511,7 +511,7 @@ class TestIntegrationWithRealData:
     @pytest.mark.slow
     def test_maf_mutation_filtering(self):
         """Test filtering with real MAF PyMutation instance"""
-        maf_path = "/home/luisruimore/Escritorio/TFG/src/pyMut/data/examples/MAF/tcga_laml_VEP_annotated.maf.gz"
+        maf_path = "/pyMut/data/examples/MAF/tcga_laml_VEP_annotated.maf.gz"
         
         # This test requires the actual read_maf function to work
         try:

@@ -47,6 +47,58 @@ if not logger.handlers:
 required_columns_VCF: List[str] = ["CHROM", "POS", "ID", "REF", "ALT", "FILTER"]
 _required_canonical_VCF = {c.lower(): c for c in required_columns_VCF}
 
+RANK_SEVERE = [
+    # HIGH
+    "stop_gained", "stop_lost", "frameshift_variant",
+    "start_lost",
+    "splice_donor_variant", "splice_acceptor_variant",
+    "splice_donor_region_variant", "splice_donor_5th_base_variant",
+    "splice_region_variant", "splice_polypyrimidine_tract_variant",
+    # MODERATE
+    "inframe_deletion", "inframe_insertion",
+    "missense_variant", "protein_altering_variant",
+    "synonymous_variant", "stop_retained_variant", "start_retained_variant",
+    "incomplete_terminal_codon_variant",
+    # LOW/MODIFIER – UTRs, CDS, etc.
+    "5_prime_UTR_variant", "3_prime_UTR_variant", "coding_sequence_variant",
+    "intron_variant", "non_coding_transcript_exon_variant",
+    "non_coding_transcript_variant", "NMD_transcript_variant",
+    "mature_miRNA_variant",
+    "upstream_gene_variant", "downstream_gene_variant",
+    "intergenic_variant",
+    # Reguladoras
+    "regulatory_region_variant", "TF_binding_site_variant"
+]
+rank_ser = pd.Series(range(len(RANK_SEVERE)), index=RANK_SEVERE)
+
+MAP_SNV = {
+    "stop_gained":       "Nonsense_Mutation",
+    "stop_lost":         "Nonstop_Mutation",
+    "stop_retained_variant": "Silent",
+    "missense_variant":  "Missense_Mutation",
+    "synonymous_variant":"Silent",
+    "splice_donor_variant": "Splice_Site",
+    "splice_acceptor_variant": "Splice_Site",
+    "splice_donor_region_variant": "Splice_Site",
+    "splice_donor_5th_base_variant": "Splice_Site",
+    "splice_region_variant": "Splice_Region",
+    "splice_polypyrimidine_tract_variant": "Splice_Region",
+    "5_prime_UTR_variant": "5'UTR",
+    "3_prime_UTR_variant": "3'UTR",
+    "upstream_gene_variant": "5'Flank",
+    "downstream_gene_variant": "3'Flank",
+    "intron_variant": "Intron",
+    "intergenic_variant": "IGR",
+    # todo: RNA / non‑coding ya se gestionan más abajo
+}
+
+MAP_INDEL = {
+    "stop_gained": "FrameShift",   # se completará con _Del o _Ins
+    "stop_lost": "InFrame",
+    "missense_variant": "InFrame",
+    # los demás (UTR, intrón, etc.) toman la misma etiqueta que SNV
+}
+
 required_columns_MAF: List[str] = [
     "Chromosome",
     "Start_Position",
@@ -58,7 +110,6 @@ required_columns_MAF: List[str] = [
 _required_canonical_MAF = {c.lower(): c for c in required_columns_MAF}
 
 # Utility functions
-
 
 def _get_cache_path(file_path: Path, cache_dir: Optional[Path] = None) -> Path:
     """Generate cache file path based on file hash."""
@@ -91,6 +142,80 @@ def _create_tabix_index(vcf_path: Path, create_index: bool = False) -> bool:
     except (subprocess.CalledProcessError, FileNotFoundError) as e:
         logger.warning("Failed to create Tabix index: %s", e)
         return False
+
+def _get_primary_consequence(consequence_series: pd.Series) -> pd.Series:
+    """
+    Get the primary (most severe) consequence from VEP Consequence column using vectorized operations.
+    
+    Parameters
+    ----------
+    consequence_series : pd.Series
+        Series containing VEP Consequence values (may contain multiple consequences separated by '&')
+    
+    Returns
+    -------
+    pd.Series
+        Series with the most severe consequence for each variant
+    """
+    # explode separa por '&' y duplica las filas manteniendo su índice original
+    tmp = (
+        consequence_series
+          .str.split('&')
+          .explode()
+          .str.strip()                     # quita espacios
+          .to_frame('term')
+    )
+    tmp['rank'] = tmp['term'].map(rank_ser)
+    
+    # elegimos la consecuencia con rank más bajo para cada variante
+    primary = (
+        tmp.reset_index()                 # 'index' ← índice original de df
+           .sort_values(['index','rank'])
+           .drop_duplicates('index')
+           .set_index('index')['term']
+    )
+    
+    return primary
+
+def _classify_variant(row):
+    """
+    Classify a single variant based on primary consequence and variant class.
+    
+    Parameters
+    ----------
+    row : pd.Series
+        Row containing 'prim_cons', 'VEP_VARIANT_CLASS', 'REF', 'ALT' columns
+    
+    Returns
+    -------
+    str
+        Variant classification in MAF format
+    """
+    cons = row['prim_cons']
+    vtype = row['VEP_VARIANT_CLASS']
+    
+    # --- SNVs ------------------------------------------------------------
+    if vtype == 'SNV':
+        return MAP_SNV.get(cons, 'RNA')
+    
+    # --- indels ----------------------------------------------------------
+    elif vtype in ('deletion', 'insertion'):
+        # longitud REF y ALT deben estar en tu DataFrame
+        indel_len = abs(len(str(row['REF'])) - len(str(row['ALT'])))
+        in_frame = (indel_len % 3 == 0)
+        
+        base = MAP_INDEL.get(cons, MAP_SNV.get(cons, 'RNA'))
+        
+        if base in ('FrameShift', 'Nonsense_Mutation'):   # stop_gained
+            base = 'Frame_Shift' if not in_frame else 'In_Frame'
+        elif base == 'InFrame':
+            base = 'In_Frame'
+        
+        suffix = 'Del' if vtype == 'deletion' else 'Ins'
+        return f'{base}_{suffix}' if not base.endswith('_') else base + suffix
+    
+    # --- otros (raro) ----------------------------------------------------
+    return 'RNA'
 
 def _vectorized_gt_to_alleles(gt_series: pd.Series, ref_series: pd.Series, alt_series: pd.Series) -> pd.Series:
     """Convert genotypes to alleles using vectorized operations."""
@@ -846,10 +971,66 @@ def read_vcf(
         except Exception as e:
             logger.warning(f"Error expanding VEP CSQ annotations: {e}")
 
+    # ─── 9.6) GENERATE VARIANT_CLASSIFICATION FROM VEP DATA ─────────────────
+    if "VEP_Consequence" in vcf.columns and "VEP_VARIANT_CLASS" in vcf.columns:
+        logger.info("Generating Variant_Classification from VEP_Consequence and VEP_VARIANT_CLASS...")
+        try:
+            variant_classification_start = time.time()
+            
+            # Get primary consequence using vectorized operations
+            vcf['prim_cons'] = _get_primary_consequence(vcf['VEP_Consequence'])
+            
+            # Apply classification function
+            vcf['Variant_Classification'] = vcf.apply(_classify_variant, axis=1)
+            
+            # Fill any NaN values with 'RNA' (for non-coding transcripts)
+            vcf['Variant_Classification'] = vcf['Variant_Classification'].fillna('RNA')
+            
+            # Convert to categorical for memory efficiency and ordering
+            # First, let's see what unique values we actually have
+            unique_values = vcf['Variant_Classification'].unique()
+            logger.debug(f"Unique Variant_Classification values before categorical conversion: {unique_values}")
+            
+            ordered_categories = [
+                'Nonsense_Mutation', 'Nonstop_Mutation',
+                'Splice_Site', 'Splice_Region',
+                'Frame_Shift_Del', 'Frame_Shift_Ins',
+                'In_Frame_Del', 'In_Frame_Ins',
+                'Missense_Mutation', 'Silent',
+                "5'UTR", "3'UTR", "5'Flank", "3'Flank",
+                'Intron', 'IGR', 'RNA'
+            ]
+            
+            # Add any unique values that aren't in our predefined categories
+            for val in unique_values:
+                if val not in ordered_categories and pd.notna(val):
+                    ordered_categories.append(val)
+            
+            vcf['Variant_Classification'] = pd.Categorical(
+                vcf['Variant_Classification'],
+                categories=ordered_categories,
+                ordered=True
+            )
+            
+            # Clean up temporary column
+            vcf = vcf.drop(columns=['prim_cons'])
+            
+            logger.info("Variant_Classification generated in %.2f s", 
+                       time.time() - variant_classification_start)
+            
+        except Exception as e:
+            logger.warning(f"Error generating Variant_Classification: {e}")
+    else:
+        logger.debug("VEP_Consequence or VEP_VARIANT_CLASS columns not found, skipping Variant_Classification generation")
+
+    # ─── 9.7) NORMALIZE VARIANT_CLASSIFICATION TO UPPERCASE ─────────────────
+    vcf = normalize_variant_classification(vcf)
+    logger.debug("Variant_Classification values normalized to uppercase")
+
     # ─── 10) VECTORIZED GENOTYPE CONVERSION ─────────────────────────────────
     standard_vcf_cols = {"CHROM", "POS", "ID", "REF", "ALT", "QUAL", "FILTER", "INFO", "FORMAT"}
     all_columns = vcf.columns.tolist()
-    sample_columns = [col for col in all_columns if col not in standard_vcf_cols and not col.startswith(("AC", "AF", "AN", "DP", "FUNCOTATION", "VEP_"))]
+    sample_columns = [col for col in all_columns if col not in standard_vcf_cols and not col.startswith(("AC", "AF", "AN", "DP", "FUNCOTATION", "VEP_")) and col != "Variant_Classification"]
 
     logger.info("Detected %d sample columns. Starting vectorized genotype conversion...", len(sample_columns))
 
