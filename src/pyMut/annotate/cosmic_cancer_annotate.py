@@ -2,6 +2,7 @@ import pandas as pd
 import duckdb
 import gzip
 import logging
+import sys
 from pathlib import Path
 from typing import Optional, Union
 
@@ -10,137 +11,6 @@ from ..utils.fields import find_alias, col
 logger = logging.getLogger(__name__)
 
 
-def knownCancer(
-    maf_file: Union[str, Path],
-    annotation_table: Union[str, Path],
-    output_path: Optional[Union[str, Path]] = None,
-    compress_output: bool = True,
-    join_column: str = "Hugo_Symbol",
-    oncokb_table: Optional[Union[str, Path]] = None
-) -> tuple[pd.DataFrame, Path]:
-    """
-    Annotate MAF file with specific cancer-related annotations from COSMIC and OncoKB.
-
-    This function filters annotations to include only cancer-relevant fields and adds
-    a combined Is_Oncogene_any field that indicates if a gene is an oncogene according
-    to any source.
-
-    Parameters
-    ----------
-    maf_file : str | Path
-        Path to the MAF file (.maf or .maf.gz)
-    annotation_table : str | Path
-        Path to the COSMIC annotation table (.tsv or .tsv.gz)
-    output_path : str | Path, optional
-        Output file path. If None, creates filename with "_KnownCancer_annotated.maf" suffix
-    compress_output : bool, default True
-        Whether to compress the output file with gzip
-    join_column : str, default "Hugo_Symbol"
-        Column name to use for joining (canonical name from fields.py)
-    oncokb_table : str | Path, optional
-        Path to the OncoKB cancer gene list table (.tsv). If provided, OncoKB
-        annotations will be added to the output.
-
-    Returns
-    -------
-    tuple[pd.DataFrame, Path]
-        A tuple containing:
-        - Annotated DataFrame with MAF data and filtered cancer annotations
-        - Path to the output file that was created
-
-    Raises
-    ------
-    FileNotFoundError
-        If input files don't exist
-    ValueError
-        If join column is not found in either file
-    """
-
-    temp_output = None
-    if output_path is not None:
-        temp_output = Path(str(output_path).replace('.maf', '_temp_full.maf'))
-
-    # Get full annotations using the auxiliary function
-    full_df, temp_path = _maf_COSMIC_OncoKB_annotation_aux(
-        maf_file=maf_file,
-        annotation_table=annotation_table,
-        output_path=temp_output,
-        compress_output=False,
-        join_column=join_column,
-        oncokb_table=oncokb_table
-    )
-
-    # Define the specific columns we want to keep
-    target_columns = [
-        "COSMIC_ROLE_IN_CANCER",
-        "COSMIC_TIER",
-        "OncoKB_Is Oncogene",
-        "OncoKB_Is Tumor Suppressor Gene",
-        "OncoKB_OncoKB Annotated",
-        "OncoKB_MSK-IMPACT",
-        "OncoKB_MSK-HEME",
-        "OncoKB_FOUNDATION ONE",
-        "OncoKB_FOUNDATION ONE HEME",
-        "OncoKB_Vogelstein"
-    ]
-
-    # Get original MAF columns
-    original_columns = [col for col in full_df.columns if not (col.startswith('COSMIC_') or col.startswith('OncoKB_'))]
-
-    # Filter to keep only original columns plus target annotation columns
-    available_target_columns = [col for col in target_columns if col in full_df.columns]
-    columns_to_keep = original_columns + available_target_columns
-
-    filtered_df = full_df[columns_to_keep].copy()
-
-    # Is_Oncogene_any -> True if OncoKB_Is Oncogene is True OR COSMIC has any annotation (not empty)
-    oncokb_oncogene = filtered_df.get('OncoKB_Is Oncogene', pd.Series([False] * len(filtered_df)))
-    cosmic_role = filtered_df.get('COSMIC_ROLE_IN_CANCER', pd.Series([''] * len(filtered_df)))
-    cosmic_tier = filtered_df.get('COSMIC_TIER', pd.Series([''] * len(filtered_df)))
-
-    # Convert OncoKB_Is Oncogene to boolean (handle string representations)
-    oncokb_is_oncogene_bool = oncokb_oncogene.astype(str).str.lower().isin(['true', '1', 'yes'])
-
-    # COSMIC annotation exists if ROLE_IN_CANCER or TIER is not empty
-    cosmic_role_has_annotation = cosmic_role.astype(str).str.strip() != ''
-    cosmic_tier_has_annotation = cosmic_tier.astype(str).str.strip() != ''
-    cosmic_has_annotation = cosmic_role_has_annotation | cosmic_tier_has_annotation
-
-    # Is_Oncogene_any is True if either source indicates oncogene status
-    filtered_df['Is_Oncogene_any'] = oncokb_is_oncogene_bool | cosmic_has_annotation
-
-    # Set up final output path
-    if output_path is None:
-        maf_file_path = Path(maf_file)
-        if maf_file_path.suffix == '.gz':
-            stem = maf_file_path.stem.replace('.maf', '')
-            base_name = f"{stem}_knownCancer_annotated.maf"
-        else:
-            stem = maf_file_path.stem
-            base_name = f"{stem}_knownCancer_annotated{maf_file_path.suffix}"
-
-        if compress_output:
-            final_output_path = maf_file_path.parent / f"{base_name}.gz"
-        else:
-            final_output_path = maf_file_path.parent / base_name
-    else:
-        final_output_path = Path(output_path)
-        if compress_output and not str(final_output_path).endswith('.gz'):
-            final_output_path = final_output_path.with_suffix(final_output_path.suffix + '.gz')
-
-    # Save the filtered result
-    logger.info(f"Saving KnownCancer annotated file to: {final_output_path}")
-    _write_file_auto(filtered_df, final_output_path, compress_output)
-
-    # Clean up temporary file
-    if temp_path.exists():
-        temp_path.unlink()
-
-    logger.info(f"KnownCancer annotation completed successfully")
-    logger.info(f"Output file saved: {final_output_path}")
-    logger.info(f"Filtered to {len(available_target_columns)} annotation columns plus Is_Oncogene_any field")
-
-    return filtered_df, final_output_path
 
 
 
@@ -392,7 +262,7 @@ def _apply_synonyms_mapping(maf_df: pd.DataFrame, maf_join_col: str, synonyms_di
         maf_df['_mapped_gene_symbol'] = maf_df[maf_join_col]
         return maf_df
 
-    logger.info("Applying synonyms mapping to MAF data...")
+    logger.info("Applying synonyms mapping to PyMutation data...")
 
     maf_df = maf_df.copy()
     maf_df['_mapped_gene_symbol'] = maf_df[maf_join_col].map(
@@ -408,29 +278,26 @@ def _apply_synonyms_mapping(maf_df: pd.DataFrame, maf_join_col: str, synonyms_di
 
 
 def _annotate_with_pandas(
-    maf_file: Path,
+    data: pd.DataFrame,
     annotation_table: Path,
-    output_path: Path,
-    compress_output: bool,
     join_column: str,
     synonyms_column: str,
     oncokb_table: Optional[Path] = None,
     oncokb_synonyms_column: str = "Gene Aliases"
-) -> tuple[pd.DataFrame, Path]:
+) -> pd.DataFrame:
     """
     Annotate using pandas with pyarrow optimization for smaller files.
     """
-    logger.info(f"Reading MAF file: {maf_file}")
+    logger.info(f"Starting pandas annotation for DataFrame: {data.shape[0]} rows, {data.shape[1]} columns")
 
-    maf_df = _read_file_auto(maf_file, sep='\t', comment='#', low_memory=False)
-    logger.info(f"MAF file loaded: {maf_df.shape[0]} rows, {maf_df.shape[1]} columns")
+    maf_df = data.copy()
 
     maf_join_col = find_alias(maf_df.columns, join_column)
     if maf_join_col is None:
-        logger.error(f"Join column '{join_column}' not found in MAF file. Available columns: {list(maf_df.columns)}")
-        raise ValueError(f"Join column '{join_column}' not found in MAF file. Available columns: {list(maf_df.columns)}")
+        logger.error(f"Join column '{join_column}' not found in data file. Available columns: {list(maf_df.columns)}")
+        raise ValueError(f"Join column '{join_column}' not found in data file. Available columns: {list(maf_df.columns)}")
 
-    logger.info(f"Using MAF join column: {maf_join_col}")
+    logger.info(f"Using join column: {maf_join_col}")
 
     logger.info(f"Reading annotation table: {annotation_table}")
     annotation_df = _read_file_auto(annotation_table, sep='\t', low_memory=False)
@@ -466,7 +333,13 @@ def _annotate_with_pandas(
 
     cosmic_columns = [col for col in result_df.columns if col.startswith('COSMIC_')]
     for col in cosmic_columns:
-        result_df[col] = result_df[col].fillna("")
+        # Always use empty string for COSMIC_TIER to ensure Is_Oncogene_any calculates correctly
+        if col == 'COSMIC_TIER':
+            result_df[col] = result_df[col].fillna("")
+        elif pd.api.types.is_numeric_dtype(result_df[col]):
+            result_df[col] = result_df[col].fillna(pd.NA)
+        else:
+            result_df[col] = result_df[col].fillna("")
 
     logger.info(f"COSMIC annotation completed: {result_df.shape[0]} rows, {result_df.shape[1]} columns")
     logger.info(f"Added {len(cosmic_columns)} COSMIC annotation columns")
@@ -507,46 +380,41 @@ def _annotate_with_pandas(
 
         oncokb_columns = [col for col in result_df.columns if col.startswith('OncoKB_')]
         for col in oncokb_columns:
-            result_df[col] = result_df[col].fillna("")
+            if pd.api.types.is_numeric_dtype(result_df[col]):
+                result_df[col] = result_df[col].fillna(pd.NA)
+            else:
+                result_df[col] = result_df[col].fillna("")
 
         logger.info(f"OncoKB annotation completed: {result_df.shape[0]} rows, {result_df.shape[1]} columns")
         logger.info(f"Added {len(oncokb_columns)} OncoKB annotation columns")
 
     logger.info(f"Total annotation completed: {result_df.shape[0]} rows, {result_df.shape[1]} columns")
+    logger.info(f"Pandas annotation completed successfully")
 
-    logger.info(f"Saving annotated file to: {output_path}")
-    _write_file_auto(result_df, output_path, compress_output)
-
-    logger.info(f"COSMIC annotation completed successfully")
-    logger.info(f"Output file saved: {output_path}")
-
-    return result_df, output_path
+    return result_df
 
 
 def _annotate_with_duckdb(
-    maf_file: Path,
+    data: pd.DataFrame,
     annotation_table: Path,
-    output_path: Path,
-    compress_output: bool,
     join_column: str,
     synonyms_column: str,
     oncokb_table: Optional[Path] = None,
     oncokb_synonyms_column: str = "Gene Aliases"
-) -> tuple[pd.DataFrame, Path]:
+) -> pd.DataFrame:
     """
     Annotate using DuckDB for large files optimization.
     """
-    logger.info(f"Reading MAF file: {maf_file}")
+    logger.info(f"Starting DuckDB annotation for DataFrame: {data.shape[0]} rows, {data.shape[1]} columns")
 
-    maf_df = _read_file_auto(maf_file, sep='\t', comment='#', low_memory=False)
-    logger.info(f"MAF file loaded: {maf_df.shape[0]} rows, {maf_df.shape[1]} columns")
+    maf_df = data.copy()
 
     maf_join_col = find_alias(maf_df.columns, join_column)
     if maf_join_col is None:
-        logger.error(f"Join column '{join_column}' not found in MAF file. Available columns: {list(maf_df.columns)}")
-        raise ValueError(f"Join column '{join_column}' not found in MAF file. Available columns: {list(maf_df.columns)}")
+        logger.error(f"Join column '{join_column}' not found in data file. Available columns: {list(maf_df.columns)}")
+        raise ValueError(f"Join column '{join_column}' not found in data file. Available columns: {list(maf_df.columns)}")
 
-    logger.info(f"Using MAF join column: {maf_join_col}")
+    logger.info(f"Using join column: {maf_join_col}")
 
     logger.info(f"Reading annotation table: {annotation_table}")
     annotation_df = _read_file_auto(annotation_table, sep='\t', low_memory=False)
@@ -586,7 +454,13 @@ def _annotate_with_duckdb(
 
         cosmic_columns = [col for col in result_df.columns if col.startswith('COSMIC_')]
         for col in cosmic_columns:
-            result_df[col] = result_df[col].fillna("")
+            # Always use empty string for COSMIC_TIER to ensure Is_Oncogene_any calculates correctly
+            if col == 'COSMIC_TIER':
+                result_df[col] = result_df[col].fillna("")
+            elif pd.api.types.is_numeric_dtype(result_df[col]):
+                result_df[col] = result_df[col].fillna(pd.NA)
+            else:
+                result_df[col] = result_df[col].fillna("")
 
         logger.info(f"COSMIC annotation completed: {result_df.shape[0]} rows, {result_df.shape[1]} columns")
         logger.info(f"Added {len(cosmic_columns)} COSMIC annotation columns")
@@ -628,23 +502,175 @@ def _annotate_with_duckdb(
 
             oncokb_columns = [col for col in result_df.columns if col.startswith('OncoKB_')]
             for col in oncokb_columns:
-                result_df[col] = result_df[col].fillna("")
+                if pd.api.types.is_numeric_dtype(result_df[col]):
+                    result_df[col] = result_df[col].fillna(pd.NA)
+                else:
+                    result_df[col] = result_df[col].fillna("")
 
             logger.info(f"OncoKB annotation completed: {result_df.shape[0]} rows, {result_df.shape[1]} columns")
             logger.info(f"Added {len(oncokb_columns)} OncoKB annotation columns")
 
         logger.info(f"Total annotation completed: {result_df.shape[0]} rows, {result_df.shape[1]} columns")
+        logger.info(f"DuckDB annotation completed successfully")
 
-        logger.info(f"Saving annotated file to: {output_path}")
-        _write_file_auto(result_df, output_path, compress_output)
-
-        logger.info(f"COSMIC annotation completed successfully")
-        logger.info(f"Output file saved: {output_path}")
-
-        return result_df, output_path
+        return result_df
 
     finally:
         conn.close()
+
+
+def knownCancer(
+    self,
+    annotation_table,
+    output_path=None,
+    compress_output=True,
+    join_column="Hugo_Symbol",
+    oncokb_table=None,
+    in_place=False
+):
+    """
+    Annotate mutations with COSMIC and OncoKB cancer-related annotations.
+    
+    This method adds cancer-specific annotations from COSMIC and OncoKB databases,
+    including oncogene status, tumor suppressor information, and cancer relevance.
+    
+    Parameters
+    ----------
+    annotation_table : str | Path
+        Path to the COSMIC annotation table (.tsv or .tsv.gz)
+    output_path : str | Path, optional
+        Output file path. If provided, saves the annotated DataFrame to file
+    compress_output : bool, default True
+        Whether to compress the output file with gzip
+    join_column : str, default "Hugo_Symbol"
+        Column name to use for joining (canonical name from fields.py)
+    oncokb_table : str | Path, optional
+        Path to the OncoKB cancer gene list table (.tsv). If provided, OncoKB
+        annotations will be added to the output.
+    in_place : bool, default False
+        If True, replaces self.data with annotated data. If False, returns
+        annotated DataFrame for external use.
+        
+    Returns
+    -------
+    pd.DataFrame or None
+        If in_place=False, returns annotated DataFrame.
+        If in_place=True, returns None and updates self.data.
+        
+    Raises
+    ------
+    FileNotFoundError
+        If annotation files don't exist
+    ValueError
+        If join column is not found in DataFrame
+    """
+    from datetime import datetime
+    
+    # Calculate DataFrame memory usage to decide backend
+    data_memory_mb = self.data.memory_usage(deep=True).sum() / (1024 * 1024)
+    data_memory_gb = data_memory_mb / 1024
+    # use_duckdb = data_memory_gb > 2.0  # DuckDB option disabled
+    
+    logger.info(f"DataFrame memory usage: {data_memory_gb:.2f} GB")
+    logger.info(f"Using pandas backend for annotation")
+
+    # Get full annotations using pandas backend
+    # if use_duckdb:  # DuckDB option disabled
+    #     full_df = _annotate_with_duckdb(
+    #         data=self.data,
+    #         annotation_table=Path(annotation_table),
+    #         join_column=join_column,
+    #         synonyms_column="SYNONYMS",
+    #         oncokb_table=Path(oncokb_table) if oncokb_table else None
+    #     )
+    # else:
+    full_df = _annotate_with_pandas(
+        data=self.data,
+        annotation_table=Path(annotation_table),
+        join_column=join_column,
+        synonyms_column="SYNONYMS",
+        oncokb_table=Path(oncokb_table) if oncokb_table else None
+    )
+
+    # Define the specific columns we want to keep
+    target_columns = [
+        "COSMIC_ROLE_IN_CANCER",
+        "COSMIC_TIER",
+        "OncoKB_Is Oncogene",
+        "OncoKB_Is Tumor Suppressor Gene",
+        "OncoKB_OncoKB Annotated",
+        "OncoKB_MSK-IMPACT",
+        "OncoKB_MSK-HEME",
+        "OncoKB_FOUNDATION ONE",
+        "OncoKB_FOUNDATION ONE HEME",
+        "OncoKB_Vogelstein"
+    ]
+
+    # Get original data columns
+    original_columns = [col for col in full_df.columns if not (col.startswith('COSMIC_') or col.startswith('OncoKB_'))]
+
+    # Filter to keep only original columns plus target annotation columns
+    available_target_columns = [col for col in target_columns if col in full_df.columns]
+    columns_to_keep = original_columns + available_target_columns
+
+    filtered_df = full_df[columns_to_keep].copy()
+
+    # Is_Oncogene_any -> True if OncoKB_Is Oncogene is True OR COSMIC has any annotation (not empty)
+    oncokb_oncogene = filtered_df.get('OncoKB_Is Oncogene', pd.Series([False] * len(filtered_df)))
+    cosmic_role = filtered_df.get('COSMIC_ROLE_IN_CANCER', pd.Series([''] * len(filtered_df)))
+    cosmic_tier = filtered_df.get('COSMIC_TIER', pd.Series([''] * len(filtered_df)))
+
+    # Convert OncoKB_Is Oncogene to boolean (handle string representations)
+    oncokb_is_oncogene_bool = oncokb_oncogene.astype(str).str.lower().isin(['true', '1', 'yes'])
+
+    # COSMIC annotation exists if ROLE_IN_CANCER or TIER is not empty
+    # Handle pd.NA values and "<NA>" strings as empty
+    def _is_not_empty_or_na(series):
+        """Check if series has meaningful values (not empty, not NA, not '<NA>')"""
+        return (
+            series.notna() & 
+            (series.astype(str).str.strip() != '') & 
+            (series.astype(str).str.strip() != '<NA>')
+        )
+    
+    cosmic_role_has_annotation = _is_not_empty_or_na(cosmic_role)
+    cosmic_tier_has_annotation = _is_not_empty_or_na(cosmic_tier)
+    cosmic_has_annotation = cosmic_role_has_annotation | cosmic_tier_has_annotation
+
+    # Is_Oncogene_any is True if either source indicates oncogene status
+    filtered_df['Is_Oncogene_any'] = oncokb_is_oncogene_bool | cosmic_has_annotation
+
+    # Optional persistence: save to file if output_path is provided
+    if output_path is not None:
+        final_output_path = Path(output_path)
+        if compress_output and not str(final_output_path).endswith('.gz'):
+            final_output_path = final_output_path.with_suffix(final_output_path.suffix + '.gz')
+        
+        logger.info(f"Saving KnownCancer annotated file to: {final_output_path}")
+        _write_file_auto(filtered_df, final_output_path, compress_output)
+        logger.info(f"Output file saved: {final_output_path}")
+
+    logger.info(f"KnownCancer annotation completed successfully")
+    logger.info(f"Filtered to {len(available_target_columns)} annotation columns plus Is_Oncogene_any field")
+    
+    # Update metadata
+    if self.metadata is not None:
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        annotation_note = f"COSMIC cancer annotation applied at {timestamp}"
+        if oncokb_table:
+            annotation_note += " (with OncoKB data)"
+        
+        if self.metadata.notes:
+            self.metadata.notes += f"; {annotation_note}"
+        else:
+            self.metadata.notes = annotation_note
+    
+    # Handle in_place flag
+    if in_place:
+        self.data = filtered_df
+        return None
+    else:
+        return filtered_df
 
 
 __all__ = [
