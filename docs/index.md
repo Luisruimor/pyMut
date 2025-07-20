@@ -200,12 +200,12 @@ class PyMutation:
     def configure_high_quality_plots()
     
     def summary_plot(self, figsize=(16, 12), title="Mutation Summary", 
-                     max_samples=None, top_genes_count=10, 
-                     show_interactive=False) -> plt.Figure
+                     max_samples=None, top_genes_count=10
+                     ) -> plt.Figure
     
     def oncoplot(self, figsize=(16, 10), title="Oncoplot",
-                 top_genes_count=10, max_samples=180,
-                 show_interactive=False) -> plt.Figure
+                 top_genes_count=10, max_samples=180
+                 ) -> plt.Figure
     
     def variant_classification_plot(self, **kwargs) -> plt.Figure
     def variant_type_plot(self, **kwargs) -> plt.Figure  
@@ -221,7 +221,6 @@ class PyMutation:
 |-----------|-------------|-------------------|
 | `figsize` | Tamaño de figura (ancho, alto) | Varía por plot |
 | `title` | Título del gráfico | Varía por plot |
-| `show_interactive` | Mostrar ventana interactiva | `False` |
 | `max_samples` | Límite de muestras a mostrar | `None` (todas) |
 | `top_genes_count` | Número de genes principales | `10` |
 

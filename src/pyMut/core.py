@@ -7,7 +7,6 @@ visualizaciones a partir de datos de mutación.
 """
 
 from typing import Tuple, Optional
-import matplotlib.pyplot as plt
 import pandas as pd
 from datetime import datetime
 import matplotlib.pyplot as plt
@@ -532,8 +531,8 @@ class PyMutation:
                  ref_column: str = REF_COLUMN,
                  alt_column: str = ALT_COLUMN,
                  top_genes_count: int = None,
-                 max_samples: int = None,
-                 show_interactive: bool = False) -> plt.Figure:
+                 max_samples: int = None
+                 ) -> plt.Figure:
         """
         Generates an oncoplot showing mutation patterns in a heatmap.
         
@@ -560,7 +559,6 @@ class PyMutation:
                            If None, uses DEFAULT_ONCOPLOT_TOP_GENES.
             max_samples: Maximum number of samples to show.
                         If None, uses DEFAULT_ONCOPLOT_MAX_SAMPLES.
-            show_interactive: If True, displays the figure interactively.
             
         Returns:
             plt.Figure: matplotlib Figure object with the oncoplot.
@@ -581,9 +579,6 @@ class PyMutation:
             ...     top_genes_count=20,
             ...     max_samples=100
             ... )
-            
-            Interactive mode:
-            >>> fig = py_mut.oncoplot(show_interactive=True)
             
         Note:
             - The method automatically detects sample columns using common
@@ -616,9 +611,10 @@ class PyMutation:
             raise ValueError(f"Missing required columns: {missing_columns}")
         
         try:
+            from .visualizations.oncoplot import _create_oncoplot_plot
             # Generate the oncoplot
-            fig = create_oncoplot_plot(
-                data=self.data,
+            fig = _create_oncoplot_plot(
+                py_mut=self,
                 gene_column=gene_column,
                 variant_column=variant_column,
                 ref_column=ref_column,
@@ -628,11 +624,7 @@ class PyMutation:
                 figsize=figsize,
                 title=title
             )
-            
-            # Show interactively if requested
-            if show_interactive:
-                self._show_figure_interactive(fig)
-            
+            plt.close(fig)
             return fig
             
         except Exception as e:

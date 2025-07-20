@@ -36,8 +36,7 @@ def main():
     fig1 = py_mut.oncoplot(
         title="TCGA LAML Oncoplot (Top 50 samples)",
         top_genes_count=15,
-        max_samples=50,
-        show_interactive=False
+        max_samples=50
     )
     
     # Save limited oncoplot
@@ -50,8 +49,7 @@ def main():
     fig2 = py_mut.oncoplot(
         title="TCGA LAML Oncoplot (All samples)",
         top_genes_count=15,
-        max_samples=None,
-        show_interactive=False
+        max_samples=None
     )
     
     # Save natural oncoplot
