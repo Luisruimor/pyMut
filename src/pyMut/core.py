@@ -36,17 +36,17 @@ class MutationMetadata:
         file_path (str): Ruta del archivo de origen.
         loaded_at (datetime): Fecha y hora de carga.
         filters (List[str]): Filtros aplicados al archivo.
-        fasta (str): Ruta del archivo FASTA.
+        assembly (str): Versión del genoma (37 o 38).
         notes (Optional[str]): Notas adicionales.
     """
     def __init__(self, source_format: str, file_path: str,
-                 filters: List[str],fasta: str, notes: Optional[str] = None):
+                 filters: List[str], assembly: str, notes: Optional[str] = None):
         self.source_format = source_format
         self.file_path = file_path
         self.loaded_at = datetime.now()
         self.filters = filters
         self.notes = notes
-        self.fasta = fasta
+        self.assembly = assembly
 
 
 class PyMutation:

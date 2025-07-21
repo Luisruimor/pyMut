@@ -556,7 +556,7 @@ def _parse_info_column(info_series: pd.Series) -> pd.DataFrame:
 
 # Main functions
 
-def read_maf(path: str | Path, fasta: str | Path | None = None, cache_dir: Optional[str | Path] = None) -> PyMutation:
+def read_maf(path: str | Path, assembly: str, cache_dir: Optional[str | Path] = None) -> PyMutation:
     """
     Read a MAF file and return a PyMutation object with automatic caching.
 
@@ -564,9 +564,8 @@ def read_maf(path: str | Path, fasta: str | Path | None = None, cache_dir: Optio
     ----------
     path : str | Path
         Path to the MAF file (.maf or .maf.gz).
-    fasta : str | Path, optional
-        Path to the reference FASTA file. If provided, it will be included
-        in the metadata of the resulting PyMutation object.
+    assembly : str
+        Version of the genome assembly. Must be either "37" or "38".
     cache_dir : str | Path, optional
         Directory for caching processed files. If None, uses a .pymut_cache
         directory next to the input file.
@@ -584,6 +583,7 @@ def read_maf(path: str | Path, fasta: str | Path | None = None, cache_dir: Optio
         If the specified MAF file path does not exist.
     ValueError
         If the MAF file is missing required columns or has an invalid format.
+        If the assembly parameter is not "37" or "38".
     ImportError
         If the 'pyarrow' library cannot be imported and the 'c' engine
         alternative also fails.
@@ -596,6 +596,10 @@ def read_maf(path: str | Path, fasta: str | Path | None = None, cache_dir: Optio
     - Automatic caching of processed results
     - PyArrow-accelerated data processing when available
     """
+    # Validate assembly parameter
+    if assembly not in ["37", "38"]:
+        raise ValueError("Assembly parameter must be either '37' or '38'")
+        
     start_time = time.time()
     path = Path(path)
     cache_dir_path = Path(cache_dir) if cache_dir else None
@@ -625,7 +629,7 @@ def read_maf(path: str | Path, fasta: str | Path | None = None, cache_dir: Optio
                 source_format="MAF",
                 file_path=str(path),
                 filters=["."],
-                fasta=str(fasta) if fasta else "",
+                assembly=assembly,
                 notes="\n".join(comments) if comments else None,
             )
 
@@ -760,7 +764,7 @@ def read_maf(path: str | Path, fasta: str | Path | None = None, cache_dir: Optio
         source_format="MAF",
         file_path=str(path),
         filters=["."],
-        fasta=str(fasta) if fasta else "",
+        assembly=assembly,
         notes="\n".join(comments) if comments else None,
     )
 
@@ -772,7 +776,7 @@ def read_maf(path: str | Path, fasta: str | Path | None = None, cache_dir: Optio
 
 def read_vcf(
     path: str | Path, 
-    fasta: str | Path | None = None,
+    assembly: str,
     create_index: bool = False,
     cache_dir: Optional[str | Path] = None
 ) -> PyMutation:
@@ -786,9 +790,8 @@ def read_vcf(
     ----------
     path : str | Path
         Path to the VCF file (.vcf or .vcf.gz).
-    fasta : str | Path, optional
-        Path to the reference FASTA file. If provided, it will be included
-        in the metadata of the resulting PyMutation object.
+    assembly : str
+        Version of the genome assembly. Must be either "37" or "38".
     create_index : bool, default False
         Whether to create a Tabix index (.tbi) if it doesn't exist.
         Requires 'tabix' command to be available in PATH.
@@ -809,6 +812,7 @@ def read_vcf(
         If the specified VCF file path does not exist.
     ValueError
         If the VCF file is missing required columns or has an invalid format.
+        If the assembly parameter is not "37" or "38".
     Exception
         For any other errors encountered while reading or processing the file.
 
@@ -821,6 +825,10 @@ def read_vcf(
     - Automatic caching of processed results
     - Automatic Tabix indexing for compressed files
     """
+    # Validate assembly parameter
+    if assembly not in ["37", "38"]:
+        raise ValueError("Assembly parameter must be either '37' or '38'")
+        
     start_time = time.time()
     path = Path(path)
     cache_dir_path = Path(cache_dir) if cache_dir else None
@@ -850,7 +858,7 @@ def read_vcf(
                 source_format="VCF",
                 file_path=str(path),
                 filters=["."],
-                fasta=str(fasta) if fasta else "",
+                assembly=assembly,
                 notes="\n".join(meta_lines) if meta_lines else None,
             )
 
@@ -1313,7 +1321,7 @@ def read_vcf(
         source_format="VCF",
         file_path=str(path),
         filters=["."],
-        fasta=str(fasta) if fasta else "",
+        assembly=assembly,
         notes="\n".join(meta_lines) if meta_lines else None,
     )
 
