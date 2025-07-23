@@ -99,7 +99,6 @@ def export_oncokb_input(self, token: str, batch_size: int = 5000, timeout: int =
     else:
         oncokb_input_df["ALT"] = tumor_seq_allele2
     
-    # Validate the DataFrame
     # Check for nulls in required columns
     required_columns = ["CHROM", "POS", "END", "REF", "ALT"]
     initial_row_count = len(oncokb_input_df)
@@ -109,7 +108,6 @@ def export_oncokb_input(self, token: str, batch_size: int = 5000, timeout: int =
     for col_name in required_columns:
         col_nulls = oncokb_input_df[col_name].isnull()
         if col_nulls.any():
-            # Log which column has nulls and how many
             null_count = col_nulls.sum()
             logger.warning("Column '%s' contains %d null values, these rows will be removed", col_name, null_count)
             null_mask = null_mask | col_nulls
@@ -198,8 +196,7 @@ def export_oncokb_input(self, token: str, batch_size: int = 5000, timeout: int =
             # Add tumor type if available
             if has_tumor_type and not pd.isna(row.get("TUMOR_TYPE", None)):
                 variant_entry["tumorType"] = row.TUMOR_TYPE
-                
-            # Add Hugo_Symbol if available
+
             # This can help the OncoKB API identify genes more accurately
             hugo_symbol = col(self.data, "Hugo_Symbol", required=False)
             if hugo_symbol is not None:
@@ -209,12 +206,12 @@ def export_oncokb_input(self, token: str, batch_size: int = 5000, timeout: int =
                 if not pd.isna(gene_symbol):
                     variant_entry["hugoSymbol"] = gene_symbol
                     logger.info("Added Hugo_Symbol '%s' to variant entry", gene_symbol)
-                
+
             payload.append(variant_entry)
         
         # Send API request with retries
         retry_count = 0
-        max_backoff = 30  # Maximum backoff time in seconds
+        max_backoff = 30
         
         while True:
             try:
@@ -225,21 +222,18 @@ def export_oncokb_input(self, token: str, batch_size: int = 5000, timeout: int =
                     json=payload,
                     timeout=timeout
                 )
-                
-                # Handle response based on status code
+
                 if response.status_code == 200:
                     # Success - parse the response
                     resp_json = response.json()
                     logger.info("Batch %d/%d processed successfully", i+1, num_batches)
                     
-                    # Check for warnings in the response
                     for j, anno in enumerate(resp_json):
                         if anno.get("geneExist") is False:
                             logger.warning("Gene does not exist for variant at index %d in batch %d", j, i+1)
                         if anno.get("oncogenic") == "Unknown":
                             logger.warning("Unknown oncogenicity for variant at index %d in batch %d", j, i+1)
                     
-                    # Process the response and extract the specified fields
                     if resp_json:
                         for j, anno in enumerate(resp_json):
                             # Get the original index for this variant
@@ -255,20 +249,16 @@ def export_oncokb_input(self, token: str, batch_size: int = 5000, timeout: int =
                     else:
                         logger.warning("Empty response for batch %d/%d", i+1, num_batches)
                     
-                    # Break out of the retry loop
                     break
                     
                 elif response.status_code == 401:
-                    # Authentication error - abort
                     raise ValueError(f"Authentication error: Invalid OncoKB token. Status code: {response.status_code}")
                     
                 elif response.status_code in [429, 500, 502, 503, 504]:
-                    # Retry with exponential backoff for these status codes
                     retry_count += 1
                     if retry_count > max_retries:
                         raise ValueError(f"Maximum retries exceeded for batch {i+1}. Last status code: {response.status_code}")
                     
-                    # Calculate backoff time
                     backoff_time = min(max_backoff, retry_backoff * (2 ** (retry_count - 1)))
                     logger.warning("Received status code %d for batch %d/%d. Retrying in %.1f seconds (retry %d/%d)",
                                   response.status_code, i+1, num_batches, backoff_time, retry_count, max_retries)
@@ -276,16 +266,13 @@ def export_oncokb_input(self, token: str, batch_size: int = 5000, timeout: int =
                     continue
                     
                 else:
-                    # Other error - abort
                     raise ValueError(f"Error from OncoKB API for batch {i+1}. Status code: {response.status_code}, Response: {response.text}")
                     
             except requests.exceptions.RequestException as e:
-                # Handle network errors
                 retry_count += 1
                 if retry_count > max_retries:
                     raise ValueError(f"Maximum retries exceeded for batch {i+1} due to network error: {str(e)}")
                 
-                # Calculate backoff time
                 backoff_time = min(max_backoff, retry_backoff * (2 ** (retry_count - 1)))
                 logger.warning("Network error for batch %d/%d: %s. Retrying in %.1f seconds (retry %d/%d)",
                               i+1, num_batches, str(e), backoff_time, retry_count, max_retries)
@@ -300,14 +287,12 @@ def export_oncokb_input(self, token: str, batch_size: int = 5000, timeout: int =
     # Add annotations to self.data
     if annotations_dict:
         logger.info("Adding OncoKB annotations to self.data")
-    
-        # Initialize new columns in self.data with None values
+
         for field in oncokb_fields:
             column_name = f"oncokb_{field}"
             if column_name not in self.data.columns:
                 self.data[column_name] = None
     
-        # Add annotations to self.data based on the original indices
         for orig_idx, annotations in annotations_dict.items():
             for field, value in annotations.items():
                 self.data.at[orig_idx, field] = value
@@ -316,7 +301,6 @@ def export_oncokb_input(self, token: str, batch_size: int = 5000, timeout: int =
     else:
         logger.warning("No annotations returned from OncoKB API")
 
-    # Return self.data with the added annotations
     return self.data
 
 # Add the export_oncokb_input method to the PyMutation class
