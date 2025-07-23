@@ -60,44 +60,33 @@ def export_oncokb_input(self, token: str, batch_size: int = 5000, timeout: int =
     if referenceGenome not in VALID_REFERENCE_GENOMES:
         raise ValueError(f"Invalid reference genome: {referenceGenome}. Must be one of {VALID_REFERENCE_GENOMES}")
 
-    # Extract required columns using the col function to handle aliases
+    # Extract required columns directly from PyMutation.data
     oncokb_input_df = pd.DataFrame()
-    
-    # Extract Chromosome -> CHROM
-    chromosome = col(self.data, "Chromosome", required=False)
-    if chromosome is None:
-        raise ValueError("Missing required column 'Chromosome' for OncoKB input")
+
+    if "CHROM" not in self.data.columns:
+        raise ValueError("Missing required column 'CHROM' for OncoKB input")
     # Remove 'chr' prefix using str.lstrip
-    oncokb_input_df["CHROM"] = chromosome.str.lstrip("chr")
-    
-    # Extract Start_Position -> POS
-    start_position = col(self.data, "Start_Position", required=False)
-    if start_position is None:
-        raise ValueError("Missing required column 'Start_Position' for OncoKB input")
+    oncokb_input_df["CHROM"] = self.data["CHROM"].str.lstrip("chr")
+
+    if "POS" not in self.data.columns:
+        raise ValueError("Missing required column 'POS' for OncoKB input")
     # Convert to int32 for memory efficiency
-    oncokb_input_df["POS"] = start_position.astype('int32')
+    oncokb_input_df["POS"] = self.data["POS"].astype('int32')
     
-    # Extract Reference_Allele -> REF
-    reference_allele = col(self.data, "Reference_Allele", required=False)
-    if reference_allele is None:
-        raise ValueError("Missing required column 'Reference_Allele' for OncoKB input")
-    oncokb_input_df["REF"] = reference_allele
+    if "REF" not in self.data.columns:
+        raise ValueError("Missing required column 'REF' for OncoKB input")
+    oncokb_input_df["REF"] = self.data["REF"]
     
     # Calculate End_Position as POS + len(REF) and convert to int32
     oncokb_input_df["END"] = (oncokb_input_df["POS"] + oncokb_input_df["REF"].str.len()).astype('int32')
-    
-    # Extract Tumor_Seq_Allele2 -> ALT
-    tumor_seq_allele2 = col(self.data, "Tumor_Seq_Allele2", required=False)
-    if tumor_seq_allele2 is None:
-        # Try to use ALT column if Tumor_Seq_Allele2 is not present
-        alt = col(self.data, "ALT", required=False)
-        if alt is not None:
-            logger.info("Using ALT column for Tumor_Seq_Allele2")
-            oncokb_input_df["ALT"] = alt
-        else:
-            raise ValueError("Missing required column 'Tumor_Seq_Allele2' for OncoKB input")
+
+    if "ALT" in self.data.columns:
+        oncokb_input_df["ALT"] = self.data["ALT"]
+    elif "ALT" in self.data.columns:
+        logger.info("Using ALT column for ALT")
+        oncokb_input_df["ALT"] = self.data["ALT"]
     else:
-        oncokb_input_df["ALT"] = tumor_seq_allele2
+        raise ValueError("Missing required column 'ALT' for OncoKB input")
     
     # Check for nulls in required columns
     required_columns = ["CHROM", "POS", "END", "REF", "ALT"]
