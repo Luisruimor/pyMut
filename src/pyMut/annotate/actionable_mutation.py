@@ -111,11 +111,6 @@ def export_oncokb_input(self, token: str, batch_size: int = 5000, timeout: int =
     # Add index to preserve original order
     oncokb_input_df = oncokb_input_df.reset_index().rename(columns={"index": "_original_index"})
     
-    # Check if TUMOR_TYPE column exists in the original data
-    has_tumor_type = "TUMOR_TYPE" in self.data.columns
-    if has_tumor_type:
-        oncokb_input_df["TUMOR_TYPE"] = self.data["TUMOR_TYPE"].reset_index(drop=True)
-        logger.info("TUMOR_TYPE column found and will be included in the OncoKB request")
     
     # Split data into batches
     num_variants = len(oncokb_input_df)
@@ -182,20 +177,6 @@ def export_oncokb_input(self, token: str, batch_size: int = 5000, timeout: int =
                 "genomicLocation": loc_string
             }
             
-            # Add tumor type if available
-            if has_tumor_type and not pd.isna(row.get("TUMOR_TYPE", None)):
-                variant_entry["tumorType"] = row.TUMOR_TYPE
-
-            # This can help the OncoKB API identify genes more accurately
-            hugo_symbol = col(self.data, "Hugo_Symbol", required=False)
-            if hugo_symbol is not None:
-                # Get the Hugo_Symbol for this row
-                orig_idx = row["_original_index"]
-                gene_symbol = hugo_symbol.iloc[orig_idx]
-                if not pd.isna(gene_symbol):
-                    variant_entry["hugoSymbol"] = gene_symbol
-                    logger.info("Added Hugo_Symbol '%s' to variant entry", gene_symbol)
-
             payload.append(variant_entry)
         
         # Send API request with retries
