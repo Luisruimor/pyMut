@@ -1078,7 +1078,6 @@ def read_vcf(
             logger.warning(f"Error expanding VEP CSQ annotations: {e}")
 
     # ─── 9.5.5) GENERATE HUGO_SYMBOL FROM VEP_SYMBOL AND VEP_NEAREST ────────
-    # Check if Hugo_Symbol already exists
     if 'Hugo_Symbol' in vcf.columns:
         logger.info("Hugo_Symbol column already exists, skipping generation")
     else:
@@ -1132,7 +1131,6 @@ def read_vcf(
             logger.warning(f"Error generating Hugo_Symbol: {e}")
 
     # ─── 9.6) GENERATE VARIANT_CLASSIFICATION FROM VEP DATA ─────────────────
-    # Check if Variant_Classification already exists
     if 'Variant_Classification' in vcf.columns:
         logger.info("Variant_Classification column already exists, skipping generation")
     elif "VEP_Consequence" in vcf.columns and "VEP_VARIANT_CLASS" in vcf.columns:
@@ -1191,7 +1189,6 @@ def read_vcf(
     logger.debug("Variant_Classification values normalized to uppercase")
 
     # ─── 9.8) GENERATE VARIANT_TYPE FROM VEP VARIANT_CLASS ──────────────────
-    # Check if Variant_Type already exists
     if 'Variant_Type' in vcf.columns:
         logger.info("Variant_Type column already exists, skipping generation")
     elif "VEP_VARIANT_CLASS" in vcf.columns:
