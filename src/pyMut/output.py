@@ -107,11 +107,10 @@ def to_maf(self, output_path: str | Path) -> None:
         table = pa.Table.from_pandas(data)
         
         # Crear columnas base usando PyArrow
-        # Convertir CHROM a Chromosome
-        chrom_array = pc.utf8_replace_slice(
-            pc.cast(table['CHROM'], pa.string()),
-            0, 0, "chr"
-        )
+        # Convertir CHROM a Chromosome - solo extraer el número del cromosoma
+        chrom_array = pc.cast(table['CHROM'], pa.string())
+        # Eliminar el prefijo 'chr' si existe
+        chrom_array = pc.utf8_replace_substring(chrom_array, 'chr', '')
         table = table.append_column('Chromosome', chrom_array)
         
         # Otras columnas base
@@ -125,7 +124,8 @@ def to_maf(self, output_path: str | Path) -> None:
     else:
         # Crear columnas base para todas las variantes usando pandas
         base_data = data.copy()
-        base_data['Chromosome'] = base_data['CHROM'].apply(reverse_format_chr)
+        # Eliminar el prefijo 'chr' si existe
+        base_data['Chromosome'] = base_data['CHROM'].str.replace('chr', '', regex=False)
         base_data['Start_Position'] = base_data['POS']
         base_data['Reference_Allele'] = base_data['REF'].astype(str)
         base_data['NCBI_Build'] = metadata.assembly
@@ -176,15 +176,15 @@ def to_maf(self, output_path: str | Path) -> None:
         # Calcular End_Position de manera vectorizada
         # Para SNPs (ref y alt de longitud 1)
         snp_mask = (sample_data['Reference_Allele'].str.len() == 1) & (sample_data['Tumor_Seq_Allele2'].str.len() == 1)
-        sample_data.loc[snp_mask, 'End_Position'] = sample_data.loc[snp_mask, 'Start_Position']
+        sample_data.loc[snp_mask, 'End_Position'] = sample_data.loc[snp_mask, 'Start_Position'].astype(int)
         
         # Para deleciones (ref más largo que alt)
         del_mask = sample_data['Reference_Allele'].str.len() > sample_data['Tumor_Seq_Allele2'].str.len()
-        sample_data.loc[del_mask, 'End_Position'] = sample_data.loc[del_mask, 'Start_Position'] + sample_data.loc[del_mask, 'Reference_Allele'].str.len() - 1
+        sample_data.loc[del_mask, 'End_Position'] = (sample_data.loc[del_mask, 'Start_Position'] + sample_data.loc[del_mask, 'Reference_Allele'].str.len() - 1).astype(int)
         
         # Para inserciones y otros
         other_mask = ~(snp_mask | del_mask)
-        sample_data.loc[other_mask, 'End_Position'] = sample_data.loc[other_mask, 'Start_Position']
+        sample_data.loc[other_mask, 'End_Position'] = sample_data.loc[other_mask, 'Start_Position'].astype(int)
         
         # Seleccionar columnas relevantes
         maf_cols = ['Chromosome', 'Start_Position', 'End_Position', 'Reference_Allele', 
@@ -240,6 +240,10 @@ def to_maf(self, output_path: str | Path) -> None:
         
         # Reordenar el DataFrame
         maf_df = maf_df[final_columns]
+    
+    # Ensure End_Position is an integer
+    if 'End_Position' in maf_df.columns:
+        maf_df['End_Position'] = maf_df['End_Position'].astype(int)
 
     # ─── 4) WRITE TO FILE WITH COMMENTS ──────────────────────────────
     # Definir tamaño de lote para escritura eficiente
