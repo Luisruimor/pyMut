@@ -1278,6 +1278,11 @@ def read_vcf(
         vcf["QUAL"] = "."
     if "FILTER" not in vcf.columns:
         vcf["FILTER"] = "."
+        
+    # Remove FORMAT column as it's not needed
+    if "FORMAT" in vcf.columns:
+        vcf = vcf.drop(columns=["FORMAT"])
+        logger.debug("FORMAT column removed from output DataFrame")
 
     # ─── 12) ORDER COLUMNS ──────────────────────────────────────────────────
     vcf_core = ["CHROM", "POS", "ID", "REF", "ALT", "QUAL", "FILTER"]
