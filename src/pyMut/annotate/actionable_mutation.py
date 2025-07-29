@@ -19,8 +19,8 @@ logger = logging.getLogger(__name__)
 ONCOKB_ENDPOINT = "https://www.oncokb.org/api/v1/annotate/mutations/byGenomicChange"
 VALID_REFERENCE_GENOMES = ["GRCh37", "GRCh38"]
 
-def export_oncokb_input(self, token: str, batch_size: int = 5000, timeout: int = 30, 
-                      max_retries: int = 3, retry_backoff: float = 1.0) -> pd.DataFrame:
+def actionable_mutations_oncokb(self, token: str, batch_size: int = 5000, timeout: int = 30,
+                                max_retries: int = 3, retry_backoff: float = 1.0) -> pd.DataFrame:
     """
     Export mutation data to OncoKB API and add annotations to self.data.
     
@@ -274,4 +274,4 @@ def export_oncokb_input(self, token: str, batch_size: int = 5000, timeout: int =
     return self.data
 
 # Add the export_oncokb_input method to the PyMutation class
-PyMutation.export_oncokb_input = export_oncokb_input
+PyMutation.export_oncokb_input = actionable_mutations_oncokb
