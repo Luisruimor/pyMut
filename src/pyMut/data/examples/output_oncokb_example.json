@@ -1,0 +1,46 @@
+{
+  "query": {
+    "id": null,
+    "type": "regular",
+    "hugoSymbol": "BRAF",
+    "entrezGeneId": 673,
+    "alteration": "V600E",
+    "alterationType": null,
+    "svType": null,
+    "tumorType": "Melanoma",
+    "consequence": "missense_variant",
+    "proteinStart": 600,
+    "proteinEnd": 600,
+    "hgvs": null
+  },
+  "geneExist": true,
+  "variantExist": true,
+  "alleleExist": true,
+  "oncogenic": "Oncogenic",
+  "mutationEffect": {
+    "knownEffect": "Unknown",
+    "description": "",
+    "citations": {
+      "pmids": [],
+      "abstracts": []
+    }
+  },
+  "highestSensitiveLevel": null,
+  "highestResistanceLevel": null,
+  "highestDiagnosticImplicationLevel": null,
+  "highestPrognosticImplicationLevel": null,
+  "otherSignificantSensitiveLevels": [],
+  "otherSignificantResistanceLevels": [],
+  "hotspot": true,
+  "geneSummary": "",
+  "variantSummary": "",
+  "tumorTypeSummary": "",
+  "prognosticSummary": "",
+  "diagnosticSummary": "",
+  "diagnosticImplications": null,
+  "prognosticImplications": null,
+  "treatments": [],
+  "dataVersion": "v2.1",
+  "lastUpdate": "04/24/2017",
+  "vus": false
+}
