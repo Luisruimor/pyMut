@@ -1,47 +1,27 @@
-[build-system]
-requires = ["poetry-core>=1.0.0"]
-build-backend = "poetry.core.masonry.api"
-
 [tool.poetry]
 name = "pyMut"
-version = "0.1.1"
-description = "A Python library for visualizing genetic mutations"
-readme = "README.md"
-authors = ["Name <email@example.com>"]
+version = "0.1.0"
+description = "A Python library for genetic mutations"
+authors = ["Your Name <you@example.com>"]
 license = "MIT"
-homepage     = "https://github.com/Luisruimor/pyMut"
-repository   = "https://github.com/Luisruimor/pyMut"
-keywords     = ["genetics", "mutations", "visualization"]
-
-packages = [
-  { include = "pyMut", from = "src" }
-]
-
-include = [
-  "src/pyMut/data/examples/*.maf.gz"
-]
+readme = "README.md"
 
 [tool.poetry.dependencies]
-python     = ">=3.9,<3.14"
-pandas     = "2.3.1"
-matplotlib = ">=3.4.0"
-numpy      = ">=1.20.0,<2.0.0"
-seaborn    = ">=0.11.0"
-duckdb     = "1.3.1"
-pyarrow    = "20.0.0"
+python = ">=3.10"
+numpy = ">=2.0,<2.3"
+pandas = "^2.3.1"
+seaborn = "^0.13.2"
+mkdocs = "^1.6.1"
+matplotlib = "^3.10.3"
+requests = "^2.32.4"
+urllib3 = "^2.5.0"
+duckdb = "^1.3.2"
+
 
 [tool.poetry.group.dev.dependencies]
-pytest = ">=6.0"
-black  = ">=21.5b2"
-isort  = ">=5.9.1"
-flake8 = ">=3.9.2"
+ruff = "^0.12.5"
+pytest = "^8.4.1"
 
-[tool.poetry.group.docs.dependencies]
-mkdocs          = "1.6.1"
-mkdocstrings    = "0.29.1"
-mkdocs-material = "9.6.14"
-mkdocs-jupyter  = "0.25.1"
-mkdocs-autorefs = "1.4.2"
-mkdocs-gallery = "0.10.4"
-mkdocs-get-deps = "0.2.0"
-mkdocs-material-extensions = "1.3.1"
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
