@@ -946,8 +946,46 @@ def read_vcf(
         raise ValueError(msg)
     logger.debug("Required columns present.")
 
+    # First, identify the original sample columns from the header before INFO expansion
+    original_header_cols = header_cols
+    standard_vcf_cols_temp = {"CHROM", "POS", "ID", "REF", "ALT", "QUAL", "FILTER", "INFO", "FORMAT"}
+    original_sample_columns = [col for col in original_header_cols if col not in standard_vcf_cols_temp]
+
     # ─── 7) PROCESS CHROMOSOME COLUMN ───────────────────────────────────────
     vcf["CHROM"] = vcf["CHROM"].astype(str).map(format_chr)
+
+    # ─── 7.5) VECTORIZED GENOTYPE CONVERSION ─────────────────────────────────
+    logger.info("Starting vectorized genotype conversion before INFO expansion...")
+    
+    if original_sample_columns:
+        # Vectorized conversion for all sample columns at once
+        conversion_start = time.time()
+
+        # Get reference data once
+        ref_array = vcf["REF"].astype(str).values
+        alt_array = vcf["ALT"].astype(str).values
+
+        # Process all sample columns in batches to manage memory
+        batch_size = min(100, len(original_sample_columns))
+        for batch_start in range(0, len(original_sample_columns), batch_size):
+            batch_end = min(batch_start + batch_size, len(original_sample_columns))
+            batch_cols = original_sample_columns[batch_start:batch_end]
+
+            if batch_start % 500 == 0:
+                logger.debug("Processing genotype batch %d-%d of %d samples", 
+                           batch_start + 1, batch_end, len(original_sample_columns))
+
+            # Convert batch of columns
+            for sample_col in batch_cols:
+                if sample_col in vcf.columns:  # Ensure column exists
+                    vcf[sample_col] = _vectorized_gt_to_alleles(
+                        vcf[sample_col], 
+                        vcf["REF"], 
+                        vcf["ALT"]
+                    )
+
+        conversion_time = time.time() - conversion_start
+        logger.info("GT conversion completed: %.2f s", conversion_time)
 
     # ─── 8) EXPAND INFO COLUMN WITH VECTORIZED OPERATIONS ──────────────────
     if "INFO" in vcf.columns:
@@ -980,11 +1018,6 @@ def read_vcf(
             logger.warning("Error processing Funcotator annotations: %s", e)
 
     # ─── 9.5) CSQ ───────────────────────────────────
-    # First, identify the original sample columns from the header before INFO expansion
-    original_header_cols = header_cols
-    standard_vcf_cols_temp = {"CHROM", "POS", "ID", "REF", "ALT", "QUAL", "FILTER", "INFO", "FORMAT"}
-    original_sample_columns = [col for col in original_header_cols if col not in standard_vcf_cols_temp]
-    
     # Check if there's a sample column named "CSQ" in the original header
     has_csq_sample = "CSQ" in original_sample_columns
     
@@ -1237,45 +1270,13 @@ def read_vcf(
     else:
         logger.debug("VEP_VARIANT_CLASS column not found, skipping Variant_Type generation")
 
-    # ─── 10) VECTORIZED GENOTYPE CONVERSION ─────────────────────────────────
+    # ─── 10) DEFINE SAMPLE COLUMNS FOR LATER USE ─────────────────────────────
+    # Use original_sample_columns but filter out any columns that might have been added during processing
     standard_vcf_cols = {"CHROM", "POS", "ID", "REF", "ALT", "QUAL", "FILTER", "INFO", "FORMAT"}
     all_columns = vcf.columns.tolist()
-    sample_columns = [col for col in all_columns if col not in standard_vcf_cols and not col.startswith(("AC", "AF", "AN", "DP", "FUNCOTATION", "VEP_")) and col not in ("Variant_Classification", "Variant_Type", "Hugo_Symbol")]
-
-    logger.info("Detected %d sample columns. Starting vectorized genotype conversion...", len(sample_columns))
-
-    if sample_columns:
-        # Massively vectorized conversion for all sample columns at once
-        conversion_start = time.time()
-
-        # Convert all sample columns using numpy stack operations
-        if len(sample_columns) > 0:
-            logger.debug("Converting genotypes for %d samples using numpy stack operations", len(sample_columns))
-
-            # Get reference data once
-            ref_array = vcf["REF"].astype(str).values
-            alt_array = vcf["ALT"].astype(str).values
-
-            # Process all sample columns in batches to manage memory
-            batch_size = min(100, len(sample_columns))
-            for batch_start in range(0, len(sample_columns), batch_size):
-                batch_end = min(batch_start + batch_size, len(sample_columns))
-                batch_cols = sample_columns[batch_start:batch_end]
-
-                if batch_start % 500 == 0:
-                    logger.debug("Processing genotype batch %d-%d of %d samples", 
-                               batch_start + 1, batch_end, len(sample_columns))
-
-                # Convert batch of columns
-                for sample_col in batch_cols:
-                    vcf[sample_col] = _vectorized_gt_to_alleles(
-                        vcf[sample_col], 
-                        vcf["REF"], 
-                        vcf["ALT"]
-                    )
-
-        conversion_time = time.time() - conversion_start
-        logger.info("GT conversion: %.2f s", conversion_time)
+    sample_columns = [col for col in original_sample_columns if col in all_columns]
+    
+    logger.info("Using %d sample columns for output organization", len(sample_columns))
 
     # ─── 11) ENSURE REQUIRED COLUMNS EXIST ──────────────────────────────────
     if "QUAL" not in vcf.columns:
