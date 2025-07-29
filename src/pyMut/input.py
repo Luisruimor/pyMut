@@ -697,8 +697,12 @@ def read_maf(path: str | Path, assembly: str, cache_dir: Optional[str | Path] = 
         maf["ID"] = "."
     maf["REF"] = maf["Reference_Allele"].astype(str)
     maf["ALT"] = maf["Tumor_Seq_Allele2"].fillna(maf["Tumor_Seq_Allele1"]).astype(str)
-    maf["QUAL"] = "."
-    maf["FILTER"] = "."
+    # Check if QUAL and FILTER columns exist before defaulting to "."
+    if "QUAL" not in maf.columns:
+        maf["QUAL"] = "."
+        
+    if "FILTER" not in maf.columns:
+        maf["FILTER"] = "."
 
     # ─── 5) EXPAND SAMPLES TO COLUMNS ------------------------------------
     samples = maf["Tumor_Sample_Barcode"].dropna().unique().tolist()
