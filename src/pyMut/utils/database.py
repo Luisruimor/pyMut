@@ -1,10 +1,8 @@
-import os
 import pandas as pd
 import duckdb
 import hashlib
 import gzip
 from datetime import datetime
-from typing import Optional
 from pathlib import Path
 
 
@@ -148,7 +146,7 @@ def check_mapping_coverage(conn: duckdb.DuckDBPyConnection) -> bool:
         np_count = conn.execute("SELECT COUNT(*) FROM xref WHERE prot_id LIKE 'NP_%'").fetchone()[0]
         total_count = conn.execute("SELECT COUNT(*) FROM xref").fetchone()[0]
 
-        print(f"Mapping coverage:")
+        print("Mapping coverage:")
         print(f"    Total mappings: {total_count:,}")
         print(f"    ENSP mappings: {ensp_count:,}")
         print(f"    NP_ mappings: {np_count:,}")

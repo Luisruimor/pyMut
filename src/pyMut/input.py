@@ -1,10 +1,9 @@
 import gzip
 import logging
-import re
 import subprocess
 import hashlib
 import os
-from typing import List, Dict, Any, Optional, Union, Literal
+from typing import List, Optional
 import io
 from pathlib import Path
 import numpy as np

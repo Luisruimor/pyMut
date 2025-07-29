@@ -278,7 +278,7 @@ def _create_variant_classification_summary_plot(py_mut: PyMutation,
                                 (isinstance(col, str) and col.count('-') >= 2)]
         
         if not potential_sample_cols:
-            print(f"No sample columns found that look like identifiers")
+            print("No sample columns found that look like identifiers")
             if ax is None:
                 _, ax = plt.subplots(figsize=(12, 6))
             ax.text(0.5, 0.5, "No data available for Variant Classification Summary\nNo sample columns detected", 
@@ -668,7 +668,7 @@ def _create_variants_per_sample_plot(py_mut: PyMutation,
         potential_sample_cols = [col for col in data.columns if col.startswith('TCGA-') or '|' in str(data[col].iloc[0])]
         
         if not potential_sample_cols:
-            print(f"No sample columns found that start with TCGA- or contain the | character")
+            print("No sample columns found that start with TCGA- or contain the | character")
             if ax is None:
                 _, ax = plt.subplots(figsize=(10, 6))
             ax.text(0.5, 0.5, "No data available for Variants per Sample\nNo sample columns detected", 
@@ -866,7 +866,7 @@ def _create_top_mutated_genes_plot(py_mut: PyMutation,
         print("No sample columns with TCGA-* format detected either")
         if ax is None:
             _, ax = plt.subplots(figsize=(10, 8))
-        ax.text(0.5, 0.5, f"No data available for Top Mutated Genes\nNo samples detected", 
+        ax.text(0.5, 0.5, "No data available for Top Mutated Genes\nNo samples detected", 
                ha='center', va='center', fontsize=12)
         if set_title:
             ax.set_title("Top Mutated Genes", fontsize=14, fontweight='bold')

@@ -2,11 +2,10 @@ import pandas as pd
 import duckdb
 import gzip
 import logging
-import sys
 from pathlib import Path
 from typing import Optional, Union
 
-from ..utils.fields import find_alias, col
+from ..utils.fields import find_alias
 
 logger = logging.getLogger(__name__)
 
@@ -66,7 +65,7 @@ def _maf_COSMIC_OncoKB_annotation_aux(
     if oncokb_table is not None:
         oncokb_table_path = Path(oncokb_table)
 
-    logger.info(f"Starting COSMIC annotation process")
+    logger.info("Starting COSMIC annotation process")
     logger.info(f"MAF file: {maf_file}")
     logger.info(f"Annotation table: {annotation_table}")
     if oncokb_table_path:
@@ -389,7 +388,7 @@ def _annotate_with_pandas(
         logger.info(f"Added {len(oncokb_columns)} OncoKB annotation columns")
 
     logger.info(f"Total annotation completed: {result_df.shape[0]} rows, {result_df.shape[1]} columns")
-    logger.info(f"Pandas annotation completed successfully")
+    logger.info("Pandas annotation completed successfully")
 
     return result_df
 
@@ -511,7 +510,7 @@ def _annotate_with_duckdb(
             logger.info(f"Added {len(oncokb_columns)} OncoKB annotation columns")
 
         logger.info(f"Total annotation completed: {result_df.shape[0]} rows, {result_df.shape[1]} columns")
-        logger.info(f"DuckDB annotation completed successfully")
+        logger.info("DuckDB annotation completed successfully")
 
         return result_df
 
@@ -572,7 +571,7 @@ def knownCancer(
     # use_duckdb = data_memory_gb > 2.0  # DuckDB option disabled
     
     logger.info(f"DataFrame memory usage: {data_memory_gb:.2f} GB")
-    logger.info(f"Using pandas backend for annotation")
+    logger.info("Using pandas backend for annotation")
 
     # Get full annotations using pandas backend
     # if use_duckdb:  # DuckDB option disabled
@@ -650,7 +649,7 @@ def knownCancer(
         _write_file_auto(filtered_df, final_output_path, compress_output)
         logger.info(f"Output file saved: {final_output_path}")
 
-    logger.info(f"KnownCancer annotation completed successfully")
+    logger.info("KnownCancer annotation completed successfully")
     logger.info(f"Filtered to {len(available_target_columns)} annotation columns plus Is_Oncogene_any field")
     
     # Update metadata

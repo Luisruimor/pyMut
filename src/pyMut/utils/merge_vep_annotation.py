@@ -1,7 +1,7 @@
 import pandas as pd
 import duckdb
 from pathlib import Path
-from typing import Optional, Dict, Any
+from typing import Optional, Dict
 import gzip
 import logging
 from .format import format_chr

@@ -1,5 +1,3 @@
-import pyarrow as pa
-import pandas as pd
 import logging
 from copy import deepcopy
 
@@ -139,7 +137,7 @@ def region(self, chrom: str, start: int, end: int):
     if filtered_count == 0:
         logger.warning(f"No variants found in region {chrom_formatted}:{start}-{end}")
     elif filtered_count == original_count:
-        logger.warning(f"Filter did not remove any variants - check region coordinates")
+        logger.warning("Filter did not remove any variants - check region coordinates")
     else:
         logger.info(f"Successfully filtered genomic region: {chrom_formatted}:{start}-{end}")
 

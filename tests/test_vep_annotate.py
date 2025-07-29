@@ -1,10 +1,7 @@
 import pytest
 import subprocess
 import tempfile
-import gzip
 from pathlib import Path
-from unittest.mock import Mock, patch, MagicMock, call
-import pandas as pd
 
 from src.pyMut.annotate.vep_annotate import (
     _extract_assembly_and_version_from_cache,

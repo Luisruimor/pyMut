@@ -6,8 +6,6 @@ mutation data for subsequent visualization in summary charts.
 """
 
 import pandas as pd
-import numpy as np
-from typing import List, Dict, Union, Optional, Tuple
 import os
 
 
@@ -251,7 +249,7 @@ def read_tsv(file_path: str) -> pd.DataFrame:
     try:
         # First try to read without comments
         data = pd.read_csv(file_path, sep='\t')
-    except (pd.errors.ParserError, pd.errors.EmptyDataError) as e:
+    except (pd.errors.ParserError, pd.errors.EmptyDataError):
         # If it fails due to a parsing error, try with the comment parameter
         try:
             data = pd.read_csv(file_path, sep='\t', comment='#', engine='python')

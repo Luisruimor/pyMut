@@ -20,18 +20,16 @@ Main functions:
 - create_oncoplot_plot(): Main function to create the oncoplot
 """
 
-import warnings
-from typing import Dict, List, Optional, Set, Tuple, Union, TYPE_CHECKING
+from typing import Dict, List, Optional, Set, Tuple, TYPE_CHECKING
 
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 import numpy as np
 import pandas as pd
-import seaborn as sns
 
 from ..utils.constants import (
     GENE_COLUMN, VARIANT_CLASSIFICATION_COLUMN, REF_COLUMN, ALT_COLUMN,
-    DEFAULT_ONCOPLOT_FIGSIZE, DEFAULT_ONCOPLOT_TOP_GENES, DEFAULT_ONCOPLOT_MAX_SAMPLES
+    DEFAULT_ONCOPLOT_FIGSIZE
 )
 
 if TYPE_CHECKING:
@@ -463,7 +461,7 @@ def _create_oncoplot_plot(py_mut: 'PyMutation',
         plot_matrix = plot_matrix.loc[sorted_genes, sorted_samples]
         
         # Show cascade algorithm information
-        print(f"Cascade applied:")
+        print("Cascade applied:")
         print(f"  - Genes sorted by frequency: {len(sorted_genes)}")
         print(f"  - Samples sorted by cascade algorithm: {len(sorted_samples)}")
         print(f"  - Final samples shown: {plot_matrix.shape[1]}")
@@ -829,11 +827,11 @@ def _create_oncoplot_plot(py_mut: 'PyMutation',
                     title_fontsize=10
                 )
     
-        print(f"Oncoplot created successfully:")
+        print("Oncoplot created successfully:")
         print(f"  - {plot_matrix.shape[0]} genes")
         print(f"  - {plot_matrix.shape[1]} samples")
         print(f"  - {len(color_mapping)} variant types")
-        print(f"  - Standard cascade algorithm applied (maftools)")
+        print("  - Standard cascade algorithm applied (maftools)")
         
         return fig 
         

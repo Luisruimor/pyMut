@@ -1,7 +1,4 @@
-import pyarrow as pa
-import pandas as pd
 import logging
-from copy import deepcopy
 
 # ────────────────────────────────────────────────────────────────
 # Logging configuration

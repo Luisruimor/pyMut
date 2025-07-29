@@ -1,11 +1,10 @@
 import gzip
 import logging
-import os
 import subprocess
 import shutil
 from datetime import datetime
 from pathlib import Path
-from typing import Union, Literal, Tuple, List, Optional
+from typing import Union, Literal, Tuple, Optional
 
 import pandas as pd
 
@@ -67,7 +66,7 @@ def _generate_transcript_regions(genome_version: str) -> pd.DataFrame:
                     "SYMBOL": transcript.gene_name,
                     "STRAND": "+" if transcript.strand == 1 else "-"
                 })
-            except Exception as e:
+            except Exception:
                 continue
 
     except Exception as e:
@@ -187,7 +186,7 @@ def _run_oncodriveclustl(mutations_file: Path, regions_file: Path, genome_build:
             '-c', str(threads)
         ]
 
-        logging.info(f"Running OncodriveCLUSTL with command:")
+        logging.info("Running OncodriveCLUSTL with command:")
         logging.info(' '.join(cmd))
 
         logger = logging.getLogger("oncodrive")
