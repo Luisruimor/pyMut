@@ -348,7 +348,6 @@ def to_vcf(self, output_path: str | Path) -> None:
         
         # Contig lines for each chromosome
         for chrom in unique_chroms:
-            # Format chromosome (only show the number)
             formatted_chrom = chrom
             if chrom.startswith('chr'):
                 formatted_chrom = chrom[3:]
