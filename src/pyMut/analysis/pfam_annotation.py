@@ -137,7 +137,7 @@ def resolve_uniprot_identifiers(df: pd.DataFrame, uniprot_column: str, db_conn: 
             df_work.loc[idx, 'resolution_method'] = method
     
     # Log resolution summary
-    logger.info(f"UniProt resolution summary:")
+    logger.info("UniProt resolution summary:")
     logger.info(f"   Total identifiers processed: {stats['total']:,}")
     logger.info(f"   Direct accessions: {stats['direct_accession']:,}")
     logger.info(f"   Resolved via short_name: {stats['via_short_name']:,}")
@@ -306,7 +306,7 @@ def _annotate_with_vep_domains(self, df):
     with_aa_pos = result_df['aa_pos'].notna().sum()
     with_pfam = result_df['pfam_id'].notna().sum()
 
-    logger.debug(f"Processing summary:")
+    logger.debug("Processing summary:")
     logger.debug(f"   Total variants: {total_variants:,}")
     logger.debug(f"   With UniProt ID: {with_uniprot:,}")
     logger.debug(f"   With amino acid position: {with_aa_pos:,}")
@@ -352,7 +352,7 @@ def annotate_pfam(self,
         has_vep_domains = col(df, 'Domains') is not None
         has_protein_change = col(df, 'Protein_Change') is not None
 
-        logger.debug(f"Data availability check:")
+        logger.debug("Data availability check:")
         logger.debug(f"   UniProt column: {'Yes' if uniprot_alias else 'No'}")
         logger.debug(f"   AA position column: {'Yes' if has_aa_pos else 'No'}")
         logger.debug(f"   VEP_DOMAINS: {'Yes' if has_vep_domains else 'No'}")
@@ -378,7 +378,7 @@ def annotate_pfam(self,
             # Display resolution summary if available
             if hasattr(result_df, 'attrs') and 'resolution_stats' in result_df.attrs:
                 stats = result_df.attrs['resolution_stats']
-                logger.info(f"\nFinal annotation summary:")
+                logger.info("\nFinal annotation summary:")
                 logger.info(f"   Total variants processed: {len(df):,}")
                 logger.info(f"   UniProt identifiers resolved: {stats['total'] - stats['unresolved']:,}/{stats['total']:,}")
                 logger.info(f"   Variants with PFAM annotations: {result_df['pfam_id'].notna().sum():,}")

@@ -1,5 +1,5 @@
 import pandas as pd
-from typing import Optional, Dict, List
+from typing import Optional, Dict
 import os
 import re
 import logging

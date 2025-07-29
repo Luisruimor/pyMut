@@ -1,10 +1,7 @@
 import pytest
 import subprocess
 import tempfile
-import gzip
 from pathlib import Path
-from unittest.mock import Mock, patch, MagicMock, call
-import pandas as pd
 
 from src.pyMut.annotate.vep_annotate import (
     _extract_assembly_and_version_from_cache,
@@ -477,8 +474,8 @@ class TestGeneralLogging:
             pytest.skip("Required real files not found")
         
         # Test that the function completes without raising exceptions
-        success, result = wrap_vcf_vep_annotate_protein(
-            VCF_FILE, VCF_CACHE_DIR, VCF_FASTA
+        success, result = wrap_vcf_vep_annotate_unified(
+            VCF_FILE, VCF_CACHE_DIR, VCF_FASTA, annotate_protein=True
         )
         
         # Should complete successfully

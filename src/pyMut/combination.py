@@ -4,7 +4,6 @@ Combination module for PyMutation objects.
 This module provides functionality to combine two PyMutation objects.
 """
 
-from typing import List, Set
 import logging
 import pandas as pd
 from .core import PyMutation, MutationMetadata

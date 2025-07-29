@@ -1,11 +1,9 @@
 import logging
 from pathlib import Path
-from typing import List, Optional, Union
+from typing import List, Optional
 import pandas as pd
-import numpy as np
 
 from .input import required_columns_MAF
-from .utils.format import reverse_format_chr
 
 # Import PyArrow if available
 try:
@@ -335,7 +333,6 @@ def to_vcf(self, output_path: str | Path) -> None:
     
     # ─── WRITE TO FILE WITH HEADER ──────────────────────────────
     from datetime import datetime
-    import time
     
     with open(output_path, 'w', encoding='utf-8') as f:
         # Generate VCF header

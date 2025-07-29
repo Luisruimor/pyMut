@@ -1,10 +1,7 @@
 import pytest
 import json
-import tempfile
 import pandas as pd
-from pathlib import Path
-from unittest.mock import Mock, patch, mock_open, MagicMock
-from typing import Dict, Any
+from unittest.mock import Mock, patch, mock_open
 
 from src.pyMut.filters.tissue_expression import (
     _load_rna_cancer_consensus,

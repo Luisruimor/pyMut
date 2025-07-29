@@ -1,0 +1,14 @@
+name: PyMut
+channels:
+  - bioconda
+  - conda-forge
+  - defaults
+  - https://repo.anaconda.com/pkgs/main
+  - https://repo.anaconda.com/pkgs/r
+dependencies:
+  - python=3.10
+  - bcftools
+  - ensembl-vep
+  - htslib
+  - tabix
+prefix: /home/luisruimore/anaconda3/envs/PyMut

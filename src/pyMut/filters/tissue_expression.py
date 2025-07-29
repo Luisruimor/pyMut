@@ -1,9 +1,9 @@
 import pandas as pd
 import json
 import logging
-from typing import Union, List, Dict, Any, Optional, Tuple
+from typing import Union, List, Dict, Optional, Tuple
 from pathlib import Path
-from ..utils.fields import find_alias, FIELDS
+from ..utils.fields import FIELDS
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -66,7 +66,6 @@ def get_gene_symbol(row: pd.Series) -> Optional[str]:
     Optional[str]
         The first valid gene symbol found, or None if no valid symbol is found
     """
-    from ..utils.fields import FIELDS
     
     hugo_symbol_fields = FIELDS.get("Hugo_Symbol", [])
     
