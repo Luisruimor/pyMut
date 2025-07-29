@@ -474,8 +474,8 @@ class TestGeneralLogging:
             pytest.skip("Required real files not found")
         
         # Test that the function completes without raising exceptions
-        success, result = wrap_vcf_vep_annotate_protein(
-            VCF_FILE, VCF_CACHE_DIR, VCF_FASTA
+        success, result = wrap_vcf_vep_annotate_unified(
+            VCF_FILE, VCF_CACHE_DIR, VCF_FASTA, annotate_protein=True
         )
         
         # Should complete successfully
