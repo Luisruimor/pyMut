@@ -284,8 +284,203 @@ def to_maf(self, output_path: str | Path) -> None:
 
 
 # Add the method to PyMutation class
+def to_vcf(self, output_path: str | Path) -> None:
+    """
+    Export a PyMutation object to VCF format.
+
+    This function creates a VCF file from a PyMutation object, including
+    a proper VCF header with metadata information.
+
+    Parameters
+    ----------
+    output_path : str | Path
+        Path where the VCF file will be written.
+
+    Raises
+    ------
+    ValueError
+        If the PyMutation object doesn't contain the necessary data for VCF export.
+    """
+    output_path = Path(output_path)
+    logger.info("Starting VCF export to: %s", output_path)
+
+    # Get the data and samples from PyMutation object
+    data = self.data.copy()
+    samples = self.samples
+    metadata = self.metadata
+    
+    # Log total number of variants to process
+    total_variants = len(data)
+    logger.info(f"Starting to process {total_variants} variants from {len(samples)} samples")
+
+    # ─── VALIDATE REQUIRED COLUMNS FOR EXPORT ──────────────────────
+    vcf_like_cols = ["CHROM", "POS", "REF", "ALT", "ID"]
+    missing_vcf_cols = [col for col in vcf_like_cols if col not in data.columns]
+    if missing_vcf_cols:
+        raise ValueError(f"Missing required VCF-style columns for VCF export: {missing_vcf_cols}")
+
+    missing_samples = [sample for sample in samples if sample not in data.columns]
+    if missing_samples:
+        raise ValueError(f"Missing sample columns for VCF export: {missing_samples}")
+
+    # ─── PREPARE DATA FOR VCF FORMAT ────────────────────────────────
+    # Get unique chromosomes for contig lines
+    unique_chroms = data['CHROM'].unique()
+    
+    # Get all columns that are not standard VCF columns and not sample columns
+    standard_vcf_cols = ["CHROM", "POS", "ID", "REF", "ALT", "QUAL", "FILTER", "INFO", "FORMAT"]
+    excluded_cols = standard_vcf_cols + samples
+    info_cols = [col for col in data.columns if col not in excluded_cols]
+    info_cols_str = "|".join(info_cols)
+    
+    # ─── WRITE TO FILE WITH HEADER ──────────────────────────────
+    from datetime import datetime
+    import time
+    
+    with open(output_path, 'w', encoding='utf-8') as f:
+        # Generate VCF header
+        f.write("##fileformat=VCFv4.3\n")
+        current_date = datetime.now().strftime("%Y%m%d")
+        f.write(f"##fileDate={current_date}\n")
+        f.write("##source=https://github.com/Luisruimor/pyMut\n")
+        f.write(f"##reference={metadata.assembly}\n")
+        f.write("##FILTER=<ID=PASS,Description=\"All filters passed\">\n")
+        
+        # Contig lines for each chromosome
+        for chrom in unique_chroms:
+            # Format chromosome (only show the number)
+            formatted_chrom = chrom
+            if chrom.startswith('chr'):
+                formatted_chrom = chrom[3:]
+            f.write(f"##contig=<ID={formatted_chrom}>\n")
+        
+        # Format and INFO fields
+        f.write("##FORMAT=<ID=GT,Number=1,Type=String,Description=\"Phased Genotype\">\n")
+        f.write(f"##INFO=<ID=PMUT,Number=.,Type=String,Description=\"Consequence annotations columns from PyMut. Format: {info_cols_str}\">\n")
+        
+        # Write VCF column headers
+        vcf_columns = ["#CHROM", "POS", "ID", "REF", "ALT", "QUAL", "FILTER", "INFO", "FORMAT"] + samples
+        f.write('\t'.join(vcf_columns) + '\n')
+        
+        # Prepare data for writing
+        vcf_data = data.copy()
+        
+        # Format chromosome values to remove 'chr' prefix
+        vcf_data['CHROM'] = vcf_data['CHROM'].apply(lambda x: x[3:] if x.startswith('chr') else x)
+        
+        # Set default values for missing columns
+        if "QUAL" not in vcf_data.columns:
+            vcf_data["QUAL"] = "."
+        if "FILTER" not in vcf_data.columns:
+            vcf_data["FILTER"] = "PASS"
+        if "FORMAT" not in vcf_data.columns:
+            vcf_data["FORMAT"] = "GT"
+            
+        # Populate INFO column with PMUT values
+        if info_cols:
+            vcf_data["INFO"] = vcf_data.apply(
+                lambda row: f"PMUT={('|'.join([str(row[col]) if pd.notna(row[col]) else '.' for col in info_cols]))}", 
+                axis=1
+            )
+        elif "INFO" not in vcf_data.columns:
+            vcf_data["INFO"] = "."
+        
+        # Process genotype data to replace bases with indices
+        logger.info("Processing genotype data to replace bases with indices")
+        for i, row in vcf_data.iterrows():
+            ref = row['REF']
+            alt_alleles = row['ALT'].split(',') if row['ALT'] else []
+            
+            # Build allele map {REF:0, ALT1:1, ALT2:2,...}
+            allele_map = {ref: '0'}
+            for idx, alt in enumerate(alt_alleles, 1):
+                allele_map[alt] = str(idx)
+            
+            # Process each sample's genotype
+            for sample in samples:
+                gt = row[sample]
+                
+                # Skip if genotype is missing or no-call
+                if pd.isna(gt) or gt in [".", "./.", ".|."]:
+                    continue
+                
+                # Keep only the part before ':' if it exists
+                gt_core = gt.split(":", 1)[0]
+                
+                # Determine the separator used ('|' preferentially)
+                sep = "|" if "|" in gt_core else "/"
+                
+                # Skip if not using the '|' separator
+                if sep != "|":
+                    continue
+                
+                # Split genotype by separator
+                alleles = gt_core.split(sep)
+                new_alleles = []
+                
+                # Replace each base with its index according to the map
+                for allele in alleles:
+                    if allele == ".":
+                        new_alleles.append(".")
+                    elif allele in allele_map:
+                        new_alleles.append(allele_map[allele])
+                    else:
+                        # If a base appears that is not in REF/ALT, add it to ALT and update indices
+                        alt_alleles.append(allele)
+                        new_idx = len(alt_alleles)
+                        allele_map[allele] = str(new_idx)
+                        new_alleles.append(str(new_idx))
+                        # Update the ALT column
+                        vcf_data.at[i, 'ALT'] = ','.join(alt_alleles)
+                
+                # Join the new alleles with the separator
+                vcf_data.at[i, sample] = sep.join(new_alleles)
+        
+        # Reorder columns to match VCF format
+        vcf_columns_data = ["CHROM", "POS", "ID", "REF", "ALT", "QUAL", "FILTER", "INFO", "FORMAT"] + samples
+        existing_columns = [col for col in vcf_columns_data if col in vcf_data.columns]
+        vcf_data = vcf_data[existing_columns]
+        
+        # Write data
+        chunk_size = 10000
+        
+        # For small datasets, write directly
+        if len(vcf_data) <= chunk_size:
+            logger.info(f"Writing {len(vcf_data)} variants to file")
+            vcf_data.to_csv(f, sep='\t', index=False, header=False, lineterminator='\n')
+            logger.info(f"Progress: {len(vcf_data)}/{len(vcf_data)} variants written (100.0%)")
+        else:
+            # For large datasets, write in batches
+            total_rows = len(vcf_data)
+            logger.info(f"Writing large dataset ({total_rows} variants) in chunks of {chunk_size}")
+            
+            for i in range(0, total_rows, chunk_size):
+                chunk = vcf_data.iloc[i:i+chunk_size]
+                chunk.to_csv(f, sep='\t', index=False, header=False, lineterminator='\n')
+                
+                # Calculate the actual number of rows written (may be less than i+chunk_size in the last batch)
+                rows_written = min(i + chunk_size, total_rows)
+                
+                # Log progress for each batch
+                logger.info(f"Progress: {rows_written}/{total_rows} variants written ({rows_written/total_rows*100:.1f}%)")
+        
+        # Remove the last newline character if it exists
+        if f.tell() > 0:
+            f.seek(f.tell() - 1)
+            f.truncate()
+
+    # Log final summary with detailed statistics
+    logger.info(f"VCF export completed successfully: {len(vcf_data)} variants processed and written to {output_path}")
+    logger.info(f"Conversion summary: {len(samples)} samples, {total_variants} input variants, {len(vcf_data)} output variants")
+
+
 def add_to_maf_method_to_pymutation():
     from .core import PyMutation
     PyMutation.to_maf = to_maf
 
+def add_to_vcf_method_to_pymutation():
+    from .core import PyMutation
+    PyMutation.to_vcf = to_vcf
+
 add_to_maf_method_to_pymutation()
+add_to_vcf_method_to_pymutation()
