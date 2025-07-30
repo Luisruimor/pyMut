@@ -18,6 +18,7 @@ from .analysis.mutation_burden import MutationBurdenMixin
 from .analysis.mutational_signature import MutationalSignatureMixin
 from .annotate.actionable_mutation import ActionableMutationMixin
 from .annotate.cosmic_cancer_annotate import CancerAnnotateMixin
+from .output import OutputMixin
 from .filters.chrom_sample_filter import filter_by_chrom_sample
 from .filters.genomic_range import gen_region, region
 from .filters.pass_filter import pass_filter
@@ -52,7 +53,7 @@ class MutationMetadata:
         self.assembly = assembly
 
 
-class PyMutation(CancerAnnotateMixin, ActionableMutationMixin, MutationBurdenMixin, MutationalSignatureMixin, PfamAnnotationMixin):
+class PyMutation(CancerAnnotateMixin, ActionableMutationMixin, MutationBurdenMixin, MutationalSignatureMixin, PfamAnnotationMixin, OutputMixin):
     def __init__(self, data: pd.DataFrame, metadata: Optional[MutationMetadata] = None,
                  samples: Optional[List[str]] = None):
         self.data = data
