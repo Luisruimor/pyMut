@@ -1,33 +1,19 @@
 """
-====================================================
-Mapa de nombres de campo estándar (canónicos) y sus
-alias en salidas MAF/VEP/ANNOVAR/cBioPortal, etc.
-----------------------------------------------------
+Field mapping utilities for pyMut.
 
-• Fácil de ampliar → añade una entrada más en el
-  diccionario
-• Proporciona utilidades para obtener el nombre
-  canónico a partir de cualquier alias **sin modificar
-  el DataFrame original**.
+Maps canonical field names to their aliases in MAF/VEP/ANNOVAR/cBioPortal outputs.
+Provides utilities to get canonical names from any alias without modifying the original DataFrame.
 
-Ejemplo rápido
-~~~~~~~~~~~~~~
+Example:
 >>> from fields import col
->>> aa_series = col(df, "Protein_position")  # Devuelve df[alias_encontrado]
+>>> aa_series = col(df, "Protein_position")
 >>> uniprot_series = col(df, "UNIPROT", required=True)
-
-A partir de aquí tu código se abstrae de los alias;
-si en el DataFrame la columna se llama `AAPos` o
-`VEP_Protein_position`, tu lógica siempre usa el nombre
-canónico.
 """
 from __future__ import annotations
 
 from typing import Dict, List, Sequence
 
-# ---------------------------------------------------------------------------
-# Diccionario principal: clave = nombre canónico, valor = lista de alias
-# ---------------------------------------------------------------------------
+# Main dictionary: key = canonical name, value = list of aliases
 FIELDS: Dict[str, List[str]] = {
     # Posición de aminoácido en la proteína
     "Protein_position": [
@@ -236,17 +222,13 @@ FIELDS: Dict[str, List[str]] = {
     ],
 }
 
-# ---------------------------------------------------------------------------
-# Alias inverso: alias → nombre canónico
-# ---------------------------------------------------------------------------
+# Reverse alias mapping: alias → canonical name
 ALIAS_TO_CANONICAL: Dict[str, str] = {
     alias: canonical for canonical, aliases in FIELDS.items() for alias in aliases
 }
 
 
-# ---------------------------------------------------------------------------
-# Funciones utilitarias
-# ---------------------------------------------------------------------------
+# Utility functions
 
 def canonical_name(column: str) -> str:
     """Devuelve el nombre canónico asociado a *column* (alias)."""

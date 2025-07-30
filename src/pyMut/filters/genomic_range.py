@@ -3,9 +3,7 @@ from copy import deepcopy
 
 from ..utils.format import format_chr
 
-# ────────────────────────────────────────────────────────────────
-# LOGGER CONFIGURATION
-# ────────────────────────────────────────────────────────────────
+# Logger configuration
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)  # Change to DEBUG for more verbosity
 if not logger.handlers:

@@ -619,7 +619,7 @@ def read_maf(path: str | Path, assembly: str, cache_dir: Optional[str | Path] = 
 
     logger.info("Starting MAF reading: %s", path)
 
-    # ─── 0) CHECK CACHE ─────────────────────────────────────────────────────
+    # Check cache
     cache_path = _get_cache_path(path, cache_dir_path)
     if cache_path.exists():
         logger.info("Loading from cache: %s", cache_path)
@@ -652,7 +652,7 @@ def read_maf(path: str | Path, assembly: str, cache_dir: Optional[str | Path] = 
         except Exception as e:
             logger.warning("Cache loading failed (%s), proceeding with fresh read", e)
 
-    # ─── 1) SEPARATE COMMENTS (#) FROM BODY ──────────────────────────────
+    # Separate comments from body
     comments: list[str] = []
     buf = io.StringIO()
     try:
@@ -671,7 +671,7 @@ def read_maf(path: str | Path, assembly: str, cache_dir: Optional[str | Path] = 
         logger.exception("Error reading header/comments from MAF.")
         raise
 
-    # ─── 2) LOAD DATAFRAME -------------------------------------------------
+    # Load dataframe
     csv_kwargs = dict(sep="\t", dtype_backend="pyarrow", low_memory=False)
     try:
         logger.info("Reading MAF with 'pyarrow' engine…")
@@ -682,7 +682,7 @@ def read_maf(path: str | Path, assembly: str, cache_dir: Optional[str | Path] = 
         buf.seek(0)
         maf = pd.read_csv(buf, engine="c", low_memory=False, sep="\t")
 
-    # ─── 3) VALIDATE AND STANDARDIZE COLUMNS ---------------------------------
+    # Validate and standardize columns
     _standardise_maf_columns(maf)
     missing = [c for c in required_columns_MAF if c not in maf.columns]
     if missing:
@@ -694,7 +694,7 @@ def read_maf(path: str | Path, assembly: str, cache_dir: Optional[str | Path] = 
     # Normalize Variant Classification column names
     maf = normalize_variant_classification(maf)
 
-    # ─── 4) GENERATE VCF-STYLE FIELDS ---------------------------------------
+    # Generate VCF-style fields
     maf["CHROM"] = maf["Chromosome"].astype(str).map(format_chr)
     maf["POS"] = maf["Start_Position"].astype("int64")
 
@@ -717,7 +717,7 @@ def read_maf(path: str | Path, assembly: str, cache_dir: Optional[str | Path] = 
     if "FILTER" not in maf.columns:
         maf["FILTER"] = "."
 
-    # ─── 5) EXPAND SAMPLES TO COLUMNS ------------------------------------
+    # Expand samples to columns
     samples = maf["Tumor_Sample_Barcode"].dropna().unique().tolist()
     logger.info("Detected %d unique samples.", len(samples))
 

@@ -120,7 +120,6 @@ def merge_maf_with_vep_annotations(
 
     logger.info(f"Reading MAF file: {maf_file}")
 
-    # Read MAF file
     if maf_file.suffix == '.gz':
         with gzip.open(maf_file, 'rt') as f:
             maf_df = pd.read_csv(f, sep='\t', comment='#', low_memory=False)
@@ -149,14 +148,12 @@ def merge_maf_with_vep_annotations(
 
     logger.info(f"VEP file loaded: {vep_df.shape[0]} rows, {vep_df.shape[1]} columns")
 
-    # Create region keys for MAF data
     logger.info("Creating region keys for MAF data...")
     maf_df['region_key'] = maf_df.apply(_create_region_key_from_maf, axis=1)
 
     # Use VEP Uploaded_variation as the key (after removing # prefix)
     vep_df['region_key'] = vep_df['Uploaded_variation']
 
-    # Parse VEP Extra column to extract annotations
     logger.info("Parsing VEP Extra column...")
     vep_extra_parsed = vep_df['Extra'].apply(_parse_vep_extra_column)
     extra_df = pd.json_normalize(vep_extra_parsed)
@@ -173,7 +170,6 @@ def merge_maf_with_vep_annotations(
 
     logger.info(f"Filtered to {meaningful_annotations.shape[0]} meaningful annotations")
 
-    # Remove duplicates from VEP before merge to avoid cartesian product
     logger.info("Removing VEP duplicates...")
     original_vep_count = len(meaningful_annotations)
     meaningful_annotations = meaningful_annotations.drop_duplicates("region_key", keep="first")

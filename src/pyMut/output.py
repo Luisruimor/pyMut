@@ -41,7 +41,6 @@ def _load_maf_column_order() -> List[str]:
     """
     global _MAF_COLUMN_ORDER_CACHE
 
-    # Use cache if it already exists
     if _MAF_COLUMN_ORDER_CACHE is not None:
         return _MAF_COLUMN_ORDER_CACHE
 
@@ -50,11 +49,8 @@ def _load_maf_column_order() -> List[str]:
     try:
         if maf_columns_file.exists():
             columns_df = pd.read_csv(maf_columns_file)
-            # Extract column names from the 'nombre' column, ordered by 'id'
             ordered_columns = columns_df.sort_values('id')['nombre'].tolist()
             logger.debug(f"Loaded {len(ordered_columns)} column names from MAF_COL_ORDER.csv")
-
-            # Save to cache
             _MAF_COLUMN_ORDER_CACHE = ordered_columns
             return ordered_columns
         else:
@@ -99,11 +95,10 @@ class OutputMixin:
         samples = self.samples
         metadata = self.metadata
 
-        # Log total number of variants to process
         total_variants = len(data)
         logger.info(f"Starting to process {total_variants} variants from {len(samples)} samples")
 
-        # ─── VALIDATE REQUIRED COLUMNS FOR EXPORT ──────────────────────
+        # Validate required columns
         vcf_like_cols = ["CHROM", "POS", "REF", "ALT", "ID"]
         missing_vcf_cols = [col for col in vcf_like_cols if col not in data.columns]
         if missing_vcf_cols:
@@ -113,7 +108,7 @@ class OutputMixin:
         if missing_samples:
             raise ValueError(f"Missing sample columns for MAF export: {missing_samples}")
 
-        # ─── CONVERT TO MAF FORMAT ────────────────────────────────
+        # Convert to MAF format
         # Determine whether to use PyArrow for large datasets
         use_pyarrow = HAS_PYARROW and len(data) > 10000
 
@@ -153,7 +148,6 @@ class OutputMixin:
         log_frequency = max(1, total_samples // 50)  # Log every ~2% of samples, minimum 1
 
         for sample_idx, sample in enumerate(samples, 1):
-            # Log progress for sample processing (only every log_frequency samples)
             if sample_idx % log_frequency == 0 or sample_idx == 1 or sample_idx == total_samples:
                 logger.info(
                     f"Processing sample {sample_idx}/{total_samples}: {sample} ({sample_idx / total_samples * 100:.1f}%)")
@@ -222,8 +216,7 @@ class OutputMixin:
         logger.info(f"Sample processing completed: {processed_samples}/{total_samples} samples processed")
         logger.info(f"Total variants found: {total_variants_found} variants")
 
-        # ─── ENSURE COLUMN ORDER ─────────────────────
-
+        # Ensure column order
         # Load the preferred column order from MAF_COL_ORDER.csv
         preferred_column_order = _load_maf_column_order()
 
@@ -253,7 +246,7 @@ class OutputMixin:
         if 'End_Position' in maf_df.columns:
             maf_df['End_Position'] = maf_df['End_Position'].astype(int)
 
-        # ─── WRITE TO FILE WITH COMMENTS ──────────────────────────────
+        # Write to file
         chunk_size = 10000
 
         with open(output_path, 'w', encoding='utf-8') as f:
@@ -331,7 +324,7 @@ class OutputMixin:
         total_variants = len(data)
         logger.info(f"Starting to process {total_variants} variants from {len(samples)} samples")
 
-        # ─── VALIDATE REQUIRED COLUMNS FOR EXPORT ──────────────────────
+        # Validate required columns for export
         vcf_like_cols = ["CHROM", "POS", "REF", "ALT", "ID"]
         missing_vcf_cols = [col for col in vcf_like_cols if col not in data.columns]
         if missing_vcf_cols:
@@ -341,7 +334,7 @@ class OutputMixin:
         if missing_samples:
             raise ValueError(f"Missing sample columns for VCF export: {missing_samples}")
 
-        # ─── PREPARE DATA FOR VCF FORMAT ────────────────────────────────
+        # Prepare data for VCF format
         # Get unique chromosomes for contig lines
         unique_chroms = data['CHROM'].unique()
 
@@ -351,7 +344,7 @@ class OutputMixin:
         info_cols = [col for col in data.columns if col not in excluded_cols]
         info_cols_str = "|".join(info_cols)
 
-        # ─── WRITE TO FILE WITH HEADER ──────────────────────────────
+        # Write to file with header
         from datetime import datetime
 
         with open(output_path, 'w', encoding='utf-8') as f:

@@ -14,12 +14,7 @@ logger = logging.getLogger(__name__)
 
 
 def _extract_assembly_and_version_from_cache(cache_dir: Union[str, Path]) -> tuple[str, str]:
-    """
-    Extract assembly and version information from VEP cache directory name.
-
-    Expected format: homo_sapiens_vep_{version}_{assembly}
-    Example: homo_sapiens_vep_114_GRCh38 -> ('GRCh38', '114')
-    """
+    """Extract assembly and version information from VEP cache directory name."""
     cache_path = Path(cache_dir)
     cache_name = cache_path.name
 
@@ -49,23 +44,14 @@ def _get_case_insensitive_column(columns: list, target_column: str) -> str:
 def _maf_to_region(maf_path: Union[str, Path],
                    out_path: Optional[Union[str, Path]] = None) -> Tuple[bool, str]:
     """
-    Convert a MAF file (compressed .gz or uncompressed .maf) to region format.
-
-    Output format: chr:start-end:strand/ALT
+    Convert a MAF file to region format.
 
     Args:
         maf_path: Path to the MAF file (.maf or .maf.gz)
-        out_path: Path to the output .region file (optional). If None, creates a file
-                 in the same directory with the same name but .region extension
+        out_path: Path to the output .region file (optional)
 
     Returns:
-        Tuple[bool, str]: (success_status, output_path) where success_status is True 
-                         if conversion was successful, and output_path is the path to 
-                         the output .region file
-
-    Raises:
-        FileNotFoundError: If the MAF file doesn't exist
-        Exception: For any other errors during processing
+        Tuple[bool, str]: (success_status, output_path)
     """
     maf_file = Path(maf_path)
 
@@ -148,14 +134,14 @@ def wrap_maf_vep_annotate_protein(maf_file: Union[str, Path],
     Wrapper method for VEP annotation that accepts MAF files and merges annotations back to MAF.
 
     This method converts a MAF file to region format internally, runs VEP annotation, and then
-    merges the VEP annotations back with the original MAF file. VEP annotation uses the following 
+    merges the VEP annotations back with the original MAF file. VEP annotation uses the following
     fixed parameters:
     - --offline --cache
     - --protein --uniprot --domains --symbol
     - --synonyms (automatically constructed from cache directory or provided explicitly)
     - --no_stats (only when no_stats=False)
 
-    After successful VEP annotation, the method automatically merges the VEP results with the 
+    After successful VEP annotation, the method automatically merges the VEP results with the
     original MAF file, creating an annotated MAF file with VEP_ prefixed columns. The original
     VEP annotation files are preserved and not deleted.
 
@@ -176,7 +162,7 @@ def wrap_maf_vep_annotate_protein(maf_file: Union[str, Path],
         no_stats: Whether to disable VEP statistics generation (default: True). When True, --no_stats flag is omitted
 
     Returns:
-        Tuple[bool, str]: (success_status, output_info) where success_status is True 
+        Tuple[bool, str]: (success_status, output_info) where success_status is True
                          if annotation was successful, and output_info contains information
                          about both the VEP file and the merged MAF file paths
 
@@ -236,7 +222,6 @@ def wrap_maf_vep_annotate_protein(maf_file: Union[str, Path],
         chr_synonyms_path = Path(synonyms_file)
         logger.info(f"Using provided chr synonyms path: {chr_synonyms_path}")
 
-    # Construct VEP command
     vep_cmd = [
         "vep",
         "--input_file", str(region_file),
@@ -265,7 +250,6 @@ def wrap_maf_vep_annotate_protein(maf_file: Union[str, Path],
         if result.stderr:
             logger.warning(f"VEP warnings/messages: {result.stderr}")
 
-        # Merge VEP annotations with original MAF file
         logger.info("Merging VEP annotations with original MAF file...")
         try:
             merged_df, merged_output_path = merge_maf_with_vep_annotations(

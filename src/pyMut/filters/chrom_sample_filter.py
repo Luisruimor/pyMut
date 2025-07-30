@@ -5,9 +5,7 @@ from typing import Optional, List, Union
 from ..utils.constants import SAMPLE_COLUMN
 from ..utils.format import format_chr
 
-# ────────────────────────────────────────────────────────────────
 # Logging configuration
-# ────────────────────────────────────────────────────────────────
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)  # Change to DEBUG for more verbosity
 if not logger.handlers:
@@ -53,14 +51,14 @@ class ChromSampleFilterMixin:
             If None, no sample filtering is applied.
             When provided, both rows and columns are filtered to include only the specified samples.
         sample_column : str, optional
-            Name of the column containing sample information. 
+            Name of the column containing sample information.
             Defaults to 'Tumor_Sample_Barcode'.
 
         Returns
         -------
         PyMutation
             A new instance of PyMutation containing only the rows and columns that match
-            the specified chromosome and/or sample criteria. The metadata is 
+            the specified chromosome and/or sample criteria. The metadata is
             copied and updated to record the applied filter.
 
         Raises

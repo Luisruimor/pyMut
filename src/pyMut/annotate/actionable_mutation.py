@@ -16,7 +16,6 @@ ONCOKB_ENDPOINT = "https://www.oncokb.org/api/v1/annotate/mutations/byGenomicCha
 VALID_REFERENCE_GENOMES = ["GRCh37", "GRCh38"]
 
 
-# NO __init__ aquí
 class ActionableMutationMixin:
     def actionable_mutations_oncokb(self, token: str, batch_size: int = 5000, timeout: int = 30,
                                     max_retries: int = 3, retry_backoff: float = 1.0) -> pd.DataFrame:
@@ -25,7 +24,7 @@ class ActionableMutationMixin:
         
         This method extracts the required columns from self.data, sends the data to the OncoKB API
         in batches, and adds the annotations as columns to self.data.
-        
+
         Parameters
         ----------
         token : str
@@ -43,7 +42,7 @@ class ActionableMutationMixin:
         -------
         pd.DataFrame
             The original self.data DataFrame with OncoKB annotations added as columns.
-            
+
         Raises
         ------
         ValueError
@@ -51,7 +50,6 @@ class ActionableMutationMixin:
         requests.exceptions.RequestException
             If there's an error with the API request that can't be resolved with retries.
         """
-        # Generate referenceGenome variable
         referenceGenome = f"GRCh{self.metadata.assembly}"
         logger.info("Using reference genome: %s", referenceGenome)
 
@@ -64,7 +62,6 @@ class ActionableMutationMixin:
 
         if "CHROM" not in self.data.columns:
             raise ValueError("Missing required column 'CHROM' for OncoKB input")
-        # Remove 'chr' prefix using str.lstrip
         oncokb_input_df["CHROM"] = self.data["CHROM"].str.lstrip("chr")
 
         if "POS" not in self.data.columns:
@@ -110,7 +107,6 @@ class ActionableMutationMixin:
         # Add index to preserve original order
         oncokb_input_df = oncokb_input_df.reset_index().rename(columns={"index": "_original_index"})
 
-        # Split data into batches
         num_variants = len(oncokb_input_df)
         num_batches = math.ceil(num_variants / batch_size)
         logger.info("Splitting %d variants into %d batches of max %d variants each",
