@@ -1,14 +1,15 @@
 import gzip
-import logging
-import subprocess
 import hashlib
-import os
-from typing import List, Optional
 import io
+import logging
+import os
+import subprocess
+import time
 from pathlib import Path
+from typing import List, Optional
+
 import numpy as np
 import pandas as pd
-import time
 
 from .core import PyMutation, MutationMetadata
 from .utils.format import format_rs, format_chr, normalize_variant_classification
@@ -17,18 +18,21 @@ from .utils.format import format_rs, format_chr, normalize_variant_classificatio
 try:
     import pyarrow as pa
     import pyarrow.compute as pc
+
     HAS_PYARROW = True
 except ImportError:
     HAS_PYARROW = False
 
 try:
     import cyvcf2
+
     HAS_CYVCF2 = True
 except ImportError:
     HAS_CYVCF2 = False
 
 try:
     import psutil
+
     HAS_PSUTIL = True
 except ImportError:
     HAS_PSUTIL = False
@@ -71,11 +75,11 @@ RANK_SEVERE = [
 rank_ser = pd.Series(range(len(RANK_SEVERE)), index=RANK_SEVERE)
 
 MAP_SNV = {
-    "stop_gained":       "Nonsense_Mutation",
-    "stop_lost":         "Nonstop_Mutation",
+    "stop_gained": "Nonsense_Mutation",
+    "stop_lost": "Nonstop_Mutation",
     "stop_retained_variant": "Silent",
-    "missense_variant":  "Missense_Mutation",
-    "synonymous_variant":"Silent",
+    "missense_variant": "Missense_Mutation",
+    "synonymous_variant": "Silent",
     "splice_donor_variant": "Splice_Site",
     "splice_acceptor_variant": "Splice_Site",
     "splice_donor_region_variant": "Splice_Site",
@@ -92,7 +96,7 @@ MAP_SNV = {
 }
 
 MAP_INDEL = {
-    "stop_gained": "FrameShift",   # se completará con _Del o _Ins
+    "stop_gained": "FrameShift",  # se completará con _Del o _Ins
     "stop_lost": "InFrame",
     "missense_variant": "InFrame",
     # los demás (UTR, intrón, etc.) toman la misma etiqueta que SNV
@@ -107,6 +111,7 @@ required_columns_MAF: List[str] = [
     "Tumor_Sample_Barcode",
 ]
 _required_canonical_MAF = {c.lower(): c for c in required_columns_MAF}
+
 
 # Utility functions
 
@@ -123,6 +128,7 @@ def _get_cache_path(file_path: Path, cache_dir: Optional[Path] = None) -> Path:
     file_hash = hashlib.md5(hash_input.encode()).hexdigest()[:16]
 
     return cache_dir / f"{file_path.stem}_{file_hash}.parquet"
+
 
 def _create_tabix_index(vcf_path: Path, create_index: bool = False) -> bool:
     """Create Tabix index if it doesn't exist and create_index is True."""
@@ -142,6 +148,7 @@ def _create_tabix_index(vcf_path: Path, create_index: bool = False) -> bool:
         logger.warning("Failed to create Tabix index: %s", e)
         return False
 
+
 def _get_primary_consequence(consequence_series: pd.Series) -> pd.Series:
     """
     Get the primary (most severe) consequence from VEP Consequence column using vectorized operations.
@@ -159,22 +166,23 @@ def _get_primary_consequence(consequence_series: pd.Series) -> pd.Series:
     # explode separa por '&' y duplica las filas manteniendo su índice original
     tmp = (
         consequence_series
-          .str.split('&')
-          .explode()
-          .str.strip()                     # quita espacios
-          .to_frame('term')
+        .str.split('&')
+        .explode()
+        .str.strip()  # quita espacios
+        .to_frame('term')
     )
     tmp['rank'] = tmp['term'].map(rank_ser)
-    
+
     # elegimos la consecuencia con rank más bajo para cada variante
     primary = (
-        tmp.reset_index()                 # 'index' ← índice original de df
-           .sort_values(['index','rank'])
-           .drop_duplicates('index')
-           .set_index('index')['term']
+        tmp.reset_index()  # 'index' ← índice original de df
+        .sort_values(['index', 'rank'])
+        .drop_duplicates('index')
+        .set_index('index')['term']
     )
-    
+
     return primary
+
 
 def _classify_variant(row):
     """
@@ -192,29 +200,30 @@ def _classify_variant(row):
     """
     cons = row['prim_cons']
     vtype = row['VEP_VARIANT_CLASS']
-    
+
     # --- SNVs ------------------------------------------------------------
     if vtype == 'SNV':
         return MAP_SNV.get(cons, 'RNA')
-    
+
     # --- indels ----------------------------------------------------------
     elif vtype in ('deletion', 'insertion'):
         # longitud REF y ALT deben estar en tu DataFrame
         indel_len = abs(len(str(row['REF'])) - len(str(row['ALT'])))
         in_frame = (indel_len % 3 == 0)
-        
+
         base = MAP_INDEL.get(cons, MAP_SNV.get(cons, 'RNA'))
-        
-        if base in ('FrameShift', 'Nonsense_Mutation'):   # stop_gained
+
+        if base in ('FrameShift', 'Nonsense_Mutation'):  # stop_gained
             base = 'Frame_Shift' if not in_frame else 'In_Frame'
         elif base == 'InFrame':
             base = 'In_Frame'
-        
+
         suffix = 'Del' if vtype == 'deletion' else 'Ins'
         return f'{base}_{suffix}' if not base.endswith('_') else base + suffix
-    
+
     # --- otros (raro) ----------------------------------------------------
     return 'RNA'
+
 
 def _map_vep_variant_class_to_maf_variant_type(row):
     """
@@ -251,7 +260,7 @@ def _map_vep_variant_class_to_maf_variant_type(row):
     vep_variant_class = row.get('VEP_VARIANT_CLASS', '')
     ref = str(row.get('REF', ''))
     alt = str(row.get('ALT', ''))
-    
+
     # Handle missing or empty values
     if not vep_variant_class or vep_variant_class in ['', '.', 'nan', 'None']:
         vep_variant_class = ''
@@ -259,11 +268,11 @@ def _map_vep_variant_class_to_maf_variant_type(row):
         ref = ''
     if not alt or alt in ['.', 'nan', 'None']:
         alt = ''
-    
+
     # Calculate lengths
     ref_len = len(ref)
     alt_len = len(alt)
-    
+
     # First, handle specific VEP variant classes that should not be overridden by length rules
     vep_to_maf_map = {
         'SNV': 'SNP',
@@ -273,11 +282,11 @@ def _map_vep_variant_class_to_maf_variant_type(row):
         'inversion': 'INV',
         'copy_number_variation': 'CNV'
     }
-    
+
     # If we have a direct VEP mapping (except substitution), use it
     if vep_variant_class in vep_to_maf_map:
         return vep_to_maf_map[vep_variant_class]
-    
+
     # Handle substitution with length-based rules
     if vep_variant_class == 'substitution':
         if ref_len == alt_len:
@@ -292,7 +301,7 @@ def _map_vep_variant_class_to_maf_variant_type(row):
         else:
             # Different lengths for substitution - treat as mixed indel
             return 'IND'
-    
+
     # If no VEP class or unknown VEP class, apply length-based rules as fallback
     # This handles cases where VEP_VARIANT_CLASS is missing, empty, or not in our known mappings
     if ref_len == alt_len and ref_len == 1:
@@ -310,9 +319,10 @@ def _map_vep_variant_class_to_maf_variant_type(row):
         return 'DEL'
     elif ref_len > 0 and alt_len > 0 and ref_len != alt_len:
         return 'IND'
-    
+
     # If nothing matches, return UNKNOWN
     return 'UNKNOWN'
+
 
 def _vectorized_gt_to_alleles(gt_series: pd.Series, ref_series: pd.Series, alt_series: pd.Series) -> pd.Series:
     """Convert genotypes to alleles using vectorized operations."""
@@ -354,6 +364,7 @@ def _vectorized_gt_to_alleles(gt_series: pd.Series, ref_series: pd.Series, alt_s
         result[i] = sep.join(translated)
 
     return pd.Series(result, index=gt_series.index)
+
 
 def _parse_info_column_vectorized(info_series: pd.Series) -> pd.DataFrame:
     """Parse INFO column using pyarrow if available."""
@@ -455,6 +466,7 @@ def _open_text_maybe_gzip(path: str | Path):
     logger.debug("Opening %s as plain text.", path)
     return open(path, encoding="utf-8", errors="replace")
 
+
 def _gt_to_alleles(gt: str, ref: str, alt: str) -> str:
     """
     Convert a numeric genotype string to actual allele sequences.
@@ -481,7 +493,7 @@ def _gt_to_alleles(gt: str, ref: str, alt: str) -> str:
         allele sequences. Returns an empty string if `gt` is empty, and
         preserves no-calls ('.', './.', '.|.') as-is.
     """
-    if not gt:           # empty string
+    if not gt:  # empty string
         return ""
     # Keep only the part before ':' if it exists
     gt_core = gt.split(":", 1)[0]
@@ -534,6 +546,7 @@ def _parse_info_column(info_series: pd.Series) -> pd.DataFrame:
         DataFrame where each column corresponds to a key from the INFO field.
         Values are strings for key–value pairs, and True for flags without values.
     """
+
     def _parser(cell: str | float) -> dict[str, str | bool]:
         if pd.isna(cell):
             return {}
@@ -552,6 +565,7 @@ def _parse_info_column(info_series: pd.Series) -> pd.DataFrame:
     parsed = info_series.apply(_parser)
     info_df = pd.DataFrame(parsed.tolist())  # type: ignore[arg-type]
     return info_df
+
 
 # Main functions
 
@@ -598,7 +612,7 @@ def read_maf(path: str | Path, assembly: str, cache_dir: Optional[str | Path] = 
     # Validate assembly parameter
     if assembly not in ["37", "38"]:
         raise ValueError("Assembly parameter must be either '37' or '38'")
-        
+
     start_time = time.time()
     path = Path(path)
     cache_dir_path = Path(cache_dir) if cache_dir else None
@@ -699,7 +713,7 @@ def read_maf(path: str | Path, assembly: str, cache_dir: Optional[str | Path] = 
     # Check if QUAL and FILTER columns exist before defaulting to "."
     if "QUAL" not in maf.columns:
         maf["QUAL"] = "."
-        
+
     if "FILTER" not in maf.columns:
         maf["FILTER"] = "."
 
@@ -712,7 +726,7 @@ def read_maf(path: str | Path, assembly: str, cache_dir: Optional[str | Path] = 
     default_cols = pd.DataFrame(
         {sample: ref_ref for sample in samples},
         index=maf.index,
-        dtype="object"            # avoid unnecessary casting
+        dtype="object"  # avoid unnecessary casting
     )
 
     # Add all columns at once
@@ -772,16 +786,16 @@ def read_maf(path: str | Path, assembly: str, cache_dir: Optional[str | Path] = 
     )
 
     total_time = time.time() - start_time
-    logger.info("MAF processed successfully: %d rows, %d columns in %.2f seconds", 
+    logger.info("MAF processed successfully: %d rows, %d columns in %.2f seconds",
                 *maf.shape, total_time)
     return PyMutation(maf, metadata, samples)
 
 
 def read_vcf(
-    path: str | Path, 
-    assembly: str,
-    create_index: bool = False,
-    cache_dir: Optional[str | Path] = None
+        path: str | Path,
+        assembly: str,
+        create_index: bool = False,
+        cache_dir: Optional[str | Path] = None
 ) -> PyMutation:
     """
     Read a VCF file and return a PyMutation object with optimized performance.
@@ -831,7 +845,7 @@ def read_vcf(
     # Validate assembly parameter
     if assembly not in ["37", "38"]:
         raise ValueError("Assembly parameter must be either '37' or '38'")
-        
+
     start_time = time.time()
     path = Path(path)
     cache_dir_path = Path(cache_dir) if cache_dir else None
@@ -910,7 +924,7 @@ def read_vcf(
 
     # Read directly without StringIO
     csv_kwargs = {
-        "sep": "\t", 
+        "sep": "\t",
         "names": header_cols,
         "dtype_backend": "pyarrow" if HAS_PYARROW else None,
         "low_memory": False,
@@ -955,7 +969,7 @@ def read_vcf(
 
     # ─── 7.5) VECTORIZED GENOTYPE CONVERSION ─────────────────────────────────
     logger.info("Starting vectorized genotype conversion before INFO expansion...")
-    
+
     if original_sample_columns:
         # Vectorized conversion for all sample columns at once
         conversion_start = time.time()
@@ -971,15 +985,15 @@ def read_vcf(
             batch_cols = original_sample_columns[batch_start:batch_end]
 
             if batch_start % 500 == 0:
-                logger.debug("Processing genotype batch %d-%d of %d samples", 
-                           batch_start + 1, batch_end, len(original_sample_columns))
+                logger.debug("Processing genotype batch %d-%d of %d samples",
+                             batch_start + 1, batch_end, len(original_sample_columns))
 
             # Convert batch of columns
             for sample_col in batch_cols:
                 if sample_col in vcf.columns:  # Ensure column exists
                     vcf[sample_col] = _vectorized_gt_to_alleles(
-                        vcf[sample_col], 
-                        vcf["REF"], 
+                        vcf[sample_col],
+                        vcf["REF"],
                         vcf["ALT"]
                     )
 
@@ -994,12 +1008,12 @@ def read_vcf(
         # Pandas - direct processing
         info_df = _parse_info_column_vectorized(vcf["INFO"])
         vcf = pd.concat([vcf, info_df], axis=1)
-        
+
         # Remove the original INFO column after expansion
         vcf = vcf.drop(columns=["INFO"])
 
-        logger.debug("INFO column expanded into %d columns in %.2f s", 
-                    info_df.shape[1], time.time() - expand_start)
+        logger.debug("INFO column expanded into %d columns in %.2f s",
+                     info_df.shape[1], time.time() - expand_start)
 
     # ─── 9) PROCESS FUNCOTATOR ANNOTATIONS ──────────────────────────────────
     if "FUNCOTATION" in vcf.columns:
@@ -1019,22 +1033,22 @@ def read_vcf(
     # ─── 9.5) CSQ ───────────────────────────────────
     # Check if there's a sample column named "CSQ" in the original header
     has_csq_sample = "CSQ" in original_sample_columns
-    
+
     csq_sample_new_name = None
     if has_csq_sample and "CSQ" in vcf.columns:
         logger.info("Detected CSQ naming conflict: sample named 'CSQ' conflicts with VEP annotations")
-        
+
         # The CSQ column now contains INFO-derived data, but we need to separate sample vs INFO CSQ
         csq_sample_new_name = "CSQ_sample"
         counter = 1
         while csq_sample_new_name in vcf.columns:
             csq_sample_new_name = f"CSQ_sample_{counter}"
             counter += 1
-        
+
         # Create a new column for the sample CSQ data by extracting it from the original VCF
         sample_csq_data = []
         csq_sample_index = original_header_cols.index("CSQ")
-        
+
         with _open_text_maybe_gzip(path) as fh:
             line_count = 0
             for line in fh:
@@ -1048,17 +1062,17 @@ def read_vcf(
                 line_count += 1
                 if line_count >= len(vcf):  # Don't read more than we have rows
                     break
-        
+
         # Add the sample CSQ data as a new column
         vcf[csq_sample_new_name] = sample_csq_data[:len(vcf)]
         logger.info(f"Created sample CSQ column: {csq_sample_new_name}")
-    
+
     # Expand VEP CSQ annotations
     if "CSQ" in vcf.columns:
         logger.info("Expanding VEP CSQ annotations into individual columns...")
         try:
             csq_expansion_start = time.time()
-            
+
             # Get the CSQ format from meta-lines to understand the field structure
             csq_format = None
             for meta_line in meta_lines:
@@ -1070,11 +1084,11 @@ def read_vcf(
                         format_end = meta_line.find('>', format_start)
                     csq_format = meta_line[format_start:format_end]
                     break
-            
+
             if csq_format:
                 csq_fields = [field.strip() for field in csq_format.split('|')]
                 logger.debug(f"Found CSQ format with {len(csq_fields)} fields: {csq_fields[:5]}...")
-                
+
                 # Expand CSQ annotations
                 csq_expanded_data = []
                 for idx, csq_value in enumerate(vcf["CSQ"]):
@@ -1095,21 +1109,20 @@ def read_vcf(
                         # Fill with empty strings for missing CSQ data
                         for field_name in csq_fields:
                             row_data[f"VEP_{field_name}"] = ""
-                    
+
                     csq_expanded_data.append(row_data)
-                
 
                 csq_expanded_df = pd.DataFrame(csq_expanded_data)
-                
+
                 vcf = pd.concat([vcf, csq_expanded_df], axis=1)
 
                 vcf = vcf.drop(columns=["CSQ"])
-                
-                logger.info(f"CSQ expanded into {len(csq_fields)} VEP annotation columns in %.2f s", 
-                           time.time() - csq_expansion_start)
+
+                logger.info(f"CSQ expanded into {len(csq_fields)} VEP annotation columns in %.2f s",
+                            time.time() - csq_expansion_start)
             else:
                 logger.warning("Could not find CSQ format in meta-lines, keeping CSQ as single column")
-                
+
         except Exception as e:
             logger.warning(f"Error expanding VEP CSQ annotations: {e}")
 
@@ -1120,25 +1133,26 @@ def read_vcf(
         logger.info("Generating Hugo_Symbol column from VEP_SYMBOL and VEP_NEAREST...")
         try:
             hugo_symbol_start = time.time()
-            
+
             has_vep_symbol = 'VEP_SYMBOL' in vcf.columns
             has_vep_nearest = 'VEP_NEAREST' in vcf.columns
-            
+
             if has_vep_symbol or has_vep_nearest:
                 # Generate Hugo_Symbol based on VEP_SYMBOL and VEP_NEAREST availability and values
                 vcf['Hugo_Symbol'] = ''
-                
+
                 # Get VEP_SYMBOL and VEP_NEAREST columns, handling missing columns
                 vep_symbol_series = vcf['VEP_SYMBOL'] if has_vep_symbol else pd.Series([''] * len(vcf), index=vcf.index)
-                vep_nearest_series = vcf['VEP_NEAREST'] if has_vep_nearest else pd.Series([''] * len(vcf), index=vcf.index)
-                
+                vep_nearest_series = vcf['VEP_NEAREST'] if has_vep_nearest else pd.Series([''] * len(vcf),
+                                                                                          index=vcf.index)
+
                 # Convert None, NaN, or null-like values to empty strings for comparison
                 vep_symbol_clean = vep_symbol_series.fillna('').astype(str)
                 vep_symbol_clean = vep_symbol_clean.replace(['None', 'null', 'NULL'], '')
-                
+
                 vep_nearest_clean = vep_nearest_series.fillna('').astype(str)
                 vep_nearest_clean = vep_nearest_clean.replace(['None', 'null', 'NULL'], '')
-                
+
                 # Apply the logic from the requirements
                 if has_vep_symbol and not has_vep_nearest:
                     # Only VEP_SYMBOL exists, use it
@@ -1152,17 +1166,18 @@ def read_vcf(
                 else:
                     # Neither exists (this case shouldn't happen due to the if condition above)
                     vcf['Hugo_Symbol'] = ''
-                
-                logger.info("Hugo_Symbol column generated in %.2f s", 
-                           time.time() - hugo_symbol_start)
-                logger.debug(f"Hugo_Symbol: VEP_SYMBOL available: {has_vep_symbol}, VEP_NEAREST available: {has_vep_nearest}")
-                
+
+                logger.info("Hugo_Symbol column generated in %.2f s",
+                            time.time() - hugo_symbol_start)
+                logger.debug(
+                    f"Hugo_Symbol: VEP_SYMBOL available: {has_vep_symbol}, VEP_NEAREST available: {has_vep_nearest}")
+
                 # Log some statistics
                 non_empty_count = (vcf['Hugo_Symbol'] != '').sum()
                 logger.debug(f"Hugo_Symbol: {non_empty_count} non-empty values out of {len(vcf)} total rows")
             else:
                 logger.debug("Neither VEP_SYMBOL nor VEP_NEAREST columns found, skipping Hugo_Symbol generation")
-                
+
         except Exception as e:
             logger.warning(f"Error generating Hugo_Symbol: {e}")
 
@@ -1173,21 +1188,21 @@ def read_vcf(
         logger.info("Generating Variant_Classification from VEP_Consequence and VEP_VARIANT_CLASS...")
         try:
             variant_classification_start = time.time()
-            
+
             # Get primary consequence using vectorized operations
             vcf['prim_cons'] = _get_primary_consequence(vcf['VEP_Consequence'])
-            
+
             # Apply classification function
             vcf['Variant_Classification'] = vcf.apply(_classify_variant, axis=1)
-            
+
             # Fill any NaN values with 'RNA' (for non-coding transcripts)
             vcf['Variant_Classification'] = vcf['Variant_Classification'].fillna('RNA')
-            
+
             # Convert to categorical for memory efficiency and ordering
             # First, let's see what unique values we actually have
             unique_values = vcf['Variant_Classification'].unique()
             logger.debug(f"Unique Variant_Classification values before categorical conversion: {unique_values}")
-            
+
             ordered_categories = [
                 'Nonsense_Mutation', 'Nonstop_Mutation',
                 'Splice_Site', 'Splice_Region',
@@ -1197,28 +1212,29 @@ def read_vcf(
                 "5'UTR", "3'UTR", "5'Flank", "3'Flank",
                 'Intron', 'IGR', 'RNA'
             ]
-            
+
             # Add any unique values that aren't in our predefined categories
             for val in unique_values:
                 if val not in ordered_categories and pd.notna(val):
                     ordered_categories.append(val)
-            
+
             vcf['Variant_Classification'] = pd.Categorical(
                 vcf['Variant_Classification'],
                 categories=ordered_categories,
                 ordered=True
             )
-            
+
             # Clean up temporary column
             vcf = vcf.drop(columns=['prim_cons'])
-            
-            logger.info("Variant_Classification generated in %.2f s", 
-                       time.time() - variant_classification_start)
-            
+
+            logger.info("Variant_Classification generated in %.2f s",
+                        time.time() - variant_classification_start)
+
         except Exception as e:
             logger.warning(f"Error generating Variant_Classification: {e}")
     else:
-        logger.debug("VEP_Consequence or VEP_VARIANT_CLASS columns not found, skipping Variant_Classification generation")
+        logger.debug(
+            "VEP_Consequence or VEP_VARIANT_CLASS columns not found, skipping Variant_Classification generation")
 
     # ─── 9.7) NORMALIZE VARIANT_CLASSIFICATION TO UPPERCASE ─────────────────
     vcf = normalize_variant_classification(vcf)
@@ -1231,39 +1247,39 @@ def read_vcf(
         logger.info("Generating Variant_Type from VEP_VARIANT_CLASS...")
         try:
             variant_type_start = time.time()
-            
+
             # Apply variant type mapping function
             vcf['Variant_Type'] = vcf.apply(_map_vep_variant_class_to_maf_variant_type, axis=1)
-            
+
             # Fill any NaN values with 'UNKNOWN'
             vcf['Variant_Type'] = vcf['Variant_Type'].fillna('UNKNOWN')
-            
+
             # Convert to categorical for memory efficiency and ordering
             unique_variant_types = vcf['Variant_Type'].unique()
             logger.debug(f"Unique Variant_Type values: {unique_variant_types}")
-            
+
             # Define ordered categories for Variant_Type
             variant_type_categories = [
                 'SNP', 'DNP', 'TNP', 'ONP',  # Substitutions
-                'INS', 'DEL', 'IND',         # Indels
-                'INV', 'CNV',                # Structural variants
-                'UNKNOWN'                    # Fallback
+                'INS', 'DEL', 'IND',  # Indels
+                'INV', 'CNV',  # Structural variants
+                'UNKNOWN'  # Fallback
             ]
-            
+
             # Add any unique values that aren't in our predefined categories
             for val in unique_variant_types:
                 if val not in variant_type_categories and pd.notna(val):
                     variant_type_categories.append(val)
-            
+
             vcf['Variant_Type'] = pd.Categorical(
                 vcf['Variant_Type'],
                 categories=variant_type_categories,
                 ordered=True
             )
-            
-            logger.info("Variant_Type generated in %.2f s", 
-                       time.time() - variant_type_start)
-            
+
+            logger.info("Variant_Type generated in %.2f s",
+                        time.time() - variant_type_start)
+
         except Exception as e:
             logger.warning(f"Error generating Variant_Type: {e}")
     else:
@@ -1274,7 +1290,7 @@ def read_vcf(
     standard_vcf_cols = {"CHROM", "POS", "ID", "REF", "ALT", "QUAL", "FILTER", "INFO", "FORMAT"}
     all_columns = vcf.columns.tolist()
     sample_columns = [col for col in original_sample_columns if col in all_columns]
-    
+
     logger.info("Using %d sample columns for output organization", len(sample_columns))
 
     # ─── 11) ENSURE REQUIRED COLUMNS EXIST ──────────────────────────────────
@@ -1282,7 +1298,7 @@ def read_vcf(
         vcf["QUAL"] = "."
     if "FILTER" not in vcf.columns:
         vcf["FILTER"] = "."
-        
+
     # Remove FORMAT column as it's not needed
     if "FORMAT" in vcf.columns:
         vcf = vcf.drop(columns=["FORMAT"])
@@ -1332,7 +1348,7 @@ def read_vcf(
     )
 
     total_time = time.time() - start_time
-    logger.info("VCF processed successfully: %d rows, %d columns in %.2f seconds", 
+    logger.info("VCF processed successfully: %d rows, %d columns in %.2f seconds",
                 *vcf.shape, total_time)
 
     return PyMutation(vcf, metadata, sample_columns)

@@ -251,14 +251,13 @@ def process_oncodriveclustl_results(results_dir: Path, threshold: float = 0.10) 
 
 
 
-def detect_smg_oncodriveclustl(input_file: Union[str, Path], genome_version: Literal["GRCh37", "GRCh38"] = "GRCh37", 
-                              threads: int = 4, run_analysis: bool = True, threshold: Optional[float] = None) -> Tuple[pd.DataFrame, pd.DataFrame]:
+def detect_smg_oncodriveclustl(self, threads: int = 4, run_analysis: bool = True, threshold: Optional[float] = None) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """
     Detects significantly mutated genes (SMG) using OncodriveCLUSTL pipeline.
 
-    This function processes a MAF file to generate mutations and regions data, then runs
+    This method processes VCF-like mutation data to generate mutations and regions data, then runs
     OncodriveCLUSTL analysis to identify significantly mutated genes. It includes:
-    1. MAF processing and SNP filtering
+    1. VCF-like data processing and SNP filtering
     2. Transcript regions generation using pyensembl
     3. Chromosome format validation
     4. Optimal permutation calculation based on SNV count
@@ -267,12 +266,6 @@ def detect_smg_oncodriveclustl(input_file: Union[str, Path], genome_version: Lit
 
     Parameters
     ----------
-    input_file : str or Path
-        Path to the input MAF file (.maf or .maf.gz)
-    genome_version : {"GRCh37", "GRCh38"}, default "GRCh37"
-        Genome version to use for transcript annotation.
-        - "GRCh37": Uses Ensembl release 75 (hg19)
-        - "GRCh38": Uses Ensembl release 114 (hg38)
     threads : int, default 4
         Number of threads to use for OncodriveCLUSTL analysis
     run_analysis : bool, default True
@@ -290,61 +283,131 @@ def detect_smg_oncodriveclustl(input_file: Union[str, Path], genome_version: Lit
 
     Examples
     --------
-    >>> mutations_df, results_df = detect_smg_oncodriveclustl("tcga_laml.maf.gz", genome_version="GRCh37")
+    >>> mutations_df, results_df = py_mutation.detect_smg_oncodriveclustl()
     >>> print(f"Found {len(results_df)} significant genes")
     """
-    input_file = Path(input_file)
-
-    if input_file.suffix == '.gz':
-        with gzip.open(input_file, 'rt') as f:
-            df = pd.read_csv(f, sep='\t', low_memory=False)
+    # Use self.data directly (VCF-like format with CHROM, POS, REF, ALT, SAMPLE columns)
+    df = self.data.copy()
+    
+    # Get genome version from metadata
+    if self.metadata is None or self.metadata.assembly is None:
+        raise ValueError("Metadata with assembly information is required")
+    
+    # Convert assembly format: "37" -> "GRCh37", "38" -> "GRCh38"
+    if self.metadata.assembly == "37":
+        genome_version = "GRCh37"
+    elif self.metadata.assembly == "38":
+        genome_version = "GRCh38"
     else:
-        df = pd.read_csv(input_file, sep='\t', low_memory=False)
+        raise ValueError(f"Unsupported assembly version: {self.metadata.assembly}. Expected '37' or '38'")
 
-    # Filter for SNP variants only
-    variant_type_col = col(df, "Variant_Type", required=True)
-    df_snp = df[variant_type_col == "SNP"].copy()
+    # Check if we have MAF format first (has Tumor_Sample_Barcode)
+    maf_cols = ['CHROM', 'Start_Position', 'Reference_Allele', 'Tumor_Seq_Allele2', 'Tumor_Sample_Barcode']
+    has_maf_format = all(col in df.columns for col in maf_cols)
+    
+    # Check if we have basic VCF-like columns (CHROM, POS, REF, ALT)
+    vcf_basic_cols = ['CHROM', 'POS', 'REF', 'ALT']
+    has_vcf_basic = all(col in df.columns for col in vcf_basic_cols)
+    
+    if has_maf_format:
+        # Convert MAF format to VCF-like format
+        logging.info("Converting MAF format to VCF-like format...")
+        df = df.copy()
+        # CHROM is already present in MAF data, no need to copy
+        df['POS'] = df['Start_Position']
+        df['REF'] = df['Reference_Allele']
+        # Use Tumor_Seq_Allele2, fallback to Tumor_Seq_Allele1 if empty
+        df['ALT'] = df['Tumor_Seq_Allele2'].fillna('')
+        if 'Tumor_Seq_Allele1' in df.columns:
+            mask_empty = (df['ALT'] == '') | df['ALT'].isna()
+            df.loc[mask_empty, 'ALT'] = df.loc[mask_empty, 'Tumor_Seq_Allele1']
+        df['SAMPLE'] = df['Tumor_Sample_Barcode']
+        is_vcf_like = False
+    elif has_vcf_basic:
+        # VCF-like format with samples in separate columns
+        logging.info("Processing VCF-like format with sample columns...")
+        is_vcf_like = True
+    else:
+        # Neither format found
+        missing_maf = [col for col in maf_cols if col not in df.columns]
+        missing_vcf = [col for col in vcf_basic_cols if col not in df.columns]
+        raise ValueError(f"Data format not recognized. Missing MAF columns: {missing_maf} or VCF basic columns: {missing_vcf}")
+
+    # Filter for SNP variants only (REF and ALT should be single nucleotides)
+    df_snp = df[
+        (df['REF'].str.len() == 1) & 
+        (df['ALT'].str.len() == 1) & 
+        (df['REF'] != df['ALT'])
+    ].copy()
 
     if df_snp.empty:
-        raise ValueError("No SNP variants found in the input file")
+        raise ValueError("No SNP variants found in the data")
 
+    # Process data to create mutations DataFrame
     output_df = pd.DataFrame()
-
-    chromosome_col = col(df_snp, "Chromosome", required=True)
-    output_df['CHROMOSOME'] = chromosome_col.astype(str).apply(reverse_format_chr)
-
-    position_col = col(df_snp, "Start_Position", required=True)
-    output_df['POSITION'] = position_col
-
-    ref_col = col(df_snp, "Reference_Allele", required=True)
-    output_df['REF'] = ref_col
-
-    allele2_col = col(df_snp, "Tumor_Seq_Allele2", required=True)
-    allele1_col = col(df_snp, "Tumor_Seq_Allele1", required=True)
-
-    output_df['ALT'] = allele2_col.fillna('').replace('', None)
-    mask_empty_allele2 = output_df['ALT'].isna() | (output_df['ALT'] == '')
-    output_df.loc[mask_empty_allele2, 'ALT'] = allele1_col[mask_empty_allele2]
-
-    sample_col = col(df_snp, "Tumor_Sample_Barcode", required=True)
-    output_df['SAMPLE'] = sample_col
+    expanded_rows = []
+    
+    if is_vcf_like:
+        # Handle VCF-like format with samples in separate columns
+        # Get sample columns from self.samples or detect them
+        if hasattr(self, 'samples') and self.samples:
+            sample_columns = self.samples
+        else:
+            # Detect sample columns (exclude standard VCF columns)
+            standard_cols = ['CHROM', 'POS', 'ID', 'REF', 'ALT', 'QUAL', 'FILTER', 'INFO', 'FORMAT']
+            sample_columns = [col for col in df_snp.columns if col not in standard_cols]
+        
+        logging.info(f"Processing {len(sample_columns)} sample columns: {sample_columns[:5]}...")
+        
+        for _, row in df_snp.iterrows():
+            for sample_col in sample_columns:
+                genotype = row[sample_col]
+                
+                # Check if this sample has a mutation (non-reference genotype)
+                if pd.notna(genotype) and genotype not in ['0/0', '0|0', './.', '.|.', '']:
+                    # Parse genotype to check if it contains the ALT allele
+                    if isinstance(genotype, str):
+                        # Handle various genotype formats
+                        if ('1' in genotype or  # 0/1, 1/0, 1/1, 1|1, etc.
+                            '/' in genotype or '|' in genotype or  # Any phased/unphased genotype
+                            genotype == row['ALT'] or  # Direct ALT match
+                            (len(genotype) > 1 and row['ALT'] in genotype)):  # ALT in compound genotype
+                            
+                            expanded_rows.append({
+                                'CHROMOSOME': str(row['CHROM']).replace('chr', ''),
+                                'POSITION': row['POS'],
+                                'REF': row['REF'],
+                                'ALT': row['ALT'],
+                                'SAMPLE': sample_col
+                            })
+    else:
+        # Handle MAF format (already has SAMPLE column)
+        for _, row in df_snp.iterrows():
+            expanded_rows.append({
+                'CHROMOSOME': str(row['CHROM']).replace('chr', ''),
+                'POSITION': row['POS'],
+                'REF': row['REF'],
+                'ALT': row['ALT'],
+                'SAMPLE': row['SAMPLE']
+            })
+    
+    output_df = pd.DataFrame(expanded_rows)
+    
+    # Apply reverse_format_chr to ensure consistent chromosome format
+    output_df['CHROMOSOME'] = output_df['CHROMOSOME'].astype(str).apply(reverse_format_chr)
 
     logging.info(f"Generating transcript regions for {genome_version}...")
     regions_df = _generate_transcript_regions(genome_version)
 
-    if input_file.suffix == '.gz':
-        base_name = input_file.stem
-        base_name = Path(base_name).stem
-    else:
-         base_name = input_file.stem
-
+    # Create temporary directory for analysis files
     now = datetime.now()
     timestamp = f"_aux_{now.hour:02d}{now.minute:02d}{now.day:02d}{now.month:02d}"
+    base_name = "pymutation_data"
     
-    output_folder = input_file.parent / f"{base_name}{timestamp}"
+    output_folder = Path.cwd() / f"{base_name}{timestamp}"
     output_folder.mkdir(exist_ok=True)
 
-    mutations_file = output_folder / "tcga_laml_mutations.tsv"
+    mutations_file = output_folder / "mutations.tsv"
     output_df.to_csv(mutations_file, sep='\t', index=False)
 
     # Save regions data with gzip compression in the new folder
@@ -404,3 +467,8 @@ def detect_smg_oncodriveclustl(input_file: Union[str, Path], genome_version: Lit
         logging.info("Skipping OncodriveCLUSTL analysis (run_analysis=False)")
 
     return output_df, significant_genes_df
+
+
+# Add the detect_smg_oncodriveclustl method to the PyMutation class
+from ..core import PyMutation
+PyMutation.detect_smg_oncodriveclustl = detect_smg_oncodriveclustl

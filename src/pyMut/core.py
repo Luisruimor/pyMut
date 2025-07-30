@@ -6,25 +6,25 @@ para la librería pyMut. Proporciona métodos para generar todos los tipos de
 visualizaciones a partir de datos de mutación.
 """
 
-from typing import Tuple, Optional
-import pandas as pd
 from datetime import datetime
-import matplotlib.pyplot as plt
 from typing import List
-from .utils.constants import (
-    DEFAULT_PLOT_FIGSIZE, DEFAULT_SUMMARY_FIGSIZE, DEFAULT_PLOT_TITLE,
-    DEFAULT_TOP_GENES_COUNT, GENE_COLUMN, VARIANT_CLASSIFICATION_COLUMN,
-    SAMPLE_COLUMN, REF_COLUMN, ALT_COLUMN, MODE_VARIANTS, DEFAULT_ONCOPLOT_FIGSIZE, DEFAULT_ONCOPLOT_TOP_GENES, DEFAULT_ONCOPLOT_MAX_SAMPLES,
-    FUNCOTATION_COLUMN, VARIANT_TYPE_COLUMN, VALID_PLOT_MODES
-)
-from .filters.genomic_range import gen_region,region
-from .filters.pass_filter import pass_filter
-from .filters.chrom_sample_filter import filter_by_chrom_sample
-from .filters.tissue_expression import filter_by_tissue_expression
-from .analysis.pfam_annotation import (
-    annotate_pfam, pfam_domains,
-)
+from typing import Tuple, Optional
+
+import matplotlib.pyplot as plt
+import pandas as pd
+
+from .analysis.pfam_annotation import (annotate_pfam, pfam_domains, )
 from .annotate.cosmic_cancer_annotate import knownCancer
+from .filters.chrom_sample_filter import filter_by_chrom_sample
+from .filters.genomic_range import gen_region, region
+from .filters.pass_filter import pass_filter
+from .filters.tissue_expression import filter_by_tissue_expression
+from .utils.constants import (DEFAULT_PLOT_FIGSIZE, DEFAULT_SUMMARY_FIGSIZE, DEFAULT_PLOT_TITLE,
+                              DEFAULT_TOP_GENES_COUNT, GENE_COLUMN, VARIANT_CLASSIFICATION_COLUMN, SAMPLE_COLUMN,
+                              REF_COLUMN, ALT_COLUMN, MODE_VARIANTS, DEFAULT_ONCOPLOT_FIGSIZE,
+                              DEFAULT_ONCOPLOT_TOP_GENES, DEFAULT_ONCOPLOT_MAX_SAMPLES, FUNCOTATION_COLUMN,
+                              VARIANT_TYPE_COLUMN, VALID_PLOT_MODES)
+
 
 class MutationMetadata:
     """
@@ -38,8 +38,9 @@ class MutationMetadata:
         assembly (str): Versión del genoma (37 o 38).
         notes (Optional[str]): Notas adicionales.
     """
-    def __init__(self, source_format: str, file_path: str,
-                 filters: List[str], assembly: str, notes: Optional[str] = None):
+
+    def __init__(self, source_format: str, file_path: str, filters: List[str], assembly: str,
+                 notes: Optional[str] = None):
         self.source_format = source_format
         self.file_path = file_path
         self.loaded_at = datetime.now()
@@ -49,7 +50,8 @@ class MutationMetadata:
 
 
 class PyMutation:
-    def __init__(self, data: pd.DataFrame, metadata: Optional[MutationMetadata] = None, samples: Optional[List[str]] = None):
+    def __init__(self, data: pd.DataFrame, metadata: Optional[MutationMetadata] = None,
+                 samples: Optional[List[str]] = None):
         self.data = data
         self.samples = samples if samples is not None else []
         self.metadata = metadata
@@ -68,8 +70,8 @@ class PyMutation:
         """
         return self.data.info()
 
-    def save_figure(self, figure: plt.Figure, filename: str,
-                   dpi: int = 300, bbox_inches: str = 'tight', **kwargs) -> None:
+    def save_figure(self, figure: plt.Figure, filename: str, dpi: int = 300, bbox_inches: str = 'tight',
+                    **kwargs) -> None:
         """
         Save a figure with high-quality configuration by default.
 
@@ -139,11 +141,8 @@ class PyMutation:
         print("   • Format: optimized PNG")
         print("   ℹ️  Now all figures will be automatically saved in high quality")
 
-    def summary_plot(self, 
-                   figsize: Tuple[int, int] = DEFAULT_SUMMARY_FIGSIZE,
-                   title: str = DEFAULT_PLOT_TITLE,
-                   max_samples: Optional[int] = 200,
-                   top_genes_count: int = DEFAULT_TOP_GENES_COUNT) -> plt.Figure:
+    def summary_plot(self, figsize: Tuple[int, int] = DEFAULT_SUMMARY_FIGSIZE, title: str = DEFAULT_PLOT_TITLE,
+                     max_samples: Optional[int] = 200, top_genes_count: int = DEFAULT_TOP_GENES_COUNT) -> plt.Figure:
         """
         Generate a summary plot with general mutation statistics.
 
@@ -169,17 +168,11 @@ class PyMutation:
         from .utils.data_processing import extract_variant_classifications, extract_variant_types
 
         # Preprocess data to ensure we have the necessary columns
-        self.data = extract_variant_classifications(
-            self.data, 
-            variant_column=VARIANT_CLASSIFICATION_COLUMN,
-            funcotation_column=FUNCOTATION_COLUMN
-        )
+        self.data = extract_variant_classifications(self.data, variant_column=VARIANT_CLASSIFICATION_COLUMN,
+            funcotation_column=FUNCOTATION_COLUMN)
 
-        self.data = extract_variant_types(
-            self.data,
-            variant_column=VARIANT_TYPE_COLUMN,
-            funcotation_column=FUNCOTATION_COLUMN
-        )
+        self.data = extract_variant_types(self.data, variant_column=VARIANT_TYPE_COLUMN,
+            funcotation_column=FUNCOTATION_COLUMN)
 
         # Generate the summary plot
         fig = _create_summary_plot(self, figsize, title, max_samples, top_genes_count)
@@ -187,8 +180,7 @@ class PyMutation:
         plt.close(fig)
         return fig
 
-    def variant_classification_plot(self,
-                                    figsize: Tuple[int, int] = DEFAULT_PLOT_FIGSIZE,
+    def variant_classification_plot(self, figsize: Tuple[int, int] = DEFAULT_PLOT_FIGSIZE,
                                     title: str = "Variant Classification") -> plt.Figure:
         """
         Generate a horizontal bar plot showing the distribution of variant classifications.
@@ -204,11 +196,8 @@ class PyMutation:
         from .utils.data_processing import extract_variant_classifications
 
         # Preprocess data to ensure we have the necessary column
-        self.data = extract_variant_classifications(
-            self.data, 
-            variant_column="Variant_Classification",
-            funcotation_column="FUNCOTATION"
-        )
+        self.data = extract_variant_classifications(self.data, variant_column="Variant_Classification",
+            funcotation_column="FUNCOTATION")
 
         # Create figure and axes
         fig, ax = plt.subplots(figsize=figsize)
@@ -225,8 +214,7 @@ class PyMutation:
         plt.close(fig)
         return fig
 
-    def variant_type_plot(self,
-                          figsize: Tuple[int, int] = DEFAULT_PLOT_FIGSIZE,
+    def variant_type_plot(self, figsize: Tuple[int, int] = DEFAULT_PLOT_FIGSIZE,
                           title: str = "Variant Type") -> plt.Figure:
         """
         Generate a horizontal bar plot showing the distribution of variant types.
@@ -242,11 +230,7 @@ class PyMutation:
         from .utils.data_processing import extract_variant_types
 
         # Preprocess data to ensure we have the necessary column
-        self.data = extract_variant_types(
-            self.data,
-            variant_column="Variant_Type",
-            funcotation_column="FUNCOTATION"
-        )
+        self.data = extract_variant_types(self.data, variant_column="Variant_Type", funcotation_column="FUNCOTATION")
 
         # Create figure and axes
         fig, ax = plt.subplots(figsize=figsize)
@@ -263,11 +247,8 @@ class PyMutation:
         plt.close(fig)
         return fig
 
-    def snv_class_plot(self,
-                        figsize: Tuple[int, int] = DEFAULT_PLOT_FIGSIZE,
-                        title: str = "SNV Class",
-                        ref_column: str = "REF",
-                        alt_column: str = "ALT") -> plt.Figure:
+    def snv_class_plot(self, figsize: Tuple[int, int] = DEFAULT_PLOT_FIGSIZE, title: str = "SNV Class",
+                       ref_column: str = "REF", alt_column: str = "ALT") -> plt.Figure:
         """
         Generate a horizontal bar plot showing the distribution of SNV classes.
 
@@ -283,27 +264,21 @@ class PyMutation:
         from .visualizations.summary import _create_snv_class_plot
 
         fig, ax = plt.subplots(figsize=figsize)
-        _create_snv_class_plot(
-            self, 
-            ref_column=ref_column,
-            alt_column=alt_column,
-            ax=ax,
-            set_title=False  # Avoid duplicate title
+        _create_snv_class_plot(self, ref_column=ref_column, alt_column=alt_column, ax=ax, set_title=False
+            # Avoid duplicate title
         )
-        
+
         # Configure title
         if title:
             fig.suptitle(title, fontsize=16, fontweight='bold')
-        
+
         plt.tight_layout()
 
         plt.close(fig)
         return fig
 
-    def variants_per_sample_plot(self,
-                                 figsize: Tuple[int, int] = DEFAULT_PLOT_FIGSIZE,
-                                 title: str = "Variants per Sample",
-                                 variant_column: str = "Variant_Classification",
+    def variants_per_sample_plot(self, figsize: Tuple[int, int] = DEFAULT_PLOT_FIGSIZE,
+                                 title: str = "Variants per Sample", variant_column: str = "Variant_Classification",
                                  sample_column: str = "Tumor_Sample_Barcode",
                                  max_samples: Optional[int] = 200) -> plt.Figure:
         """
@@ -336,18 +311,11 @@ class PyMutation:
                     break
 
         # Ensure the variant classification column exists or is extracted
-        self.data = extract_variant_classifications(
-            self.data, 
-            variant_column=variant_column,
-            funcotation_column="FUNCOTATION"
-        )
+        self.data = extract_variant_classifications(self.data, variant_column=variant_column,
+            funcotation_column="FUNCOTATION")
 
         fig, ax = plt.subplots(figsize=figsize)
-        _create_variants_per_sample_plot(
-            self, 
-            variant_column=variant_column,
-            sample_column=sample_column,
-            ax=ax,
+        _create_variants_per_sample_plot(self, variant_column=variant_column, sample_column=sample_column, ax=ax,
             set_title=False,  # Avoid duplicate title
             max_samples=max_samples  # Pass the configured sample limit
         )
@@ -363,12 +331,10 @@ class PyMutation:
         plt.close(fig)
         return fig
 
-
-    def variant_classification_summary_plot(self,
-                                           figsize: Tuple[int, int] = DEFAULT_PLOT_FIGSIZE,
-                                           title: str = "Variant Classification Summary",
-                                           variant_column: str = "Variant_Classification",
-                                           sample_column: str = "Tumor_Sample_Barcode") -> plt.Figure:
+    def variant_classification_summary_plot(self, figsize: Tuple[int, int] = DEFAULT_PLOT_FIGSIZE,
+                                            title: str = "Variant Classification Summary",
+                                            variant_column: str = "Variant_Classification",
+                                            sample_column: str = "Tumor_Sample_Barcode") -> plt.Figure:
         """
         Generate a box-and-whiskers plot (boxplot) that summarizes, for each variant classification,
         the distribution (among samples) of the number of detected alternative alleles.
@@ -390,28 +356,21 @@ class PyMutation:
         from .utils.data_processing import extract_variant_classifications
 
         # Ensure the variant classification column exists or is extracted
-        self.data = extract_variant_classifications(
-            self.data, 
-            variant_column=variant_column,
-            funcotation_column="FUNCOTATION"
-        )
+        self.data = extract_variant_classifications(self.data, variant_column=variant_column,
+            funcotation_column="FUNCOTATION")
 
         # Check if we're in wide format (samples as columns)
         is_wide_format = sample_column not in self.data.columns
         if is_wide_format:
             # Detect and show information about the format
-            sample_cols = [col for col in self.data.columns if col.startswith('TCGA-') or 
-                           (isinstance(col, str) and col.count('-') >= 2)]
+            sample_cols = [col for col in self.data.columns if
+                           col.startswith('TCGA-') or (isinstance(col, str) and col.count('-') >= 2)]
             if sample_cols:
                 print(f"Detected wide format with {len(sample_cols)} possible sample columns.")
 
         fig, ax = plt.subplots(figsize=figsize)
-        _create_variant_classification_summary_plot(
-            self, 
-            variant_column=variant_column,
-            sample_column=sample_column,
-            ax=ax,
-            show_labels=True,  # Ensure it always shows labels when generated individually
+        _create_variant_classification_summary_plot(self, variant_column=variant_column, sample_column=sample_column,
+            ax=ax, show_labels=True,  # Ensure it always shows labels when generated individually
             set_title=False  # Avoid duplicate title
         )
 
@@ -424,15 +383,10 @@ class PyMutation:
         plt.close(fig)
         return fig
 
-
-    def top_mutated_genes_plot(self,
-                              figsize: Tuple[int, int] = DEFAULT_PLOT_FIGSIZE,
-                              title: str = "Top Mutated Genes",
-                              mode: str = MODE_VARIANTS, 
-                              variant_column: str = VARIANT_CLASSIFICATION_COLUMN,
-                              gene_column: str = GENE_COLUMN,
-                              sample_column: str = SAMPLE_COLUMN,
-                              count: int = DEFAULT_TOP_GENES_COUNT) -> plt.Figure:
+    def top_mutated_genes_plot(self, figsize: Tuple[int, int] = DEFAULT_PLOT_FIGSIZE, title: str = "Top Mutated Genes",
+                               mode: str = MODE_VARIANTS, variant_column: str = VARIANT_CLASSIFICATION_COLUMN,
+                               gene_column: str = GENE_COLUMN, sample_column: str = SAMPLE_COLUMN,
+                               count: int = DEFAULT_TOP_GENES_COUNT) -> plt.Figure:
         """
         Generate a horizontal bar plot showing the most mutated genes and the distribution
         of variants according to their classification.
@@ -486,22 +440,12 @@ class PyMutation:
                     break
 
         # Ensure the variant classification column exists or is extracted
-        self.data = extract_variant_classifications(
-            self.data, 
-            variant_column=variant_column,
-            funcotation_column=FUNCOTATION_COLUMN
-        )
+        self.data = extract_variant_classifications(self.data, variant_column=variant_column,
+            funcotation_column=FUNCOTATION_COLUMN)
 
         fig, ax = plt.subplots(figsize=figsize)
-        _create_top_mutated_genes_plot(
-            self, 
-            mode=mode,
-            variant_column=variant_column,
-            gene_column=gene_column,
-            sample_column=sample_column,
-            count=count,
-            ax=ax,
-            set_title=False  # Avoid duplicate title
+        _create_top_mutated_genes_plot(self, mode=mode, variant_column=variant_column, gene_column=gene_column,
+            sample_column=sample_column, count=count, ax=ax, set_title=False  # Avoid duplicate title
         )
 
         # Adjust custom title based on mode
@@ -522,17 +466,11 @@ class PyMutation:
 
         plt.close(fig)
         return fig
-    
-    def oncoplot(self,
-                 figsize: Optional[Tuple[int, int]] = None,
-                 title: str = "Oncoplot",
-                 gene_column: str = GENE_COLUMN,
-                 variant_column: str = VARIANT_CLASSIFICATION_COLUMN,
-                 ref_column: str = REF_COLUMN,
-                 alt_column: str = ALT_COLUMN,
-                 top_genes_count: int = None,
-                 max_samples: int = None
-                 ) -> plt.Figure:
+
+    def oncoplot(self, figsize: Optional[Tuple[int, int]] = None, title: str = "Oncoplot",
+                 gene_column: str = GENE_COLUMN, variant_column: str = VARIANT_CLASSIFICATION_COLUMN,
+                 ref_column: str = REF_COLUMN, alt_column: str = ALT_COLUMN, top_genes_count: int = None,
+                 max_samples: int = None) -> plt.Figure:
         """
         Generates an oncoplot showing mutation patterns in a heatmap.
         
@@ -595,7 +533,7 @@ class PyMutation:
             max_samples = DEFAULT_ONCOPLOT_MAX_SAMPLES
         if figsize is None:
             figsize = DEFAULT_ONCOPLOT_FIGSIZE
-            
+
         # Parameter validation
         if top_genes_count <= 0:
             raise ValueError("top_genes_count must be a positive integer")
@@ -603,30 +541,22 @@ class PyMutation:
             raise ValueError("max_samples must be a positive integer")
         if len(figsize) != 2 or any(x <= 0 for x in figsize):
             raise ValueError("figsize must be a tuple of two positive numbers")
-            
+
         # Validate required columns
         required_columns = [gene_column, variant_column, ref_column, alt_column]
         missing_columns = [col for col in required_columns if col not in self.data.columns]
         if missing_columns:
             raise ValueError(f"Missing required columns: {missing_columns}")
-        
+
         try:
             from .visualizations.oncoplot import _create_oncoplot_plot
             # Generate the oncoplot
-            fig = _create_oncoplot_plot(
-                py_mut=self,
-                gene_column=gene_column,
-                variant_column=variant_column,
-                ref_column=ref_column,
-                alt_column=alt_column,
-                top_genes_count=top_genes_count,
-                max_samples=max_samples,
-                figsize=figsize,
-                title=title
-            )
+            fig = _create_oncoplot_plot(py_mut=self, gene_column=gene_column, variant_column=variant_column,
+                ref_column=ref_column, alt_column=alt_column, top_genes_count=top_genes_count, max_samples=max_samples,
+                figsize=figsize, title=title)
             plt.close(fig)
             return fig
-            
+
         except Exception as e:
             raise ValueError(f"Error generating oncoplot: {str(e)}")
 
