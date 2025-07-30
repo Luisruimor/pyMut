@@ -1,4 +1,4 @@
-name: PyMut
+name: PyMutTFG
 channels:
   - defaults
   - bioconda
@@ -7,10 +7,9 @@ channels:
   - https://repo.anaconda.com/pkgs/main
   - https://repo.anaconda.com/pkgs/r
 dependencies:
-  - python=3.10
   - bcftools
   - ensembl-vep
   - htslib
+  - python=3.10
   - tabix
-  - oncodriveclustl
-prefix: /home/luisruimore/anaconda3/envs/PyMut
+prefix: /home/luisruimore/anaconda3/envs/PyMutTFG
