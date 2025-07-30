@@ -1,8 +1,9 @@
-import pandas as pd
-from typing import Optional, Dict
+import logging
 import os
 import re
-import logging
+from typing import Optional, Dict
+
+import pandas as pd
 
 # ────────────────────────────────────────────────────────────────
 # LOGGER CONFIGURATION
@@ -17,10 +18,10 @@ if not logger.handlers:
 
 
 def calculate_tmb_analysis(self,
-                          variant_classification_column: Optional[str] = None,
-                          genome_size_bp: int = 60456963,
-                          output_dir: str = ".",
-                          save_files: bool = True) -> Dict[str, pd.DataFrame]:
+                           variant_classification_column: Optional[str] = None,
+                           genome_size_bp: int = 60456963,
+                           output_dir: str = ".",
+                           save_files: bool = True) -> Dict[str, pd.DataFrame]:
     """
     Calculate Tumor Mutation Burden (TMB) analysis for each sample in a PyMutation object.
 
@@ -166,7 +167,8 @@ def calculate_tmb_analysis(self,
         # Calculate normalized TMB (mutations per million bases)
         # TMB = (mutations / genome_size_bp) * 1,000,000
         tmb_total_normalized = (total_mutations / genome_size_bp) * 1_000_000 if genome_size_bp > 0 else 0
-        tmb_non_synonymous_normalized = (non_synonymous_mutations / genome_size_bp) * 1_000_000 if genome_size_bp > 0 else 0
+        tmb_non_synonymous_normalized = (
+                                                    non_synonymous_mutations / genome_size_bp) * 1_000_000 if genome_size_bp > 0 else 0
 
         # Store results (keep full precision until final output)
         results.append({
@@ -185,7 +187,7 @@ def calculate_tmb_analysis(self,
 
     # Calculate global statistics
     stats_data = []
-    metrics = ['Total_Mutations', 'Non_Synonymous_Mutations', 
+    metrics = ['Total_Mutations', 'Non_Synonymous_Mutations',
                'TMB_Total_Normalized', 'TMB_Non_Synonymous_Normalized']
 
     for metric in metrics:

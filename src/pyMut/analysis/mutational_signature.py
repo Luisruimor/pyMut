@@ -5,10 +5,11 @@ This module provides functionality for analyzing trinucleotide contexts
 and generating mutational signature matrices.
 """
 
-import pandas as pd
-import numpy as np
-from typing import Tuple, Dict, Optional
 import logging
+from typing import Tuple, Dict, Optional
+
+import numpy as np
+import pandas as pd
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -121,7 +122,7 @@ def _get_trinucleotide_context(fasta, chrom: str, pos: int) -> Optional[str]:
             return None
 
         # Extract trinucleotide (1-based coordinates)
-        trinuc = fasta[chrom_key][pos-2:pos+1].seq.upper()
+        trinuc = fasta[chrom_key][pos - 2:pos + 1].seq.upper()
 
         if len(trinuc) != 3 or 'N' in trinuc:
             return None
@@ -187,22 +188,23 @@ def trinucleotideMatrix(self, fasta_file: str) -> Tuple[pd.DataFrame, pd.DataFra
 
     # Get required columns and detect data format
     from ..utils.fields import col
-    
+
     chrom_col = col(self.data, "Chromosome", required=True)
-    pos_col = col(self.data, "Start_Position", required=True) 
+    pos_col = col(self.data, "Start_Position", required=True)
     ref_col = col(self.data, "Reference_Allele", required=True)
     alt_col = col(self.data, "Tumor_Seq_Allele2", required=True)
     sample_col = col(self.data, "Tumor_Sample_Barcode", required=False)
 
     if any(col is None for col in [chrom_col, pos_col, ref_col, alt_col]):
-        raise ValueError("Required columns not found. Need: Chromosome, Start_Position, Reference_Allele, Tumor_Seq_Allele2")
+        raise ValueError(
+            "Required columns not found. Need: Chromosome, Start_Position, Reference_Allele, Tumor_Seq_Allele2")
 
     if sample_col is None:
         standard_cols = {'CHROM', 'POS', 'ID', 'REF', 'ALT', 'QUAL', 'FILTER', 'INFO', 'FORMAT',
-                        'Hugo_Symbol', 'Entrez_Gene_Id', 'Center', 'NCBI_Build', 'Start_Position', 
-                        'End_position', 'Strand', 'Variant_Classification', 'Variant_Type', 
-                        'Reference_Allele', 'Tumor_Seq_Allele1', 'Tumor_Seq_Allele2', 
-                        'Tumor_Sample_Barcode', 'Protein_Change', 'i_TumorVAF_WU', 'i_transcript_name'}
+                         'Hugo_Symbol', 'Entrez_Gene_Id', 'Center', 'NCBI_Build', 'Start_Position',
+                         'End_position', 'Strand', 'Variant_Classification', 'Variant_Type',
+                         'Reference_Allele', 'Tumor_Seq_Allele1', 'Tumor_Seq_Allele2',
+                         'Tumor_Sample_Barcode', 'Protein_Change', 'i_TumorVAF_WU', 'i_transcript_name'}
 
         sample_columns = [col for col in self.data.columns if col not in standard_cols]
         logger.info(f"Detected wide format with {len(sample_columns)} sample columns")
@@ -214,9 +216,9 @@ def trinucleotideMatrix(self, fasta_file: str) -> Tuple[pd.DataFrame, pd.DataFra
 
     # Filter for SNVs and load reference genome
     snv_mask = (
-        (ref_col.isin(['A', 'C', 'G', 'T'])) & 
-        (alt_col.isin(['A', 'C', 'G', 'T'])) &
-        (ref_col != alt_col)
+            (ref_col.isin(['A', 'C', 'G', 'T'])) &
+            (alt_col.isin(['A', 'C', 'G', 'T'])) &
+            (ref_col != alt_col)
     )
 
     if not snv_mask.any():
@@ -322,7 +324,7 @@ def trinucleotideMatrix(self, fasta_file: str) -> Tuple[pd.DataFrame, pd.DataFra
 
 
 def estimateSignatures(contexts_df: pd.DataFrame, nMin: int = 2, nTry: int = 6,
-                      nrun: int = 5, parallel: int = 4, pConstant: Optional[float] = None) -> Dict:
+                       nrun: int = 5, parallel: int = 4, pConstant: Optional[float] = None) -> Dict:
     """
     Estimate optimal number of mutational signatures using NMF decomposition.
 
@@ -370,7 +372,7 @@ def estimateSignatures(contexts_df: pd.DataFrame, nMin: int = 2, nTry: int = 6,
     except ImportError as e:
         missing_pkg = str(e).split("'")[1] if "'" in str(e) else "required package"
         raise ImportError(f"{missing_pkg} is required for signature estimation. "
-                         f"Install with: pip install scikit-learn scipy")
+                          f"Install with: pip install scikit-learn scipy")
 
     # Validate input parameters
     if not isinstance(contexts_df, pd.DataFrame):
@@ -403,8 +405,8 @@ def estimateSignatures(contexts_df: pd.DataFrame, nMin: int = 2, nTry: int = 6,
     def _run_nmf_single(k, run_idx, matrix):
         """Run a single NMF decomposition."""
         try:
-            nmf = NMF(n_components=k, init='random', random_state=run_idx, 
-                     max_iter=1000, tol=1e-4)
+            nmf = NMF(n_components=k, init='random', random_state=run_idx,
+                      max_iter=1000, tol=1e-4)
             W = nmf.fit_transform(matrix)
             H = nmf.components_
 
@@ -537,8 +539,8 @@ def estimateSignatures(contexts_df: pd.DataFrame, nMin: int = 2, nTry: int = 6,
     }
 
 
-def extract_signatures(contexts_df: pd.DataFrame, k: int, nrun: int = 30, 
-                      pseudocount: float = 1e-4, random_seed: Optional[int] = None) -> Dict:
+def extract_signatures(contexts_df: pd.DataFrame, k: int, nrun: int = 30,
+                       pseudocount: float = 1e-4, random_seed: Optional[int] = None) -> Dict:
     """
     Extract mutational signatures using Non-negative Matrix Factorization (NMF).
 
@@ -593,7 +595,7 @@ def extract_signatures(contexts_df: pd.DataFrame, k: int, nrun: int = 30,
     except ImportError as e:
         missing_pkg = str(e).split("'")[1] if "'" in str(e) else "scikit-learn"
         raise ImportError(f"{missing_pkg} is required for signature extraction. "
-                         f"Install with: pip install scikit-learn")
+                          f"Install with: pip install scikit-learn")
 
     # Validate input parameters
     if not isinstance(contexts_df, pd.DataFrame):
@@ -664,8 +666,8 @@ def extract_signatures(contexts_df: pd.DataFrame, k: int, nrun: int = 30,
             original_safe = normalized_matrix + eps
             reconstructed_safe = reconstructed + eps
 
-            kl_div = np.sum(original_safe * np.log(original_safe / reconstructed_safe) 
-                           - original_safe + reconstructed_safe)
+            kl_div = np.sum(original_safe * np.log(original_safe / reconstructed_safe)
+                            - original_safe + reconstructed_safe)
 
             all_results.append({
                 'W': W.copy(),
@@ -713,8 +715,8 @@ def extract_signatures(contexts_df: pd.DataFrame, k: int, nrun: int = 30,
     }
 
 
-def compare_signatures(W: np.ndarray, cosmic_path: str, min_cosine: float = 0.6, 
-                      return_matrix: bool = False) -> Dict:
+def compare_signatures(W: np.ndarray, cosmic_path: str, min_cosine: float = 0.6,
+                       return_matrix: bool = False) -> Dict:
     """
     Compare extracted signatures with COSMIC catalog using cosine similarity.
 
@@ -762,7 +764,7 @@ def compare_signatures(W: np.ndarray, cosmic_path: str, min_cosine: float = 0.6,
     except ImportError as e:
         missing_pkg = str(e).split("'")[1] if "'" in str(e) else "scikit-learn"
         raise ImportError(f"{missing_pkg} is required for cosine similarity calculation. "
-                         f"Install with: pip install scikit-learn")
+                          f"Install with: pip install scikit-learn")
 
     # Validate input and load COSMIC catalog
     if not isinstance(W, np.ndarray):
@@ -891,7 +893,7 @@ def compare_signatures(W: np.ndarray, cosmic_path: str, min_cosine: float = 0.6,
         aetiology = "Unknown"
 
         summary_data.append({
-            'Signature_W': f'Signature_{i+1}',
+            'Signature_W': f'Signature_{i + 1}',
             'Best_COSMIC': match_status,
             'Cosine': best_cosine,
             'Aetiology': aetiology

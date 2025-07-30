@@ -270,5 +270,6 @@ def actionable_mutations_oncokb(self, token: str, batch_size: int = 5000, timeou
 
     return self.data
 
+
 # Add the export_oncokb_input method to the PyMutation class
 PyMutation.export_oncokb_input = actionable_mutations_oncokb

@@ -1,8 +1,9 @@
-import pandas as pd
-import duckdb
-from typing import Optional, Dict, Tuple
-import re
 import logging
+import re
+from typing import Optional, Dict, Tuple
+
+import duckdb
+import pandas as pd
 
 from ..utils.database import (
     PfamAnnotationError,
@@ -12,7 +13,6 @@ from ..utils.fields import col, find_alias
 
 # Configure logger
 logger = logging.getLogger(__name__)
-
 
 
 # VCF ANNOTATION LOGIC
@@ -25,6 +25,8 @@ def annotate_vcf_variants(vcf_df: pd.DataFrame) -> pd.DataFrame:
     """VCF annotation functionality removed."""
     pass
     return vcf_df
+
+
 class VariantAnnotator:
     """
     VariantAnnotator class removed
@@ -45,7 +47,8 @@ class VariantAnnotator:
 
 
 # UNIPROT IDENTIFIER RESOLUTION
-def resolve_uniprot_identifiers(df: pd.DataFrame, uniprot_column: str, db_conn: duckdb.DuckDBPyConnection) -> Tuple[pd.DataFrame, Dict[str, int]]:
+def resolve_uniprot_identifiers(df: pd.DataFrame, uniprot_column: str, db_conn: duckdb.DuckDBPyConnection) -> Tuple[
+    pd.DataFrame, Dict[str, int]]:
     """
     Resolve UniProt identifiers to canonical accessions.
     
@@ -63,7 +66,7 @@ def resolve_uniprot_identifiers(df: pd.DataFrame, uniprot_column: str, db_conn: 
         Tuple of (DataFrame with uniprot_resolved column, resolution statistics)
     """
     logger.debug("Resolving UniProt identifiers to canonical accessions...")
-    
+
     # Initialize statistics
     stats = {
         'total': 0,
@@ -72,35 +75,35 @@ def resolve_uniprot_identifiers(df: pd.DataFrame, uniprot_column: str, db_conn: 
         'via_external_id': 0,
         'unresolved': 0
     }
-    
+
     df_work = df.copy()
     df_work['uniprot_resolved'] = None
     df_work['resolution_method'] = None
-    
+
     # Process each unique identifier
     unique_ids = df_work[uniprot_column].dropna().unique()
     resolution_cache = {}
-    
+
     for uniprot_id in unique_ids:
         if pd.isna(uniprot_id) or str(uniprot_id).strip() == '':
             continue
-            
+
         uniprot_str = str(uniprot_id).strip()
         stats['total'] += 1
-        
+
         # Check if already a valid accession (starts with letter, contains digits)
         if re.match(r'^[A-Z][0-9A-Z]{5}$', uniprot_str) or re.match(r'^[OPQ][0-9][A-Z0-9]{3}[0-9]$', uniprot_str):
             resolution_cache[uniprot_id] = (uniprot_str, 'direct_accession')
             stats['direct_accession'] += 1
             continue
-        
+
         # Try to resolve via short_name column
         try:
             result = db_conn.execute(
-                "SELECT uniprot FROM xref WHERE short_name = ? LIMIT 1", 
+                "SELECT uniprot FROM xref WHERE short_name = ? LIMIT 1",
                 [uniprot_str]
             ).fetchone()
-            
+
             if result:
                 resolved_accession = result[0]
                 resolution_cache[uniprot_id] = (resolved_accession, 'via_short_name')
@@ -108,14 +111,14 @@ def resolve_uniprot_identifiers(df: pd.DataFrame, uniprot_column: str, db_conn: 
                 continue
         except Exception as e:
             logger.warning(f"Error querying short_name for {uniprot_str}: {e}")
-        
+
         # Try to resolve via prot_id column (external identifiers)
         try:
             result = db_conn.execute(
-                "SELECT uniprot FROM xref WHERE prot_id = ? LIMIT 1", 
+                "SELECT uniprot FROM xref WHERE prot_id = ? LIMIT 1",
                 [uniprot_str]
             ).fetchone()
-            
+
             if result:
                 resolved_accession = result[0]
                 resolution_cache[uniprot_id] = (resolved_accession, 'via_external_id')
@@ -123,11 +126,11 @@ def resolve_uniprot_identifiers(df: pd.DataFrame, uniprot_column: str, db_conn: 
                 continue
         except Exception as e:
             logger.warning(f"Error querying prot_id for {uniprot_str}: {e}")
-        
+
         # Mark as unresolved
         resolution_cache[uniprot_id] = (None, 'unresolved')
         stats['unresolved'] += 1
-    
+
     # Apply resolutions to DataFrame
     for idx, row in df_work.iterrows():
         uniprot_id = row[uniprot_column]
@@ -135,7 +138,7 @@ def resolve_uniprot_identifiers(df: pd.DataFrame, uniprot_column: str, db_conn: 
             resolved_accession, method = resolution_cache[uniprot_id]
             df_work.loc[idx, 'uniprot_resolved'] = resolved_accession
             df_work.loc[idx, 'resolution_method'] = method
-    
+
     # Log resolution summary
     logger.info("UniProt resolution summary:")
     logger.info(f"   Total identifiers processed: {stats['total']:,}")
@@ -143,12 +146,13 @@ def resolve_uniprot_identifiers(df: pd.DataFrame, uniprot_column: str, db_conn: 
     logger.info(f"   Resolved via short_name: {stats['via_short_name']:,}")
     logger.info(f"   Resolved via external ID: {stats['via_external_id']:,}")
     logger.info(f"   Unresolved: {stats['unresolved']:,}")
-    
+
     return df_work, stats
 
 
 # MAF PFAM ANNOTATION LOGIC
-def _annotate_pfam_sql(df: pd.DataFrame, db_conn: duckdb.DuckDBPyConnection, aa_column: str, uniprot_alias: str) -> pd.DataFrame:
+def _annotate_pfam_sql(df: pd.DataFrame, db_conn: duckdb.DuckDBPyConnection, aa_column: str,
+                       uniprot_alias: str) -> pd.DataFrame:
     """Annotate PFAM domains using SQL for larger datasets."""
     logger.debug("Using SQL for PFAM annotation...")
 
@@ -167,12 +171,14 @@ def _annotate_pfam_sql(df: pd.DataFrame, db_conn: duckdb.DuckDBPyConnection, aa_
 
     return result_df
 
+
 def _extract_uniprot_id(self, row):
     """Extract UniProt ID from VEP columns"""
     uniprot_series = col(pd.DataFrame([row]), 'UNIPROT')
     if uniprot_series is not None and pd.notna(uniprot_series.iloc[0]):
         return str(uniprot_series.iloc[0]).split('.')[0]  # Remove version
     return None
+
 
 def _extract_aa_position(self, row):
     """Extract amino acid position from Protein_Change"""
@@ -182,6 +188,7 @@ def _extract_aa_position(self, row):
         if match:
             return int(match.group(1))
     return None
+
 
 def _annotate_with_database(self, df, db_conn, aa_column, uniprot_alias):
     """Use database for precise PFAM annotation with enhanced UniProt resolution"""
@@ -237,6 +244,7 @@ def _annotate_with_database(self, df, db_conn, aa_column, uniprot_alias):
     df_work.attrs['resolution_stats'] = resolution_stats
 
     return df_work
+
 
 def _annotate_with_vep_domains(self, df):
     """Parse PFAM from VEP_DOMAINS as fallback"""
@@ -315,11 +323,11 @@ def _annotate_with_vep_domains(self, df):
     return result_df
 
 
-def annotate_pfam(self, 
-                 db_conn: Optional[duckdb.DuckDBPyConnection] = None, 
-                 *, aa_column: str = 'aa_pos', 
-                 auto_extract: bool = True,
-                 prefer_database: bool = True):
+def annotate_pfam(self,
+                  db_conn: Optional[duckdb.DuckDBPyConnection] = None,
+                  *, aa_column: str = 'aa_pos',
+                  auto_extract: bool = True,
+                  prefer_database: bool = True):
     """
     Annotate PyMutation data with PFAM domains.
 
@@ -374,13 +382,14 @@ def annotate_pfam(self,
         if uniprot_alias and has_aa_pos and prefer_database:
             logger.debug("Using database annotation (most precise)")
             result_df = _annotate_with_database(self, df, db_conn, aa_column, uniprot_alias)
-            
+
             # Display resolution summary if available
             if hasattr(result_df, 'attrs') and 'resolution_stats' in result_df.attrs:
                 stats = result_df.attrs['resolution_stats']
                 logger.info("\nFinal annotation summary:")
                 logger.info(f"   Total variants processed: {len(df):,}")
-                logger.info(f"   UniProt identifiers resolved: {stats['total'] - stats['unresolved']:,}/{stats['total']:,}")
+                logger.info(
+                    f"   UniProt identifiers resolved: {stats['total'] - stats['unresolved']:,}/{stats['total']:,}")
                 logger.info(f"   Variants with PFAM annotations: {result_df['pfam_id'].notna().sum():,}")
 
         elif has_vep_domains:
@@ -396,13 +405,13 @@ def annotate_pfam(self,
         # Return new PyMutation object
         from ..core import PyMutation
         new_pymut = PyMutation(result_df, metadata=self.metadata, samples=self.samples)
-        
+
         # Store resolution statistics in metadata if available
         if hasattr(result_df, 'attrs') and 'resolution_stats' in result_df.attrs:
             if new_pymut.metadata is not None:
                 # Add pfam_resolution_stats as an attribute to existing MutationMetadata object
                 new_pymut.metadata.pfam_resolution_stats = result_df.attrs['resolution_stats']
-        
+
         return new_pymut
 
     finally:
@@ -412,7 +421,7 @@ def annotate_pfam(self,
 
 # PFAM DOMAIN SUMMARY FUNCTION
 def pfam_domains(self, *, aa_column: str = 'aa_pos', summarize_by: str = 'PfamDomain',
-                top_n: int = 10, include_synonymous: bool = False, plot: bool = False) -> pd.DataFrame:
+                 top_n: int = 10, include_synonymous: bool = False, plot: bool = False) -> pd.DataFrame:
     """
     Summarize PFAM domain annotations similar to maftools pfamDomains function.
 
@@ -481,7 +490,7 @@ def pfam_domains(self, *, aa_column: str = 'aa_pos', summarize_by: str = 'PfamDo
 
         summary = df_pfam.groupby([pfam_id_col, pfam_name_col]).agg({
             hugo_alias: 'nunique',  # Number of unique genes
-            aa_column: 'count'         # Number of variants
+            aa_column: 'count'  # Number of variants
         }).reset_index()
 
         summary.columns = ['pfam_id', 'pfam_name', 'n_genes', 'n_variants']
@@ -505,8 +514,10 @@ def pfam_domains(self, *, aa_column: str = 'aa_pos', summarize_by: str = 'PfamDo
 
         if uniprot_alias is not None and hugo_alias is not None:
             # Fix the aggregation
-            summary = df_pfam.groupby([uniprot_alias, aa_column, pfam_id_col, pfam_name_col]).size().reset_index(name='n_variants')
-            gene_counts = df_pfam.groupby([uniprot_alias, aa_column, pfam_id_col, pfam_name_col])[hugo_alias].nunique().reset_index(name='n_genes')
+            summary = df_pfam.groupby([uniprot_alias, aa_column, pfam_id_col, pfam_name_col]).size().reset_index(
+                name='n_variants')
+            gene_counts = df_pfam.groupby([uniprot_alias, aa_column, pfam_id_col, pfam_name_col])[
+                hugo_alias].nunique().reset_index(name='n_genes')
             summary = summary.merge(gene_counts, on=[uniprot_alias, aa_column, pfam_id_col, pfam_name_col])
             summary = summary.sort_values('n_variants', ascending=False)
         else:

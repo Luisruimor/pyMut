@@ -1,11 +1,12 @@
-import subprocess
-import logging
-import re
 import csv
 import gzip
+import logging
+import re
+import subprocess
+from datetime import datetime
 from pathlib import Path
 from typing import Union, Optional, Tuple
-from datetime import datetime
+
 from ..utils.format import format_chr
 from ..utils.merge_vep_annotation import merge_maf_with_vep_annotations
 
@@ -26,7 +27,8 @@ def _extract_assembly_and_version_from_cache(cache_dir: Union[str, Path]) -> tup
     match = re.search(pattern, cache_name)
 
     if not match:
-        raise ValueError(f"Cache directory name '{cache_name}' doesn't match expected format 'homo_sapiens_vep_{{version}}_{{assembly}}'")
+        raise ValueError(
+            f"Cache directory name '{cache_name}' doesn't match expected format 'homo_sapiens_vep_{{version}}_{{assembly}}'")
 
     version = match.group(1)
     assembly = match.group(2)
@@ -44,7 +46,7 @@ def _get_case_insensitive_column(columns: list, target_column: str) -> str:
         raise KeyError(f"Column '{target_column}' not found in MAF file. Available columns: {columns}")
 
 
-def _maf_to_region(maf_path: Union[str, Path], 
+def _maf_to_region(maf_path: Union[str, Path],
                    out_path: Optional[Union[str, Path]] = None) -> Tuple[bool, str]:
     """
     Convert a MAF file (compressed .gz or uncompressed .maf) to region format.
@@ -250,7 +252,7 @@ def wrap_maf_vep_annotate_protein(maf_file: Union[str, Path],
         "--force_overwrite",
         "--output_file", str(output_path)
     ]
-    
+
     # Add --no_stats when no_stats is True
     if no_stats:
         vep_cmd.insert(-2, "--no_stats")
@@ -300,18 +302,18 @@ def wrap_maf_vep_annotate_protein(maf_file: Union[str, Path],
 
 
 def wrap_vcf_vep_annotate_unified(vcf_file: Union[str, Path],
-                                cache_dir: Union[str, Path],
-                                fasta: Union[str, Path],
-                                output_file: Optional[Union[str, Path]] = None,
-                                synonyms_file: Optional[Union[str, Path]] = None,
-                                assembly: Optional[str] = None,
-                                version: Optional[str] = None,
-                                no_stats: bool = True,
-                                # New parameters to control annotations
-                                annotate_protein: bool = False,
-                                annotate_gene: bool = False,
-                                annotate_variant_class: bool = False,
-                                distance: Optional[int] = None) -> Tuple[bool, str]:
+                                  cache_dir: Union[str, Path],
+                                  fasta: Union[str, Path],
+                                  output_file: Optional[Union[str, Path]] = None,
+                                  synonyms_file: Optional[Union[str, Path]] = None,
+                                  assembly: Optional[str] = None,
+                                  version: Optional[str] = None,
+                                  no_stats: bool = True,
+                                  # New parameters to control annotations
+                                  annotate_protein: bool = False,
+                                  annotate_gene: bool = False,
+                                  annotate_variant_class: bool = False,
+                                  distance: Optional[int] = None) -> Tuple[bool, str]:
     """
     Unified method for VEP annotation that allows combining different types of annotation.
     
@@ -335,11 +337,11 @@ def wrap_vcf_vep_annotate_unified(vcf_file: Union[str, Path],
     # Validation: at least one annotation must be enabled
     if not any([annotate_protein, annotate_gene, annotate_variant_class]):
         raise ValueError("At least one annotation option must be enabled")
-    
+
     vcf_path = Path(vcf_file)
     cache_path = Path(cache_dir)
     fasta_path = Path(fasta)
-    
+
     # Validate input files
     if not vcf_path.exists():
         raise FileNotFoundError(f"VCF file not found: {vcf_path}")
@@ -365,7 +367,7 @@ def wrap_vcf_vep_annotate_unified(vcf_file: Union[str, Path],
             annotations.append("gene")
         if annotate_variant_class:
             annotations.append("variant_class")
-        
+
         output_filename = f"{vcf_path.stem}_vep_{'_'.join(annotations)}.vcf"
         output_path = output_dir / output_filename
     else:
@@ -414,19 +416,19 @@ def wrap_vcf_vep_annotate_unified(vcf_file: Union[str, Path],
     # Add specific parameters based on selected options
     if annotate_protein:
         vep_cmd.extend(["--protein", "--uniprot", "--domains", "--symbol"])
-    
+
     if annotate_gene:
         if not annotate_protein:  # Avoid duplicating --symbol
             vep_cmd.append("--symbol")
-        
+
         # Add distance parameters if specified
         if distance is not None:
             vep_cmd.extend(["--nearest", "symbol", "--distance", str(distance)])
-    
+
     if annotate_variant_class:
         # Add --variant_class WITHOUT --fields to get all variant class fields
         vep_cmd.append("--variant_class")
-    
+
     # Add --no_stats when no_stats is True
     if no_stats:
         vep_cmd.append("--no_stats")
