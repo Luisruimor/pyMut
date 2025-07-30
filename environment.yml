@@ -1,8 +1,9 @@
 name: PyMut
 channels:
+  - defaults
   - bioconda
   - conda-forge
-  - defaults
+  - bbglab
   - https://repo.anaconda.com/pkgs/main
   - https://repo.anaconda.com/pkgs/r
 dependencies:
@@ -11,4 +12,5 @@ dependencies:
   - ensembl-vep
   - htslib
   - tabix
+  - oncodriveclustl
 prefix: /home/luisruimore/anaconda3/envs/PyMut
