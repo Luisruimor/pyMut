@@ -1,0 +1,127 @@
+id,nombre,descripcion
+1,Hugo_Symbol,HUGO symbol for the gene.
+2,Entrez_Gene_Id,Entrez gene ID (integer).
+3,Center,Genome sequencing center reporting the variant.
+4,NCBI_Build,Reference genome build (e.g. GRCh38).
+5,Chromosome,Affected chromosome.
+6,Start_Position,Mutation start coordinate on reference.
+7,End_Position,Mutation end coordinate on reference.
+8,Strand,Genomic strand of allele (+).
+9,Variant_Classification,Translational effect of variant allele.
+10,Variant_Type,"Mutation type (SNP,DNP,TNP,ONP,INS,DEL,Consolidated)."
+11,Reference_Allele,Plus‑strand reference allele.
+12,Tumor_Seq_Allele1,Tumor sequencing allele 1.
+13,Tumor_Seq_Allele2,Tumor sequencing allele 2.
+14,dbSNP_RS,"dbSNP rsID, novel or null."
+15,dbSNP_Val_Status,dbSNP validation status list.
+16,Tumor_Sample_Barcode,Tumor sample aliquot barcode.
+17,Matched_Norm_Sample_Barcode,Matched normal sample barcode.
+18,Match_Norm_Seq_Allele1,Matched normal sequencing allele 1.
+19,Match_Norm_Seq_Allele2,Matched normal sequencing allele 2.
+20,Tumor_Validation_Allele1,Tumor validation allele 1.
+21,Tumor_Validation_Allele2,Tumor validation allele 2.
+22,Match_Norm_Validation_Allele1,Matched normal validation allele 1.
+23,Match_Norm_Validation_Allele2,Matched normal validation allele 2.
+24,Verification_Status,Second‑pass verification status.
+25,Validation_Status,Orthogonal validation status.
+26,Mutation_Status,Somatic / germline / LOH / etc.
+27,Sequencing_Phase,TCGA sequencing phase.
+28,Sequence_Source,Molecular assay type.
+29,Validation_Method,Assay platform for validation.
+30,Score,Not in use.
+31,BAM_File,Not in use.
+32,Sequencer,Instrument used for sequencing.
+33,Tumor_Sample_UUID,GDC UUID for tumor sample.
+34,Matched_Norm_Sample_UUID,GDC UUID for matched normal sample.
+35,HGVSc,HGVS coding sequence notation.
+36,HGVSp,HGVS protein sequence notation.
+37,HGVSp_Short,Short HGVS protein form.
+38,Transcript_ID,Ensembl transcript ID.
+39,Exon_Number,Exon number.
+40,t_depth,Tumor read depth.
+41,t_ref_count,Tumor reference allele depth.
+42,t_alt_count,Tumor alternate allele depth.
+43,n_depth,Normal read depth.
+44,n_ref_count,Normal reference allele depth.
+45,n_alt_count,Normal alternate allele depth.
+46,all_effects,Semicolon‑separated list of all effects.
+47,Allele,Variant allele used in consequence.
+48,Gene,Ensembl gene ID.
+49,Feature,Ensembl feature ID.
+50,Feature_type,"Type of feature (Transcript, etc.)."
+51,One_Consequence,Canonical transcript consequence term.
+52,Consequence,Consequence terms.
+53,cDNA_position,Position in cDNA sequence.
+54,CDS_position,Position in coding sequence.
+55,Protein_position,Position in protein sequence.
+56,Amino_acids,Amino‑acid change.
+57,Codons,Alternate codons.
+58,Existing_variation,Known existing variant identifier.
+59,ALLELE_NUM,Allele number from input.
+60,DISTANCE,Distance to transcript.
+61,TRANSCRIPT_STRAND,Transcript strand (+1 or ‑1).
+62,SYMBOL,Gene symbol.
+63,SYMBOL_SOURCE,Source of gene symbol.
+64,HGNC_ID,HGNC gene identifier.
+65,BIOTYPE,Transcript biotype.
+66,CANONICAL,Flag canonical transcript.
+67,CCDS,CCDS transcript ID.
+68,ENSP,Ensembl protein ID.
+69,SWISSPROT,UniProt Swiss‑Prot accession.
+70,TREMBL,UniProt TrEMBL identifier.
+71,UNIPARC,UniParc identifier.
+72,RefSeq,RefSeq transcript ID.
+73,SIFT,SIFT prediction / score.
+74,PolyPhen,PolyPhen prediction / score.
+75,EXON,Exon number.
+76,INTRON,Intron number.
+77,DOMAINS,Overlapping protein domains.
+78,GMAF,Global MAF from 1000G.
+79,AFR_MAF,1000G African population MAF.
+80,AMR_MAF,1000G American population MAF.
+81,ASN_MAF,1000G Asian population MAF.
+82,EAS_MAF,1000G East Asian population MAF.
+83,EUR_MAF,1000G European population MAF.
+84,SAS_MAF,1000G South Asian population MAF.
+85,AA_MAF,ESP African American MAF.
+86,EA_MAF,ESP European American MAF.
+87,CLIN_SIG,Clinical significance (ClinVar).
+88,SOMATIC,Somatic status flag.
+89,PUBMED,PubMed IDs citing variant.
+90,MOTIF_NAME,TF motif identifier.
+91,MOTIF_POS,Position within motif.
+92,HIGH_INF_POS,High information position flag.
+93,MOTIF_SCORE_CHANGE,Motif score change.
+94,IMPACT,Impact modifier.
+95,PICK,VEP pick flag.
+96,VARIANT_CLASS,Sequence Ontology variant class.
+97,TSL,Transcript support level.
+98,HGVS_OFFSET,HGVS offset.
+99,PHENO,Phenotype association flag.
+100,MINIMISED,Minimal representation flag.
+101,ExAC_AF,ExAC global allele frequency.
+102,ExAC_AF_Adj,ExAC adjusted allele frequency.
+103,ExAC_AF_AFR,ExAC African allele frequency.
+104,ExAC_AF_AMR,ExAC American allele frequency.
+105,ExAC_AF_EAS,ExAC East Asian allele frequency.
+106,ExAC_AF_FIN,ExAC Finnish allele frequency.
+107,ExAC_AF_NFE,ExAC Non‑Finnish European AF.
+108,ExAC_AF_OTH,ExAC other populations AF.
+109,ExAC_AF_SAS,ExAC South Asian allele frequency.
+110,GENE_PHENO,Gene‑phenotype association flag.
+111,FILTER,Filters from input VCF.
+112,CONTEXT,Reference allele and flanking context.
+113,src_vcf_id,Submitter ID of input VCF file.
+114,tumor_bam_uuid,Submitter ID of tumor BAM.
+115,normal_bam_uuid,Submitter ID of normal BAM.
+116,case_id,GDC case UUID.
+117,GDC_FILTER,GDC filter tags.
+118,COSMIC,Overlapping COSMIC variants.
+119,MC3_Overlap,Overlap with MC3 variant flag.
+120,GDC_Validation_Status,GDC validation status.
+121,GDC_Valid_Somatic,Somatic validation flag.
+122,vcf_region,VCF region string.
+123,vcf_info,VCF INFO column.
+124,vcf_format,VCF FORMAT column.
+125,vcf_tumor_gt,Tumor genotype from VCF.
+126,vcf_normal_gt,Normal genotype from VCF.

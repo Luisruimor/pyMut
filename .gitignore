@@ -50,6 +50,9 @@ coverage.xml
 .hypothesis/
 .pytest_cache/
 
+# pyMut cache directories
+.pymut_cache/
+
 # Translations
 *.mo
 *.pot
@@ -125,3 +128,35 @@ dmypy.json
 
 # Intellij IDEA
 .idea
+
+src/pyMut/data/examples/tcga_laml_converted_reduced.tsv
+.cursor/rules/
+.cursorproject.yml
+
+src/pyMut/data/examples/genes_unicos.tsv
+src/pyMut/data/examples/reducido-1k.tsv
+src/pyMut/data/examples/reducido-100k.tsv.gz
+src/pyMut/data/examples/xtra-reducido.tsv
+src/pyMut/data/examples/sample_mutations.tsv
+
+*.png
+src/pyMut/data/subsets
+ALL.chr10.shapeit2_integrated_snvindels_v2a_27022019.GRCh38.phased.vcf.gz
+ALL.chr10.shapeit2_integrated_snvindels_v2a_27022019.GRCh38.phased.vcf.gz.tbi
+
+src/pyMut/data/resources
+
+# mkdocs gh-page
+site
+src/pyMut/data/examples/tcga_laml.maf
+
+# Salida auxiliar de OncodriveCLUSTL
+**/tcga_laml_aux_*
+src/pyMut/data/examples/PAAD-TP.final_analysis_set.maf
+**/vep_annotation_*
+*.pdf
+
+*.DS_Store
+
+examples/oncoplot_outputs/
+docs/examples/data_conversion/output
