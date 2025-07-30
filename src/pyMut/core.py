@@ -13,7 +13,9 @@ from typing import Tuple, Optional
 import matplotlib.pyplot as plt
 import pandas as pd
 
-from .analysis.pfam_annotation import (annotate_pfam, pfam_domains, )
+from .analysis.pfam_annotation import PfamAnnotationMixin
+from .analysis.mutation_burden import MutationBurdenMixin
+from .analysis.mutational_signature import MutationalSignatureMixin
 from .annotate.actionable_mutation import ActionableMutationMixin
 from .annotate.cosmic_cancer_annotate import CancerAnnotateMixin
 from .filters.chrom_sample_filter import filter_by_chrom_sample
@@ -50,7 +52,7 @@ class MutationMetadata:
         self.assembly = assembly
 
 
-class PyMutation(CancerAnnotateMixin, ActionableMutationMixin):
+class PyMutation(CancerAnnotateMixin, ActionableMutationMixin, MutationBurdenMixin, MutationalSignatureMixin, PfamAnnotationMixin):
     def __init__(self, data: pd.DataFrame, metadata: Optional[MutationMetadata] = None,
                  samples: Optional[List[str]] = None):
         self.data = data
@@ -570,5 +572,3 @@ PyMutation.gen_region = gen_region
 PyMutation.pass_filter = pass_filter
 PyMutation.filter_by_chrom_sample = filter_by_chrom_sample
 PyMutation.filter_by_tissue_expression = filter_by_tissue_expression
-PyMutation.annotate_pfam = annotate_pfam
-PyMutation.pfam_domains = pfam_domains
