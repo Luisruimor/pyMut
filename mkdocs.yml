@@ -101,7 +101,7 @@ nav:
   - Example Usage:
       - Filtering:
           - Data Filtering Examples: examples/filtering/example_filtering.ipynb
-          - Tissue Expression Filter: examples/filtering/test_tissue_expression.ipynb
+          - Tissue Expression Filter: examples/filtering/tissue_expression.ipynb
       - Visualization:
           - Variant Classification Plot: examples/visualization/maf_to_variant_classification.ipynb
       - Analysis:
