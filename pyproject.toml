@@ -3,8 +3,7 @@ name = "PyMut"
 version = "0.1.0"
 description = "A Python library for genetic mutations"
 authors = [
-    {name = "Luis Ruiz Moreno",email = "lruizm4@alumnos.nebrija.es"},
-    {name = "Jesús Cuesta Bartolomé",email = "jcuestab1@alumnos.nebrija.es"}
+    {name = "Luis Ruiz Moreno",email = "lruizm4@alumnos.nebrija.es"}
 ]
 readme = "README.md"
 requires-python = ">=3.10,<3.13"
