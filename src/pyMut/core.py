@@ -16,6 +16,7 @@ import pandas as pd
 from .analysis.pfam_annotation import PfamAnnotationMixin
 from .analysis.mutation_burden import MutationBurdenMixin
 from .analysis.mutational_signature import MutationalSignatureMixin
+from .analysis.smg_detection import SmgDetectionMixin
 from .annotate.actionable_mutation import ActionableMutationMixin
 from .annotate.cosmic_cancer_annotate import CancerAnnotateMixin
 from .output import OutputMixin
@@ -53,7 +54,7 @@ class MutationMetadata:
         self.assembly = assembly
 
 
-class PyMutation(CancerAnnotateMixin, ActionableMutationMixin, MutationBurdenMixin, MutationalSignatureMixin, PfamAnnotationMixin, OutputMixin):
+class PyMutation(CancerAnnotateMixin, ActionableMutationMixin, MutationBurdenMixin, MutationalSignatureMixin, PfamAnnotationMixin, SmgDetectionMixin, OutputMixin):
     def __init__(self, data: pd.DataFrame, metadata: Optional[MutationMetadata] = None,
                  samples: Optional[List[str]] = None):
         self.data = data
