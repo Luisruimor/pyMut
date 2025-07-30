@@ -20,10 +20,7 @@ def _maf_COSMIC_OncoKB_annotation_aux(
         oncokb_table: Optional[Union[str, Path]] = None
 ) -> tuple[pd.DataFrame, Path]:
     """
-    Auxiliary function to annotate MAF file with COSMIC Cancer Gene Census data and optionally OncoKB data.
-
-    Uses a hybrid approach: DuckDB for large files (>2GB), pandas+pyarrow for smaller files.
-    Synonyms columns are hardcoded: "SYNONIMS" for COSMIC and "Gene Aliases" for OncoKB.
+    Annotate MAF file with COSMIC Cancer Gene Census data and optionally OncoKB data.
 
     Parameters
     ----------
@@ -36,24 +33,14 @@ def _maf_COSMIC_OncoKB_annotation_aux(
     compress_output : bool, default True
         Whether to compress the output file with gzip
     join_column : str, default "Hugo_Symbol"
-        Column name to use for joining (canonical name from fields.py)
+        Column name to use for joining
     oncokb_table : str | Path, optional
-        Path to the OncoKB cancer gene list table (.tsv). If provided, OncoKB
-        annotations will be added to the output.
+        Path to the OncoKB cancer gene list table (.tsv)
 
     Returns
     -------
     tuple[pd.DataFrame, Path]
-        A tuple containing:
-        - Annotated DataFrame with MAF data, COSMIC annotations, and optionally OncoKB annotations
-        - Path to the output file that was created
-
-    Raises
-    ------
-    FileNotFoundError
-        If input files don't exist
-    ValueError
-        If join column is not found in either file
+        Annotated DataFrame and output file path
     """
 
     maf_file = Path(maf_file)
@@ -120,21 +107,7 @@ def _maf_COSMIC_OncoKB_annotation_aux(
 
 
 def _read_file_auto(file_path: Path, **kwargs) -> pd.DataFrame:
-    """
-    Automatically read file detecting .gz compression.
-
-    Parameters
-    ----------
-    file_path : Path
-        Path to the file to read
-    **kwargs
-        Additional arguments passed to pd.read_csv
-
-    Returns
-    -------
-    pd.DataFrame
-        Loaded DataFrame
-    """
+    """Automatically read file detecting .gz compression."""
     if file_path.suffix == '.gz':
         with gzip.open(file_path, 'rt') as f:
             return pd.read_csv(f, **kwargs)
@@ -143,18 +116,7 @@ def _read_file_auto(file_path: Path, **kwargs) -> pd.DataFrame:
 
 
 def _write_file_auto(df: pd.DataFrame, file_path: Path, compress: bool = False) -> None:
-    """
-    Automatically write file with optional compression.
-
-    Parameters
-    ----------
-    df : pd.DataFrame
-        DataFrame to write
-    file_path : Path
-        Output file path
-    compress : bool, default False
-        Whether to compress the output
-    """
+    """Automatically write file with optional compression."""
     if compress or str(file_path).endswith('.gz'):
         with gzip.open(file_path, 'wt') as f:
             df.to_csv(f, sep='\t', index=False)
@@ -532,9 +494,6 @@ class CancerAnnotateMixin:
         """
         Annotate mutations with COSMIC and OncoKB cancer-related annotations.
         
-        This method adds cancer-specific annotations from COSMIC and OncoKB databases,
-        including oncogene status, tumor suppressor information, and cancer relevance.
-        
         Parameters
         ----------
         annotation_table : str | Path
@@ -557,7 +516,7 @@ class CancerAnnotateMixin:
         pd.DataFrame or None
             If in_place=False, returns annotated DataFrame.
             If in_place=True, returns None and updates self.data.
-            
+
         Raises
         ------
         FileNotFoundError
@@ -567,7 +526,6 @@ class CancerAnnotateMixin:
         """
         from datetime import datetime
 
-        # Calculate DataFrame memory usage to decide backend
         data_memory_mb = self.data.memory_usage(deep=True).sum() / (1024 * 1024)
         data_memory_gb = data_memory_mb / 1024
         # use_duckdb = data_memory_gb > 2.0  # DuckDB option disabled

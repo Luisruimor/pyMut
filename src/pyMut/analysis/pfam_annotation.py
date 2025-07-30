@@ -115,7 +115,6 @@ class PfamAnnotationMixin:
                 df_work.loc[idx, 'uniprot_resolved'] = resolved_accession
                 df_work.loc[idx, 'resolution_method'] = method
 
-        # Log resolution summary
         logger.info("UniProt resolution summary:")
         logger.info(f"   Total identifiers processed: {stats['total']:,}")
         logger.info(f"   Direct accessions: {stats['direct_accession']:,}")

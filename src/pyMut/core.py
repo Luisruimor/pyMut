@@ -140,12 +140,6 @@ class PyMutation(CancerAnnotateMixin, ActionableMutationMixin, MutationBurdenMix
         mpl.rcParams['savefig.facecolor'] = 'white'
         mpl.rcParams['savefig.edgecolor'] = 'none'
 
-        print("✅ High-quality configuration activated for matplotlib")
-        print("   • DPI: 300 (high resolution)")
-        print("   • Margins: automatic (tight)")
-        print("   • Format: optimized PNG")
-        print("   ℹ️  Now all figures will be automatically saved in high quality")
-
     def summary_plot(self, figsize: Tuple[int, int] = DEFAULT_SUMMARY_FIGSIZE, title: str = DEFAULT_PLOT_TITLE,
                      max_samples: Optional[int] = 200, top_genes_count: int = DEFAULT_TOP_GENES_COUNT) -> plt.Figure:
         """
@@ -375,10 +369,7 @@ class PyMutation(CancerAnnotateMixin, ActionableMutationMixin, MutationBurdenMix
 
         fig, ax = plt.subplots(figsize=figsize)
         _create_variant_classification_summary_plot(self, variant_column=variant_column, sample_column=sample_column,
-                                                    ax=ax, show_labels=True,
-                                                    # Ensure it always shows labels when generated individually
-                                                    set_title=False  # Avoid duplicate title
-                                                    )
+                                                    ax=ax, show_labels=True, set_title=False)
 
         # Configure title
         if title:

@@ -112,7 +112,7 @@ def _validate_chromosome_format(mutations_file: Path, regions_file: Path) -> boo
             logging.warning(f"Regions file format: {'chr prefix' if regions_has_chr else 'no chr prefix'}")
             return False
 
-        logging.info("✓ Chromosome formats are consistent between files")
+        logging.info("Chromosome formats are consistent between files")
         return True
 
     except Exception as e:
@@ -198,7 +198,7 @@ def _run_oncodriveclustl(mutations_file: Path, regions_file: Path, genome_build:
         proc.wait()
 
         if proc.returncode == 0:
-            logging.info("✓ OncodriveCLUSTL completed successfully")
+            logging.info("OncodriveCLUSTL completed successfully")
             return True
         else:
             logging.error(f"OncodriveCLUSTL failed with return code {proc.returncode}")

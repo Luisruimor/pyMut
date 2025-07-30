@@ -5,9 +5,7 @@ from typing import Optional, Dict
 
 import pandas as pd
 
-# ────────────────────────────────────────────────────────────────
-# LOGGER CONFIGURATION
-# ────────────────────────────────────────────────────────────────
+# Logger configuration
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)  # Change to DEBUG for more verbosity
 if not logger.handlers:
@@ -230,7 +228,6 @@ class MutationBurdenMixin:
             logger.info(f"TMB statistics saved to: {statistics_path}")
             logger.info(f"Analyzed {len(analysis_df)} samples with {len(self.data)} total mutations")
 
-        # Log comprehensive summary of TMB analysis results
         log_tmb_summary(analysis_df)
 
         return {
@@ -257,9 +254,7 @@ def log_tmb_summary(analysis_df: pd.DataFrame) -> None:
         logger.warning("No analysis data provided for summary")
         return
 
-    logger.info("=" * 40)
     logger.info("TMB ANALYSIS SUMMARY")
-    logger.info("=" * 40)
 
     # Basic statistics
     total_samples = len(analysis_df)
@@ -288,5 +283,3 @@ def log_tmb_summary(analysis_df: pd.DataFrame) -> None:
     logger.info(f"  - TMB value: {max_tmb_value:.6f} mutations/Mb")
     logger.info(f"• Sample with lowest TMB: {min_tmb_sample}")
     logger.info(f"  - TMB value: {min_tmb_value:.6f} mutations/Mb")
-
-    logger.info("=" * 40)

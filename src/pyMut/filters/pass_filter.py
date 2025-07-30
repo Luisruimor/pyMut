@@ -1,8 +1,6 @@
 import logging
 
-# ────────────────────────────────────────────────────────────────
 # Logging configuration
-# ────────────────────────────────────────────────────────────────
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)  # Change to DEBUG for more verbosity
 if not logger.handlers:
@@ -22,7 +20,7 @@ class PassFilterMixin:
 
     def pass_filter(self, chrom: str, pos: int, ref: str, alt: str):
         """
-        Filter this PyMutation by checking if a specific record (CHROM, POS, REF, ALT) 
+        Filter this PyMutation by checking if a specific record (CHROM, POS, REF, ALT)
         has FILTER == "PASS" using pyarrow for optimized performance.
 
         Parameters
