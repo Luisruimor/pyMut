@@ -13,8 +13,11 @@ from typing import Tuple, Optional
 import matplotlib.pyplot as plt
 import pandas as pd
 
-from .analysis.pfam_annotation import (annotate_pfam, pfam_domains, )
-from .annotate.cosmic_cancer_annotate import knownCancer
+from .analysis.pfam_annotation import PfamAnnotationMixin
+from .analysis.mutation_burden import MutationBurdenMixin
+from .analysis.mutational_signature import MutationalSignatureMixin
+from .annotate.actionable_mutation import ActionableMutationMixin
+from .annotate.cosmic_cancer_annotate import CancerAnnotateMixin
 from .filters.chrom_sample_filter import filter_by_chrom_sample
 from .filters.genomic_range import gen_region, region
 from .filters.pass_filter import pass_filter
@@ -49,7 +52,7 @@ class MutationMetadata:
         self.assembly = assembly
 
 
-class PyMutation:
+class PyMutation(CancerAnnotateMixin, ActionableMutationMixin, MutationBurdenMixin, MutationalSignatureMixin, PfamAnnotationMixin):
     def __init__(self, data: pd.DataFrame, metadata: Optional[MutationMetadata] = None,
                  samples: Optional[List[str]] = None):
         self.data = data
@@ -169,10 +172,10 @@ class PyMutation:
 
         # Preprocess data to ensure we have the necessary columns
         self.data = extract_variant_classifications(self.data, variant_column=VARIANT_CLASSIFICATION_COLUMN,
-            funcotation_column=FUNCOTATION_COLUMN)
+                                                    funcotation_column=FUNCOTATION_COLUMN)
 
         self.data = extract_variant_types(self.data, variant_column=VARIANT_TYPE_COLUMN,
-            funcotation_column=FUNCOTATION_COLUMN)
+                                          funcotation_column=FUNCOTATION_COLUMN)
 
         # Generate the summary plot
         fig = _create_summary_plot(self, figsize, title, max_samples, top_genes_count)
@@ -197,7 +200,7 @@ class PyMutation:
 
         # Preprocess data to ensure we have the necessary column
         self.data = extract_variant_classifications(self.data, variant_column="Variant_Classification",
-            funcotation_column="FUNCOTATION")
+                                                    funcotation_column="FUNCOTATION")
 
         # Create figure and axes
         fig, ax = plt.subplots(figsize=figsize)
@@ -265,8 +268,8 @@ class PyMutation:
 
         fig, ax = plt.subplots(figsize=figsize)
         _create_snv_class_plot(self, ref_column=ref_column, alt_column=alt_column, ax=ax, set_title=False
-            # Avoid duplicate title
-        )
+                               # Avoid duplicate title
+                               )
 
         # Configure title
         if title:
@@ -312,13 +315,13 @@ class PyMutation:
 
         # Ensure the variant classification column exists or is extracted
         self.data = extract_variant_classifications(self.data, variant_column=variant_column,
-            funcotation_column="FUNCOTATION")
+                                                    funcotation_column="FUNCOTATION")
 
         fig, ax = plt.subplots(figsize=figsize)
         _create_variants_per_sample_plot(self, variant_column=variant_column, sample_column=sample_column, ax=ax,
-            set_title=False,  # Avoid duplicate title
-            max_samples=max_samples  # Pass the configured sample limit
-        )
+                                         set_title=False,  # Avoid duplicate title
+                                         max_samples=max_samples  # Pass the configured sample limit
+                                         )
 
         # Don't modify title if it contains the median
         if title and not title.startswith("Variants per Sample"):
@@ -357,7 +360,7 @@ class PyMutation:
 
         # Ensure the variant classification column exists or is extracted
         self.data = extract_variant_classifications(self.data, variant_column=variant_column,
-            funcotation_column="FUNCOTATION")
+                                                    funcotation_column="FUNCOTATION")
 
         # Check if we're in wide format (samples as columns)
         is_wide_format = sample_column not in self.data.columns
@@ -370,9 +373,10 @@ class PyMutation:
 
         fig, ax = plt.subplots(figsize=figsize)
         _create_variant_classification_summary_plot(self, variant_column=variant_column, sample_column=sample_column,
-            ax=ax, show_labels=True,  # Ensure it always shows labels when generated individually
-            set_title=False  # Avoid duplicate title
-        )
+                                                    ax=ax, show_labels=True,
+                                                    # Ensure it always shows labels when generated individually
+                                                    set_title=False  # Avoid duplicate title
+                                                    )
 
         # Configure title
         if title:
@@ -441,12 +445,13 @@ class PyMutation:
 
         # Ensure the variant classification column exists or is extracted
         self.data = extract_variant_classifications(self.data, variant_column=variant_column,
-            funcotation_column=FUNCOTATION_COLUMN)
+                                                    funcotation_column=FUNCOTATION_COLUMN)
 
         fig, ax = plt.subplots(figsize=figsize)
         _create_top_mutated_genes_plot(self, mode=mode, variant_column=variant_column, gene_column=gene_column,
-            sample_column=sample_column, count=count, ax=ax, set_title=False  # Avoid duplicate title
-        )
+                                       sample_column=sample_column, count=count, ax=ax, set_title=False
+                                       # Avoid duplicate title
+                                       )
 
         # Adjust custom title based on mode
         if title:
@@ -552,8 +557,9 @@ class PyMutation:
             from .visualizations.oncoplot import _create_oncoplot_plot
             # Generate the oncoplot
             fig = _create_oncoplot_plot(py_mut=self, gene_column=gene_column, variant_column=variant_column,
-                ref_column=ref_column, alt_column=alt_column, top_genes_count=top_genes_count, max_samples=max_samples,
-                figsize=figsize, title=title)
+                                        ref_column=ref_column, alt_column=alt_column, top_genes_count=top_genes_count,
+                                        max_samples=max_samples,
+                                        figsize=figsize, title=title)
             plt.close(fig)
             return fig
 
@@ -566,6 +572,3 @@ PyMutation.gen_region = gen_region
 PyMutation.pass_filter = pass_filter
 PyMutation.filter_by_chrom_sample = filter_by_chrom_sample
 PyMutation.filter_by_tissue_expression = filter_by_tissue_expression
-PyMutation.annotate_pfam = annotate_pfam
-PyMutation.pfam_domains = pfam_domains
-PyMutation.knownCancer = knownCancer
