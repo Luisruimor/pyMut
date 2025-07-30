@@ -1,6 +1,6 @@
 [project]
 name = "pymut-bio"
-version = "0.1.0"
+version = "0.1.1"
 description = "A Python library for genetic mutations"
 readme = "README.md"
 license = { file = "LICENSE" }
