@@ -7,6 +7,9 @@ authors = ["Luis Ruiz Moreno <lruizm4@alumnos.nebrija.es>",
 ]
 license = "MIT"
 readme = "README.md"
+repository = "https://github.com/Luisruimor/pyMut"
+homepage = "https://luisruimor.github.io/pyMut/"
+keywords = ["genetics", "mutations", "bioinformatics", "python"]
 
 [tool.poetry.dependencies]
 python = ">=3.10"
