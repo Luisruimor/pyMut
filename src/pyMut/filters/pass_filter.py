@@ -110,10 +110,10 @@ def pass_filter(self, chrom: str, pos: int, ref: str, alt: str):
         df_formatted["CHROM"] = df_formatted["CHROM"].astype(str).map(format_chr)
 
         mask = (
-            (df_formatted["CHROM"] == chrom_formatted) &
-            (df_formatted["POS"] == pos) &
-            (df_formatted["REF"] == ref) &
-            (df_formatted["ALT"] == alt)
+                (df_formatted["CHROM"] == chrom_formatted) &
+                (df_formatted["POS"] == pos) &
+                (df_formatted["REF"] == ref) &
+                (df_formatted["ALT"] == alt)
         )
 
         matching_records = df_formatted[mask]
@@ -136,10 +136,10 @@ def pass_filter(self, chrom: str, pos: int, ref: str, alt: str):
         df_formatted["CHROM"] = df_formatted["CHROM"].astype(str).map(format_chr)
 
         mask = (
-            (df_formatted["CHROM"] == chrom_formatted) &
-            (df_formatted["POS"] == pos) &
-            (df_formatted["REF"] == ref) &
-            (df_formatted["ALT"] == alt)
+                (df_formatted["CHROM"] == chrom_formatted) &
+                (df_formatted["POS"] == pos) &
+                (df_formatted["REF"] == ref) &
+                (df_formatted["ALT"] == alt)
         )
 
         matching_records = df_formatted[mask]

@@ -1,8 +1,10 @@
-import pandas as pd
 import json
 import logging
-from typing import Union, List, Dict, Optional, Tuple
 from pathlib import Path
+from typing import Union, List, Dict, Optional, Tuple
+
+import pandas as pd
+
 from ..utils.fields import FIELDS
 
 logger = logging.getLogger(__name__)
@@ -66,9 +68,9 @@ def get_gene_symbol(row: pd.Series) -> Optional[str]:
     Optional[str]
         The first valid gene symbol found, or None if no valid symbol is found
     """
-    
+
     hugo_symbol_fields = FIELDS.get("Hugo_Symbol", [])
-    
+
     for field in hugo_symbol_fields:
         if field in row.index and pd.notna(row[field]):
             value = str(row[field]).strip()
@@ -79,7 +81,7 @@ def get_gene_symbol(row: pd.Series) -> Optional[str]:
                     value = value.split("&")[0].strip()
                 if value and value not in ["", ".", "-"]:
                     return value
-    
+
     return None
 
 
@@ -158,9 +160,10 @@ def tissue_expression(data: Union[str, pd.Series], tissue: List[Union[str, float
 
     elif isinstance(data, pd.Series):
         gene_symbol = get_gene_symbol(data)
-        
+
         if gene_symbol is None:
-            raise KeyError("Could not find gene symbol in the provided data row. Expected columns: Hugo_Symbol, Gene_Symbol, Gene, etc.")
+            raise KeyError(
+                "Could not find gene symbol in the provided data row. Expected columns: Hugo_Symbol, Gene_Symbol, Gene, etc.")
 
     else:
         raise TypeError("data parameter must be either a string (gene symbol) or a pandas Series (data row)")
@@ -177,8 +180,6 @@ def tissue_expression(data: Union[str, pd.Series], tissue: List[Union[str, float
     is_expressed = expression_value >= threshold
 
     return is_expressed
-
-
 
 
 def filter_by_tissue_expression(self, tissues: List[Tuple[str, float]], keep_expressed: bool = True) -> 'PyMutation':
@@ -231,7 +232,7 @@ def filter_by_tissue_expression(self, tissues: List[Tuple[str, float]], keep_exp
     for i, tissue_spec in enumerate(tissues):
         if not isinstance(tissue_spec, tuple) or len(tissue_spec) != 2:
             raise ValueError(f"Each tissue specification must be a tuple with 2 elements (tissue_code, threshold). "
-                           f"Invalid specification at index {i}: {tissue_spec}")
+                             f"Invalid specification at index {i}: {tissue_spec}")
 
         tissue_code, threshold = tissue_spec
         if not isinstance(tissue_code, str):

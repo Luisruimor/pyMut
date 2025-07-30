@@ -94,9 +94,9 @@ def region(self, chrom: str, start: int, end: int):
         df_formatted["CHROM"] = df_formatted["CHROM"].astype(str).map(format_chr)
 
         mask = (
-            (df_formatted["CHROM"] == chrom_formatted) &
-            (df_formatted["POS"] >= start) &
-            (df_formatted["POS"] <= end)
+                (df_formatted["CHROM"] == chrom_formatted) &
+                (df_formatted["POS"] >= start) &
+                (df_formatted["POS"] <= end)
         )
         new_df = df_formatted[mask].copy()
 
@@ -108,9 +108,9 @@ def region(self, chrom: str, start: int, end: int):
         df_formatted["CHROM"] = df_formatted["CHROM"].astype(str).map(format_chr)
 
         mask = (
-            (df_formatted["CHROM"] == chrom_formatted) &
-            (df_formatted["POS"] >= start) &
-            (df_formatted["POS"] <= end)
+                (df_formatted["CHROM"] == chrom_formatted) &
+                (df_formatted["POS"] >= start) &
+                (df_formatted["POS"] <= end)
         )
         new_df = df_formatted[mask].copy()
 
@@ -193,7 +193,7 @@ def gen_region(self, gen_name: str):
         # Filter by the specified gene (case-insensitive)
         filtered_data = self.data[
             self.data[hugo_column].str.upper() == gen_name.upper()
-        ]
+            ]
 
         # Create filter description using the found column
         filter_description = f"gene_filter:{hugo_column}:{gen_name}"

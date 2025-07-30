@@ -1,8 +1,9 @@
 import logging
 from copy import deepcopy
 from typing import Optional, List, Union
-from ..utils.format import format_chr
+
 from ..utils.constants import SAMPLE_COLUMN
+from ..utils.format import format_chr
 
 # ────────────────────────────────────────────────────────────────
 # Logging configuration
@@ -17,10 +18,10 @@ if not logger.handlers:
 
 
 def filter_by_chrom_sample(
-    self, 
-    chrom: Optional[Union[str, List[str]]] = None, 
-    sample: Optional[Union[str, List[str]]] = None,
-    sample_column: str = SAMPLE_COLUMN
+        self,
+        chrom: Optional[Union[str, List[str]]] = None,
+        sample: Optional[Union[str, List[str]]] = None,
+        sample_column: str = SAMPLE_COLUMN
 ):
     """
     Filter this PyMutation by chromosome and/or sample.
