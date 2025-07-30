@@ -1,5 +1,5 @@
 [project]
-name = "pyMut"
+name = "pymut-bio"
 version = "0.1.0"
 description = "A Python library for genetic mutations"
 readme = "README.md"
