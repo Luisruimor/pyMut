@@ -243,6 +243,7 @@ ALIAS_TO_CANONICAL: Dict[str, str] = {
     alias: canonical for canonical, aliases in FIELDS.items() for alias in aliases
 }
 
+
 # ---------------------------------------------------------------------------
 # Funciones utilitarias
 # ---------------------------------------------------------------------------
@@ -287,6 +288,7 @@ def canonicalize_columns(columns: List[str]) -> List[str]:
     """Conservado para compatibilidad, pero normalmente **no** se usa
     si prefieres dejar las columnas intactas y llamar a ``col``."""
     return [canonical_name(c) for c in columns]
+
 
 # Para añadir un nuevo campo:
 # 1. Edita este archivo

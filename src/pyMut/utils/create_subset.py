@@ -1,7 +1,7 @@
 import gzip
+import logging
 from pathlib import Path
 from typing import Optional
-import logging
 
 # ────────────────────────────────────────────────────────────────
 # LOGGER CONFIGURATION
@@ -14,13 +14,14 @@ if not logger.handlers:
         level=logging.INFO,
     )
 
+
 def extract_vcf_subset(
-    input_vcf_path: str | Path,
-    output_vcf_path: str | Path,
-    max_variants: Optional[int] = None,
-    chromosome: Optional[str] = None,
-    start_pos: Optional[int] = None,
-    end_pos: Optional[int] = None
+        input_vcf_path: str | Path,
+        output_vcf_path: str | Path,
+        max_variants: Optional[int] = None,
+        chromosome: Optional[str] = None,
+        start_pos: Optional[int] = None,
+        end_pos: Optional[int] = None
 ) -> bool:
     """
     Extract a subset of variants from a VCF file

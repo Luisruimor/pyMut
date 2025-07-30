@@ -1,9 +1,10 @@
-import pandas as pd
-import duckdb
-import hashlib
 import gzip
+import hashlib
 from datetime import datetime
 from pathlib import Path
+
+import duckdb
+import pandas as pd
 
 
 class PfamAnnotationError(Exception):
@@ -218,14 +219,15 @@ def build_embedded_db(force_rebuild: bool = False) -> str:
 
     conn.execute("DROP TABLE IF EXISTS pfam")
     conn.execute("""
-        CREATE TABLE pfam (
-            uniprot VARCHAR,
-            seq_start INTEGER,
-            seq_end INTEGER,
-            pfam_id VARCHAR,
-            pfam_name VARCHAR
-        )
-    """)
+                 CREATE TABLE pfam
+                 (
+                     uniprot   VARCHAR,
+                     seq_start INTEGER,
+                     seq_end   INTEGER,
+                     pfam_id   VARCHAR,
+                     pfam_name VARCHAR
+                 )
+                 """)
 
     with gzip.open(pfam_file, 'rt') as f:
         header = f.readline().strip().split('\t')
@@ -282,12 +284,13 @@ def build_embedded_db(force_rebuild: bool = False) -> str:
         print("    that already have UniProt protein IDs in the input data.")
         conn.execute("DROP TABLE IF EXISTS xref")
         conn.execute("""
-            CREATE TABLE xref (
-                prot_id VARCHAR,
-                uniprot VARCHAR,
-                short_name VARCHAR
-            )
-        """)
+                     CREATE TABLE xref
+                     (
+                         prot_id    VARCHAR,
+                         uniprot    VARCHAR,
+                         short_name VARCHAR
+                     )
+                     """)
     else:
         file_size = mapping_file.stat().st_size
         if file_size < 1000:  # Less than 1KB suggests empty or corrupted file
@@ -296,16 +299,18 @@ def build_embedded_db(force_rebuild: bool = False) -> str:
             print("⚠️  Creating empty xref table.")
             print("📝  Note: To enable full Pfam annotation functionality, please download")
             print("    the UniProt ID mapping file from:")
-            print("    https://ftp.uniprot.org/pub/databases/uniprot/current_release/knowledgebase/idmapping/idmapping.dat.gz")
+            print(
+                "    https://ftp.uniprot.org/pub/databases/uniprot/current_release/knowledgebase/idmapping/idmapping.dat.gz")
             print("    and place it at the expected location.")
             conn.execute("DROP TABLE IF EXISTS xref")
             conn.execute("""
-                CREATE TABLE xref (
-                    prot_id VARCHAR,
-                    uniprot VARCHAR,
-                    short_name VARCHAR
-                )
-            """)
+                         CREATE TABLE xref
+                         (
+                             prot_id    VARCHAR,
+                             uniprot    VARCHAR,
+                             short_name VARCHAR
+                         )
+                         """)
         else:
             try:
                 xref_df = parse_idmapping_selected(mapping_file, chunk_size)
@@ -313,12 +318,13 @@ def build_embedded_db(force_rebuild: bool = False) -> str:
                 if len(xref_df) > 0:
                     conn.execute("DROP TABLE IF EXISTS xref")
                     conn.execute("""
-                        CREATE TABLE xref (
-                            prot_id VARCHAR,
-                            uniprot VARCHAR,
-                            short_name VARCHAR
-                        )
-                    """)
+                                 CREATE TABLE xref
+                                 (
+                                     prot_id    VARCHAR,
+                                     uniprot    VARCHAR,
+                                     short_name VARCHAR
+                                 )
+                                 """)
 
                     conn.register('xref_temp', xref_df)
                     conn.execute("INSERT INTO xref SELECT * FROM xref_temp")
@@ -330,23 +336,25 @@ def build_embedded_db(force_rebuild: bool = False) -> str:
                     print("⚠️  Creating empty xref table. Pfam annotation may be limited.")
                     conn.execute("DROP TABLE IF EXISTS xref")
                     conn.execute("""
-                        CREATE TABLE xref (
-                            prot_id VARCHAR,
-                            uniprot VARCHAR,
-                            short_name VARCHAR
-                        )
-                    """)
+                                 CREATE TABLE xref
+                                 (
+                                     prot_id    VARCHAR,
+                                     uniprot    VARCHAR,
+                                     short_name VARCHAR
+                                 )
+                                 """)
             except Exception as e:
                 print(f"⚠️  Error reading mapping file: {e}")
                 print("⚠️  Creating empty xref table. Pfam annotation may be limited.")
                 conn.execute("DROP TABLE IF EXISTS xref")
                 conn.execute("""
-                    CREATE TABLE xref (
-                        prot_id VARCHAR,
-                        uniprot VARCHAR,
-                        short_name VARCHAR
-                    )
-                """)
+                             CREATE TABLE xref
+                             (
+                                 prot_id    VARCHAR,
+                                 uniprot    VARCHAR,
+                                 short_name VARCHAR
+                             )
+                             """)
 
     # 3. Create indices
     print("🔍 Creating database indices...")
@@ -359,14 +367,15 @@ def build_embedded_db(force_rebuild: bool = False) -> str:
     print("📝 Creating metadata table...")
     conn.execute("DROP TABLE IF EXISTS meta")
     conn.execute("""
-        CREATE TABLE meta (
-            resource VARCHAR,
-            file_path VARCHAR,
-            release_date VARCHAR,
-            sha256_hash VARCHAR,
-            created_at TIMESTAMP
-        )
-    """)
+                 CREATE TABLE meta
+                 (
+                     resource     VARCHAR,
+                     file_path    VARCHAR,
+                     release_date VARCHAR,
+                     sha256_hash  VARCHAR,
+                     created_at   TIMESTAMP
+                 )
+                 """)
 
     metadata_entries = [
         {
@@ -379,7 +388,7 @@ def build_embedded_db(force_rebuild: bool = False) -> str:
         {
             'resource': 'uniprot_mapping',
             'file_path': str(mapping_file),
-            'release_date': 'unknown', 
+            'release_date': 'unknown',
             'sha256_hash': calculate_file_hash(str(mapping_file)),
             'created_at': datetime.now()
         }

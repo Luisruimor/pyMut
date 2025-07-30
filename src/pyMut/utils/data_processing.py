@@ -5,8 +5,9 @@ This module contains functions for processing and transforming genetic
 mutation data for subsequent visualization in summary charts.
 """
 
-import pandas as pd
 import os
+
+import pandas as pd
 
 
 def extract_variant_classification(funcotation_str):
@@ -22,15 +23,15 @@ def extract_variant_classification(funcotation_str):
     """
     # Ensure we're working with a string (in case it's another type)
     funcotation_str = str(funcotation_str).strip()
-    
+
     # If the string includes a prefix like "FUNCOTATION=", remove it
     if funcotation_str.startswith("FUNCOTATION="):
         funcotation_str = funcotation_str[len("FUNCOTATION="):].strip()
-        
+
     # Remove initial and final brackets, if present
     if funcotation_str.startswith('[') and funcotation_str.endswith(']'):
         funcotation_str = funcotation_str[1:-1]
-    
+
     # Split the string by "|" and extract the sixth element (index 5)
     fields = funcotation_str.split('|')
     if len(fields) > 5:
@@ -39,9 +40,9 @@ def extract_variant_classification(funcotation_str):
         return None
 
 
-def extract_variant_classifications(data: pd.DataFrame, 
-                                  variant_column: str = "Variant_Classification",
-                                  funcotation_column: str = "FUNCOTATION") -> pd.DataFrame:
+def extract_variant_classifications(data: pd.DataFrame,
+                                    variant_column: str = "Variant_Classification",
+                                    funcotation_column: str = "FUNCOTATION") -> pd.DataFrame:
     """
     Extract variant classification from the FUNCOTATION field if there is no specific
     column for it.
@@ -56,7 +57,7 @@ def extract_variant_classifications(data: pd.DataFrame,
     """
     # Create a copy to not modify the original
     result = data.copy()
-    
+
     # Check if the classification column already exists
     if variant_column not in result.columns:
         # If the FUNCOTATION column exists, extract from there
@@ -66,7 +67,7 @@ def extract_variant_classifications(data: pd.DataFrame,
             result[variant_column] = result[funcotation_column].apply(
                 lambda x: extract_variant_classification(x) if pd.notnull(x) else None
             )
-            
+
             # Check if valid data was obtained
             if result[variant_column].isna().all():
                 print(f"Failed to extract variant classification data from '{funcotation_column}'.")
@@ -75,10 +76,10 @@ def extract_variant_classifications(data: pd.DataFrame,
             print(f"Neither '{variant_column}' nor '{funcotation_column}' columns were found in the DataFrame.")
             # Create a column with unknown value
             result[variant_column] = "Unknown"
-            
+
     # Fill NaN values with "Unknown"
     result[variant_column] = result[variant_column].fillna("Unknown")
-    
+
     return result
 
 
@@ -95,15 +96,15 @@ def extract_variant_type(funcotation_str):
     """
     # Ensure we're working with a string (in case it's another type)
     funcotation_str = str(funcotation_str).strip()
-    
+
     # If the string includes a prefix like "FUNCOTATION=", remove it
     if funcotation_str.startswith("FUNCOTATION="):
         funcotation_str = funcotation_str[len("FUNCOTATION="):].strip()
-        
+
     # Remove initial and final brackets, if present
     if funcotation_str.startswith('[') and funcotation_str.endswith(']'):
         funcotation_str = funcotation_str[1:-1]
-    
+
     # Split the string by "|" and extract the eighth element (index 7)
     fields = funcotation_str.split('|')
     if len(fields) > 7:
@@ -112,9 +113,9 @@ def extract_variant_type(funcotation_str):
         return None
 
 
-def extract_variant_types(data: pd.DataFrame, 
-                       variant_column: str = "Variant_Type",
-                       funcotation_column: str = "FUNCOTATION") -> pd.DataFrame:
+def extract_variant_types(data: pd.DataFrame,
+                          variant_column: str = "Variant_Type",
+                          funcotation_column: str = "FUNCOTATION") -> pd.DataFrame:
     """
     Extract variant type from the FUNCOTATION field if there is no specific
     column for it.
@@ -129,7 +130,7 @@ def extract_variant_types(data: pd.DataFrame,
     """
     # Create a copy to not modify the original
     result = data.copy()
-    
+
     # Check if the variant type column already exists
     if variant_column not in result.columns:
         # If the FUNCOTATION column exists, extract from there
@@ -139,7 +140,7 @@ def extract_variant_types(data: pd.DataFrame,
             result[variant_column] = result[funcotation_column].apply(
                 lambda x: extract_variant_type(x) if pd.notnull(x) else None
             )
-            
+
             # Check if valid data was obtained
             if result[variant_column].isna().all():
                 print(f"Failed to extract variant type data from '{funcotation_column}'.")
@@ -148,10 +149,10 @@ def extract_variant_types(data: pd.DataFrame,
             print(f"Neither '{variant_column}' nor '{funcotation_column}' columns were found in the DataFrame.")
             # Create a column with unknown value
             result[variant_column] = "Unknown"
-    
+
     # Fill NaN values with "Unknown"
     result[variant_column] = result[variant_column].fillna("Unknown")
-    
+
     return result
 
 
@@ -168,15 +169,15 @@ def extract_genome_change(funcotation_str):
     """
     # Convert to string and remove whitespace
     funcotation_str = str(funcotation_str).strip()
-    
+
     # Remove possible "FUNCOTATION=" prefix
     if funcotation_str.startswith("FUNCOTATION="):
         funcotation_str = funcotation_str[len("FUNCOTATION="):].strip()
-        
+
     # Remove opening and closing brackets if present
     if funcotation_str.startswith('[') and funcotation_str.endswith(']'):
         funcotation_str = funcotation_str[1:-1]
-    
+
     # Split the string by "|" and extract the corresponding field (index 11)
     fields = funcotation_str.split('|')
     if len(fields) > 11:
@@ -185,9 +186,9 @@ def extract_genome_change(funcotation_str):
         return None
 
 
-def extract_genome_changes(data: pd.DataFrame, 
-                        genome_change_column: str = "Genome_Change",
-                        funcotation_column: str = "FUNCOTATION") -> pd.DataFrame:
+def extract_genome_changes(data: pd.DataFrame,
+                           genome_change_column: str = "Genome_Change",
+                           funcotation_column: str = "FUNCOTATION") -> pd.DataFrame:
     """
     Extract genomic change from the FUNCOTATION field if there is no specific
     column for it.
@@ -202,7 +203,7 @@ def extract_genome_changes(data: pd.DataFrame,
     """
     # Create a copy to not modify the original
     result = data.copy()
-    
+
     # Check if the genomic change column already exists
     if genome_change_column not in result.columns:
         # If the FUNCOTATION column exists, extract from there
@@ -212,7 +213,7 @@ def extract_genome_changes(data: pd.DataFrame,
             result[genome_change_column] = result[funcotation_column].apply(
                 lambda x: extract_genome_change(x) if pd.notnull(x) else None
             )
-            
+
             # Check if valid data was obtained
             if result[genome_change_column].isna().all():
                 print(f"Failed to extract genome change data from '{funcotation_column}'.")
@@ -221,10 +222,10 @@ def extract_genome_changes(data: pd.DataFrame,
             print(f"Neither '{genome_change_column}' nor '{funcotation_column}' columns were found in the DataFrame.")
             # Create a column with unknown value
             result[genome_change_column] = "Unknown"
-    
+
     # Fill NaN values with "Unknown"
     result[genome_change_column] = result[genome_change_column].fillna("Unknown")
-    
+
     return result
 
 
@@ -245,7 +246,7 @@ def read_tsv(file_path: str) -> pd.DataFrame:
     """
     if not os.path.exists(file_path):
         raise FileNotFoundError(f"File '{file_path}' does not exist.")
-        
+
     try:
         # First try to read without comments
         data = pd.read_csv(file_path, sep='\t')
@@ -257,5 +258,5 @@ def read_tsv(file_path: str) -> pd.DataFrame:
             raise ValueError(f"Could not read file: {str(err)}")
     except Exception as e:
         raise ValueError(f"Error reading file: {str(e)}")
-        
+
     return data
