@@ -16,12 +16,14 @@ import pandas as pd
 from .analysis.pfam_annotation import PfamAnnotationMixin
 from .analysis.mutation_burden import MutationBurdenMixin
 from .analysis.mutational_signature import MutationalSignatureMixin
+from .analysis.smg_detection import SmgDetectionMixin
 from .annotate.actionable_mutation import ActionableMutationMixin
 from .annotate.cosmic_cancer_annotate import CancerAnnotateMixin
-from .filters.chrom_sample_filter import filter_by_chrom_sample
-from .filters.genomic_range import gen_region, region
-from .filters.pass_filter import pass_filter
-from .filters.tissue_expression import filter_by_tissue_expression
+from .output import OutputMixin
+from .filters.chrom_sample_filter import ChromSampleFilterMixin
+from .filters.genomic_range import GenomicRangeMixin
+from .filters.pass_filter import PassFilterMixin
+from .filters.tissue_expression import TissueExpressionMixin
 from .utils.constants import (DEFAULT_PLOT_FIGSIZE, DEFAULT_SUMMARY_FIGSIZE, DEFAULT_PLOT_TITLE,
                               DEFAULT_TOP_GENES_COUNT, GENE_COLUMN, VARIANT_CLASSIFICATION_COLUMN, SAMPLE_COLUMN,
                               REF_COLUMN, ALT_COLUMN, MODE_VARIANTS, DEFAULT_ONCOPLOT_FIGSIZE,
@@ -52,7 +54,7 @@ class MutationMetadata:
         self.assembly = assembly
 
 
-class PyMutation(CancerAnnotateMixin, ActionableMutationMixin, MutationBurdenMixin, MutationalSignatureMixin, PfamAnnotationMixin):
+class PyMutation(CancerAnnotateMixin, ActionableMutationMixin, MutationBurdenMixin, MutationalSignatureMixin, PfamAnnotationMixin, SmgDetectionMixin, OutputMixin, ChromSampleFilterMixin, GenomicRangeMixin, PassFilterMixin, TissueExpressionMixin):
     def __init__(self, data: pd.DataFrame, metadata: Optional[MutationMetadata] = None,
                  samples: Optional[List[str]] = None):
         self.data = data
@@ -567,8 +569,3 @@ class PyMutation(CancerAnnotateMixin, ActionableMutationMixin, MutationBurdenMix
             raise ValueError(f"Error generating oncoplot: {str(e)}")
 
 
-PyMutation.region = region
-PyMutation.gen_region = gen_region
-PyMutation.pass_filter = pass_filter
-PyMutation.filter_by_chrom_sample = filter_by_chrom_sample
-PyMutation.filter_by_tissue_expression = filter_by_tissue_expression
