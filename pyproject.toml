@@ -2,7 +2,9 @@
 name = "pyMut"
 version = "0.1.0"
 description = "A Python library for genetic mutations"
-authors = ["Your Name <you@example.com>"]
+authors = ["Luis Ruiz Moreno <lruizm4@alumnos.nebrija.es>",
+  "Jesús Cuesta Bartolomé <jcuestab1@alumnos.nebrija.es>"
+]
 license = "MIT"
 readme = "README.md"
 
