@@ -1,289 +1,51 @@
-# pyMut - Librería de Visualización de Mutaciones Genómicas
+# pyMut 🧬
+
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![PyPI version](https://badge.fury.io/py/pymut-bio.svg)](https://badge.fury.io/py/pymut-bio)
+
+A Python library for gene mutation analysis and visualisation
+
+## 🎯 Comparison with Other Tools
+
+| FUNCTIONAL CRITERIA                         | PYMUT (PROPOSAL)   | MUTSCAPE              | MAFTOOLS              |
+|---------------------------------------------|--------------------|-----------------------|-----------------------|
+| Input formats                               | VCF & MAF (native) | MAF                   | MAF                   |
+| VEP annotation                              | ✓                  |                       |                       |
+| Genomic range filtering                     | ✓                  | ✓                     | ✓                     |
+| PASS category variant filtering             | ✓                  | ✓                     |                       |
+| Sample filtering                            | ✓                  |                       | ✓                     |
+| Tissue expression filtering                 | ✓                  | ✓                     |                       |
+| File format transformation                  | ✓                  | ✓ *(VCF to MAF only)* | ✓ *(VCF to MAF only)* |
+| File output                                 | ✓                  |                       |                       |
+| File combination                            | ✓                  | ✓                     |                       |
+| Significantly mutated genes (SMG) detection |                    | ✓                     |                       |
+| Cancer-related gene annotation              | ✓                  | ✓                     |                       |
+| Tumor mutational burden (TMB) calculation   | ✓                  | ✓                     |                       |
+| Mutational signature identification         | ✓                  |                       |                       |
+| Medical implications mutation annotation    | ✓                  | ✓                     |                       |
+| PFAM annotation support                     | ✓                  |                       | ✓                     |
+
+## 📋 Requirements
+
+| Librería                  | Dependencias inmediatas                                                                                                                                                                                                                                                                     |
+|---------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **duckdb** 1.3.2          | – Ninguna                                                                                                                                                                                                                                                                                   |
+| **fastparquet** 2024.11.0 | – cramjam ≥ 2.3<br>– fsspec<br>– numpy<br>– packaging<br>– pandas ≥ 1.5.0                                                                                                                                                                                                                   |
+| **matplotlib** 3.10.3     | – contourpy ≥ 1.0.1<br>– cycler ≥ 0.10<br>– fonttools ≥ 4.22.0<br>– kiwisolver ≥ 1.3.1<br>– numpy ≥ 1.23<br>– packaging ≥ 20.0<br>– pillow ≥ 8<br>– pyparsing ≥ 2.3.1<br>– python-dateutil ≥ 2.7                                                                                            |
+| **mkdocs** 1.6.1          | – click ≥ 7.0<br>– colorama ≥ 0.4<br>– ghp-import ≥ 1.0<br>– jinja2 ≥ 2.11.1<br>– markdown ≥ 3.3.6<br>– markupsafe ≥ 2.0.1<br>– mergedeep ≥ 1.3.4<br>– mkdocs-get-deps ≥ 0.2.0<br>– packaging ≥ 20.5<br>– pathspec ≥ 0.11.1<br>– pyyaml ≥ 5.1<br>– pyyaml-env-tag ≥ 0.1<br>– watchdog ≥ 2.0 |
+| **numpy** 1.26.4          | – Ninguna                                                                                                                                                                                                                                                                                   |
+| **pandas** 2.3.1          | – numpy ≥ 1.22.4<br>– python-dateutil ≥ 2.8.2<br>– pytz ≥ 2020.1<br>– tzdata ≥ 2022.7                                                                                                                                                                                                       |
+| **pyarrow** 14.0.2        | – numpy ≥ 1.16.6                                                                                                                                                                                                                                                                            |
+| **pyensembl** 2.3.13      | – datacache ≥ 1.4.0,<2.0.0<br>– gtfparse ≥ 2.5.0,<3.0.0<br>– memoized-property ≥ 1.0.2<br>– pylint ≥ 2.17.2,<3.0.0<br>– serializable ≥ 0.2.1,<1.0.0<br>– tinytimer ≥ 0.0.0,<1.0.0<br>– typechecks ≥ 0.0.2,<1.0.0                                                                            |
+| **pyfaidx** 0.8.1.4       | – packaging                                                                                                                                                                                                                                                                                 |
+| **requests** 2.32.4       | – certifi ≥ 2017.4.17<br>– charset-normalizer ≥ 2,<4<br>– idna ≥ 2.5,<4<br>– urllib3 ≥ 1.21.1,<3                                                                                                                                                                                            |
+| **scikit-learn** 1.7.1    | – joblib ≥ 1.2.0<br>– numpy ≥ 1.22.0<br>– scipy ≥ 1.8.0<br>– threadpoolctl ≥ 3.1.0                                                                                                                                                                                                          |
+| **scipy** 1.11. 4         | – numpy ≥ 1.21.6,<1.28.0                                                                                                                                                                                                                                                                    |
+| **seaborn** 0.13.2        | – matplotlib ≥ 3.4,<3.6.1 or >3.6.1<br>– numpy ≥ 1.20,<1.24.0 or >1.24.0<br>– pandas ≥ 1.2                                                                                                                                                                                                  |
+| **urllib3** 2.5.0         | – Ninguna                                                                                                                                                                                                                                                                                   |
+
+## 📄 License
+
+This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.
 
-**pyMut** es una librería Python especializada en la visualización de datos de mutaciones genómicas, diseñada siguiendo principios de programación orientada a objetos (OOP) y mejores prácticas de desarrollo.
-
-## Características Principales
-
-- 🧬 **Visualizaciones especializadas** para datos genómicos
-- 📊 **Plot de resumen** con múltiples subgráficos informativos
-- 🎨 **Oncoplot** para visualizar paisajes mutacionales  
-- 🏗️ **Arquitectura OOP** limpia y extensible
-- 📈 **Alta calidad** automática (DPI 300, formatos vectoriales)
-- 🔧 **API intuitiva** y bien documentada
-- ✅ **Test suite completo** con >95% cobertura
-- 📚 **Documentación exhaustiva** con ejemplos
-
-## Instalación
-
-```bash
-# Clonar el repositorio
-git clone https://github.com/usuario/pyMut.git
-cd pyMut
-
-# Instalar dependencias
-pip install -r requirements.txt
-
-# Instalación en modo desarrollo
-pip install -e .
-```
-
-## Uso Rápido
-
-```python
-from pyMut import PyMutation
-import pandas as pd
-
-# Configurar alta calidad (recomendado)
-PyMutation.configure_high_quality_plots()
-
-# Cargar datos
-data = pd.read_csv("mutations.tsv", sep='\t')
-
-# Crear objeto PyMutation  
-py_mut = PyMutation(data)
-
-# Generar visualizaciones
-summary_fig = py_mut.summary_plot()
-oncoplot_fig = py_mut.oncoplot()
-
-# Guardar (automáticamente alta calidad)
-summary_fig.savefig("summary.png")
-oncoplot_fig.savefig("oncoplot.png")
-```
-
-## Visualizaciones Disponibles
-
-- **[Summary Plot](api/Visualization/summary_plot.md)** - Visualización principal que combina múltiples análisis
-
-Un panel completo con múltiples visualizaciones:
-- Clasificación de variantes
-- Tipos de variantes  
-- Clases de SNV
-- Variantes por muestra (TMB)
-- Resumen de clasificaciones
-- Genes más mutados
-
-### 2. Oncoplot (`oncoplot`)
-
-Visualización heatmap de paisajes mutacionales:
-- Genes ordenados por frecuencia de mutación
-- Muestras ordenadas por carga mutacional
-- Colores por tipo de mutación
-- Detección automática de Multi_Hit
-- Soporte para formatos TCGA y .GT
-
-### 3. Visualizaciones Individuales
-
-Cada componente del summary plot está disponible individualmente:
-- `variant_classification_plot()`
-- `variant_type_plot()`
-- `snv_class_plot()`
-- `variants_per_sample_plot()`
-- `variant_classification_summary_plot()`
-- `top_mutated_genes_plot()`
-
-## Estructura del Proyecto
-
-```
-pyMut/
-├── src/pyMut/
-│   ├── core.py                    # API principal (PyMutation class)
-│   │   ├── summary.py             # Visualizaciones de resumen
-│   │   └── oncoplot.py            # Oncoplot especializado
-│   ├── utils/
-│   │   ├── data_processing.py     # Procesamiento de datos
-│   │   └── constants.py           # Constantes del proyecto
-│   └── data/examples/             # Datos de ejemplo
-├── examples/
-│   ├── example_summary.py         # Ejemplo completo de summary plots
-│   └── example_oncoplot.py        # Ejemplo completo de oncoplot
-├── tests/
-│   ├── test_core.py              # Tests de funcionalidad principal
-│   └── test_oncoplot.py          # Tests específicos de oncoplot
-├── docs/
-│   ├── index.md                  # Esta documentación
-│   ├── summary-plot.md           # Guía detallada de summary plots
-│   └── oncoplot.md               # Guía detallada de oncoplot
-└── .cursor/rules/                # Reglas para asistentes AI
-```
-
-## Casos de Uso
-
-### Análisis de Datasets TCGA
-
-```python
-# Cargar datos TCGA
-tcga_data = pd.read_csv("TCGA_mutations.maf", sep='\t')
-
-# Análisis completo
-py_mut = PyMutation(tcga_data)
-
-# Panel de resumen
-summary = py_mut.summary_plot(
-    title="TCGA-LAML Mutation Analysis",
-    max_samples=100,
-    top_genes_count=20
-)
-
-# Oncoplot enfocado  
-oncoplot = py_mut.oncoplot(
-    title="Top Mutated Genes",
-    top_genes_count=15,
-    max_samples=200
-)
-```
-
-### Análisis de Genes Específicos
-
-```python
-# Filtrar por genes de interés
-oncogenes = ['TP53', 'KRAS', 'PIK3CA', 'EGFR', 'BRAF']
-filtered_data = data[data['Hugo_Symbol'].isin(oncogenes)]
-
-py_mut = PyMutation(filtered_data)
-focused_plot = py_mut.oncoplot(
-    title="Oncogenes Principales",
-    figsize=(12, 6)
-)
-```
-
-### Exportación Multi-formato
-
-```python
-fig = py_mut.summary_plot()
-
-# Múltiples formatos de alta calidad
-for fmt in ['png', 'pdf', 'svg']:
-    fig.savefig(f'summary.{fmt}', dpi=300 if fmt != 'svg' else None)
-```
-
-## Formatos de Datos Soportados
-
-### Estructura Requerida
-
-```python
-# Columnas mínimas requeridas
-columns = [
-    'Hugo_Symbol',           # Símbolo del gen
-    'Variant_Classification', # Tipo de mutación
-    'REF',                   # Alelo de referencia
-    'ALT',                   # Alelo alternativo
-    'TCGA-XX-XXXX'          # Columnas de muestras (auto-detectadas)
-]
-```
-
-### Formatos de Genotipo
-
-```python
-# Formatos soportados:
-"A|G"    # Pipe-separated (estándar)
-"A/G"    # Slash-separated
-"A:G"    # Colon-separated
-"A;G"    # Semicolon-separated
-
-# Casos especiales:
-"A|A"    # Sin mutación (homocigoto referencia)
-"G|G"    # Mutación homocigota
-"."      # Datos faltantes
-""       # Datos vacíos
-```
-
-## API Reference
-
-### Clase Principal: `PyMutation`
-
-```python
-class PyMutation:
-    def __init__(self, data: pd.DataFrame)
-    
-    @staticmethod
-    def configure_high_quality_plots()
-    
-    def summary_plot(self, figsize=(16, 12), title="Mutation Summary", 
-                     max_samples=None, top_genes_count=10
-                     ) -> plt.Figure
-    
-    def oncoplot(self, figsize=(16, 10), title="Oncoplot",
-                 top_genes_count=10, max_samples=180
-                 ) -> plt.Figure
-    
-    def variant_classification_plot(self, **kwargs) -> plt.Figure
-    def variant_type_plot(self, **kwargs) -> plt.Figure  
-    def snv_class_plot(self, **kwargs) -> plt.Figure
-    def variants_per_sample_plot(self, **kwargs) -> plt.Figure
-    def variant_classification_summary_plot(self, **kwargs) -> plt.Figure
-    def top_mutated_genes_plot(self, **kwargs) -> plt.Figure
-```
-
-### Parámetros Comunes
-
-| Parámetro | Descripción | Valor por Defecto |
-|-----------|-------------|-------------------|
-| `figsize` | Tamaño de figura (ancho, alto) | Varía por plot |
-| `title` | Título del gráfico | Varía por plot |
-| `max_samples` | Límite de muestras a mostrar | `None` (todas) |
-| `top_genes_count` | Número de genes principales | `10` |
-
-## Guías Detalladas
-
-- **[Guía de Summary Plot](summary-plot.md)**: Documentación completa de las visualizaciones de resumen
-- **[Guía de Oncoplot](oncoplot.md)**: Documentación detallada del oncoplot, interpretación y casos de uso
-
-## Ejemplos Completos
-
-- **[Ejemplo de Summary Plots](../examples/example_summary.py)**: Script completo con todos los tipos de summary plots
-- **[Ejemplo de Oncoplot](../examples/example_oncoplot.py)**: Script completo con múltiples configuraciones de oncoplot
-
-## Desarrollo y Testing
-
-### Ejecutar Tests
-
-```bash
-# Tests completos
-python -m pytest tests/ -v
-
-# Tests específicos de oncoplot
-python -m pytest tests/test_oncoplot.py -v
-
-# Tests con cobertura
-python -m pytest tests/ --cov=src/pyMut --cov-report=html
-```
-
-### Ejecutar Ejemplos
-
-```bash
-# Ejemplo de summary plots
-cd examples && python example_summary.py
-
-# Ejemplo de oncoplot  
-cd examples && python example_oncoplot.py
-```
-
-## Contribuir
-
-1. Fork el proyecto
-2. Crear rama de feature (`git checkout -b feature/nueva-caracteristica`)
-3. Hacer commit de cambios (`git commit -am 'Agregar nueva característica'`)
-4. Push a la rama (`git push origin feature/nueva-caracteristica`)
-5. Crear Pull Request
-
-### Estándares de Código
-
-- **PEP 8**: Estilo de código Python
-- **Type hints**: Obligatorios para todas las funciones públicas
-- **Docstrings**: Documentación completa en estilo Google
-- **Tests**: Cobertura mínima del 90%
-
-## Licencia
-
-Este proyecto está bajo la licencia MIT. Ver `LICENSE` para más detalles.
-
-## Contacto
-
-- **Repositorio**: https://github.com/usuario/pyMut
-- **Documentación**: https://pymut.readthedocs.io
-- **Issues**: https://github.com/usuario/pyMut/issues
-
----
-
-Para comenzar, revisa los [ejemplos completos](../examples/) o las [guías detalladas](summary-plot.md) de cada tipo de visualización.
