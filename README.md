@@ -1,245 +1,69 @@
 # pyMut 🧬
 
-[![Python 3.7+](https://img.shields.io/badge/python-3.7+-blue.svg)](https://www.python.org/downloads/)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Tests](https://img.shields.io/badge/tests-17%20passed-green.svg)](tests/)
 
-A professional Python library for visualizing genetic mutations from mutation data files, inspired by tools like **Maftools** and **Mutscape**.
-
-## 🎯 Features
-
-pyMut provides comprehensive mutation visualization capabilities:
-
-### 📊 **Complete Summary Visualizations**
-- **Variant Classification**: Distribution of mutation types (Missense, Nonsense, etc.)
-- **Variant Type**: Distribution of variant types (SNP, INS, DEL, etc.)
-- **SNV Class**: Distribution of nucleotide changes (A>G, C>T, etc.)
-- **Variants per Sample (TMB)**: Tumor mutation burden analysis
-- **Variant Classification Summary**: Boxplot analysis across samples
-- **Top Mutated Genes**: Most frequently mutated genes with two analysis modes
-
-### 🧬 **Waterfall Plot (Oncoplot)**
-- **Mutation Matrix**: Genes × Samples heatmap showing mutation patterns
-- **Smart Gene Ranking**: Automatically selects most frequently mutated genes
-- **Sample Prioritization**: Orders samples by mutation burden
-- **Multi-hit Detection**: Identifies samples with multiple mutation types
-- **Color-coded Variants**: Distinct colors for each mutation classification
-- **Automatic Sample Detection**: Supports TCGA and custom sample formats
-
-### 🎨 **Professional Visualization Features**
-- **High-quality graphics** with publication-ready output (DPI 300+)
-- **Consistent color schemes** across all visualizations
-- **Automatic format detection** (wide vs long format)
-- **Flexible customization** options
-
-### 🔧 **Advanced Capabilities**
-- **Automatic data preprocessing** from FUNCOTATION fields
-- **Multi-format support** (pipe-separated, slash-separated genotypes)
-- **Sample detection** (TCGA format and custom identifiers)
-- **Memory-efficient** processing of large datasets
-- **Comprehensive error handling** and validation
+A Python library for gene mutation analysis and visualisation
 
 ## 🚀 Quick Start
 
 ### Installation
 
+#### Option 1: Basic Installation (pip)
+
 ```bash
-pip install pyMut
+pip install pymut-bio
 ```
 
-### Basic Usage
+**Note**: The pip installation provides core functionality for mutation data visualization, but some advanced features may be limited as certain bioinformatics tools are not available through PyPI.
 
-```python
-from pyMut import PyMutation
-import pandas as pd
+#### Option 2: Full Installation (Recommended - Conda)
 
-# Load your mutation data
-data = pd.read_csv("mutations.tsv", sep="\t")
+For complete functionality including all bioinformatics tools, use the conda environment:
 
-# Create PyMutation object
-py_mut = PyMutation(data)
+```bash
+# 0) Descargar el environment.yml (elige curl o wget)
+curl -fsSL https://raw.githubusercontent.com/Luisruimor/pyMut/main/environment.yml -o environment.yml
+# ó:
+# wget -O environment.yml https://raw.githubusercontent.com/Luisruimor/pyMut/main/environment.yml
 
-# Configure high-quality output (recommended)
-PyMutation.configure_high_quality_plots()
+# 1) crear el entorno (añade tus binarios al environment.yml)
+conda env create -f environment.yml
 
-# Generate complete summary plot
-summary_fig = py_mut.summary_plot(
-    title="Mutation Analysis Summary",
-    figsize=(16, 12),
-    max_samples=200,
-    top_genes_count=10
-)
-summary_fig.savefig("mutation_summary.png")  # Automatically high quality!
+# 2) activar el entorno
+conda activate NOMBRE-DEL-ENTORNO
 
-# Generate waterfall plot (oncoplot)
-waterfall_fig = py_mut.waterfall_plot(
-    title="Mutation Landscape Oncoplot",
-    top_genes_count=30,
-    max_samples=180
-)
-waterfall_fig.savefig("oncoplot.png")
+# 3) instalar tu librería desde PyPI en ese entorno
+pip install pymut-bio
 ```
 
-### Individual Visualizations
+The conda environment includes essential bioinformatics tools:
+- **bcftools**: VCF/BCF file manipulation
+- **ensembl-vep**: Variant Effect Predictor
+- **htslib**: High-throughput sequencing data processing
+- **tabix**: Generic indexer for TAB-delimited genome position files
 
-```python
-# Tumor Mutation Burden (TMB) analysis
-tmb_fig = py_mut.variants_per_sample_plot(
-    title="Tumor Mutation Burden per Sample",
-    max_samples=100
-)
-tmb_fig.savefig("tmb_analysis.png")
-
-# Waterfall plot with custom parameters
-waterfall_fig = py_mut.waterfall_plot(
-    title="Top 20 Cancer Genes Mutation Pattern",
-    top_genes_count=20,
-    max_samples=100,
-    figsize=(18, 10)
-)
-waterfall_fig.savefig("cancer_genes_oncoplot.png")
-
-# Top mutated genes (by variant count)
-genes_fig = py_mut.top_mutated_genes_plot(
-    mode="variants",  # Count total variants
-    count=15,
-    title="Top 15 Most Mutated Genes"
-)
-genes_fig.savefig("top_genes_variants.png")
-
-# Top mutated genes (by sample prevalence)
-prevalence_fig = py_mut.top_mutated_genes_plot(
-    mode="samples",   # Count affected samples percentage
-    count=15,
-    title="Top 15 Genes by Sample Prevalence"
-)
-prevalence_fig.savefig("top_genes_prevalence.png")
-
-# Variant classification boxplot
-boxplot_fig = py_mut.variant_classification_summary_plot(
-    title="Variant Classification Distribution Across Samples"
-)
-boxplot_fig.savefig("variant_boxplot.png")
-```
-
-## 📁 Supported Data Formats
-
-### Long Format (Recommended)
-Each row represents one mutation:
-```
-Hugo_Symbol | Variant_Classification | Tumor_Sample_Barcode | REF | ALT
-GENE1      | Missense_Mutation      | SAMPLE_001          | A   | G
-GENE2      | Nonsense_Mutation      | SAMPLE_001          | C   | T
-```
-
-### Wide Format
-Samples as columns with genotype information:
-```
-Hugo_Symbol | Variant_Classification | SAMPLE_001 | SAMPLE_002 | SAMPLE_003
-GENE1      | Missense_Mutation      | A|G        | A|A        | A|G
-GENE2      | Nonsense_Mutation      | C|T        | C|C        | C|C
-```
-
-### Automatic Detection
-pyMut automatically detects your data format and handles:
-- **TCGA sample identifiers** (TCGA-XX-YYYY format)
-- **Custom sample naming** conventions
-- **Multiple genotype formats**: `A|G`, `A/G`, or custom notation
-- **FUNCOTATION field parsing** for variant extraction
-
-## 🎨 High-Quality Output
-
-### Automatic High-Quality Configuration
-```python
-# Configure once for all figures
-PyMutation.configure_high_quality_plots()
-
-# All subsequent saves will be high quality automatically
-fig.savefig("my_plot.png")  # DPI 300, optimized margins, PNG compression
-```
-
-### Manual Quality Control
-```python
-# Save with custom quality settings
-py_mut.save_figure(fig, "publication_plot.png", dpi=600)
-
-# Multiple formats
-fig.savefig("plot.pdf", dpi=300, bbox_inches='tight')  # PDF for publications
-fig.savefig("plot.svg", bbox_inches='tight')           # SVG for editing
-```
-
-## 🔬 Advanced Features
-
-### Custom Parameters
-```python
-# Highly customizable visualizations
-py_mut.variants_per_sample_plot(
-    figsize=(14, 8),
-    max_samples=50,
-    variant_column="Custom_Variant_Col",
-    sample_column="Custom_Sample_Col"
-)
-```
-
-### Data Preprocessing
-```python
-# Automatic extraction from FUNCOTATION fields
-# No manual preprocessing required - pyMut handles it automatically
-```
+These tools enable advanced genomic data processing capabilities that are not available with pip-only installation.
 
 ## 📋 Requirements
 
-- **Python**: 3.7+ (tested on 3.7, 3.8, 3.9, 3.10, 3.11)
-- **Core dependencies**:
-  - `pandas` >= 1.2.0
-  - `matplotlib` >= 3.3.0
-  - `numpy` >= 1.19.0
-- **Optional dependencies**:
-  - `seaborn` >= 0.11.0 (enhanced styling)
+| Librería                  | Dependencias inmediatas                                                                                                                                                                                                                                                                     |
+|---------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **duckdb** 1.3.2          | – Ninguna                                                                                                                                                                                                                                                                                   |
+| **fastparquet** 2024.11.0 | – cramjam ≥ 2.3<br>– fsspec<br>– numpy<br>– packaging<br>– pandas ≥ 1.5.0                                                                                                                                                                                                                   |
+| **matplotlib** 3.10.3     | – contourpy ≥ 1.0.1<br>– cycler ≥ 0.10<br>– fonttools ≥ 4.22.0<br>– kiwisolver ≥ 1.3.1<br>– numpy ≥ 1.23<br>– packaging ≥ 20.0<br>– pillow ≥ 8<br>– pyparsing ≥ 2.3.1<br>– python-dateutil ≥ 2.7                                                                                            |
+| **mkdocs** 1.6.1          | – click ≥ 7.0<br>– colorama ≥ 0.4<br>– ghp-import ≥ 1.0<br>– jinja2 ≥ 2.11.1<br>– markdown ≥ 3.3.6<br>– markupsafe ≥ 2.0.1<br>– mergedeep ≥ 1.3.4<br>– mkdocs-get-deps ≥ 0.2.0<br>– packaging ≥ 20.5<br>– pathspec ≥ 0.11.1<br>– pyyaml ≥ 5.1<br>– pyyaml-env-tag ≥ 0.1<br>– watchdog ≥ 2.0 |
+| **numpy** 1.26.4          | – Ninguna                                                                                                                                                                                                                                                                                   |
+| **pandas** 2.3.1          | – numpy ≥ 1.22.4<br>– python-dateutil ≥ 2.8.2<br>– pytz ≥ 2020.1<br>– tzdata ≥ 2022.7                                                                                                                                                                                                       |
+| **pyarrow** 14.0.2        | – numpy ≥ 1.16.6                                                                                                                                                                                                                                                                            |
+| **pyensembl** 2.3.13      | – datacache ≥ 1.4.0,<2.0.0<br>– gtfparse ≥ 2.5.0,<3.0.0<br>– memoized-property ≥ 1.0.2<br>– pylint ≥ 2.17.2,<3.0.0<br>– serializable ≥ 0.2.1,<1.0.0<br>– tinytimer ≥ 0.0.0,<1.0.0<br>– typechecks ≥ 0.0.2,<1.0.0                                                                            |
+| **pyfaidx** 0.8.1.4       | – packaging                                                                                                                                                                                                                                                                                 |
+| **requests** 2.32.4       | – certifi ≥ 2017.4.17<br>– charset-normalizer ≥ 2,<4<br>– idna ≥ 2.5,<4<br>– urllib3 ≥ 1.21.1,<3                                                                                                                                                                                            |
+| **scikit-learn** 1.7.1    | – joblib ≥ 1.2.0<br>– numpy ≥ 1.22.0<br>– scipy ≥ 1.8.0<br>– threadpoolctl ≥ 3.1.0                                                                                                                                                                                                          |
+| **scipy** 1.11. 4         | – numpy ≥ 1.21.6,<1.28.0                                                                                                                                                                                                                                                                    |
+| **seaborn** 0.13.2        | – matplotlib ≥ 3.4,<3.6.1 or >3.6.1<br>– numpy ≥ 1.20,<1.24.0 or >1.24.0<br>– pandas ≥ 1.2                                                                                                                                                                                                  |
+| **urllib3** 2.5.0         | – Ninguna                                                                                                                                                                                                                                                                                   |
 
-## 🧪 Testing
-
-Run the comprehensive test suite:
-
-```bash
-# Clean output (recommended)
-./run_clean_tests.sh
-
-# Standard pytest
-pytest
-
-# Detailed output
-python -m pytest tests/ -v
-```
-
-**Test Coverage**: 17 tests covering all major functionality, validation, and edge cases.
-
-## 📚 Documentation
-
-- **[Complete Documentation](docs/)** - Comprehensive guides and API reference
-- **[Installation Guide](docs/user-guide/installation.md)** - Detailed installation instructions
-- **[User Guide](docs/user-guide/basic-usage.md)** - Step-by-step tutorials
-- **[API Reference](docs/api/)** - Complete API documentation
-- **[Examples](docs/examples/)** - Real-world usage examples
-
-## 🤝 Contributing
-
-Contributions are welcome! Please:
-
-1. **Fork** the repository
-2. **Create** a feature branch (`git checkout -b feature/amazing-feature`)
-3. **Run tests** to ensure everything works (`./run_clean_tests.sh`)
-4. **Commit** your changes (`git commit -m 'Add amazing feature'`)
-5. **Push** to the branch (`git push origin feature/amazing-feature`)
-6. **Open** a Pull Request
-
-### Development Setup
-```bash
-git clone https://github.com/your-username/pyMut.git
-cd pyMut
-pip install -e .
-./run_clean_tests.sh  # Verify everything works
-```
 
 ## 📄 License
 
@@ -247,33 +71,19 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 
 ## 🎯 Comparison with Other Tools
 
-| Feature | pyMut | Maftools (R) | Mutscape (R) |
-|---------|-------|--------------|--------------|
-| Language | Python 🐍 | R | R |
-| Installation | `pip install` | Complex R setup | Complex R setup |
-| Data Format | Auto-detection | Manual preparation | Manual preparation |
-| High-Quality Output | Auto-configuration | Manual setup | Manual setup |
-| Testing | 17 comprehensive tests | Limited | Limited |
-| Documentation | Complete | Partial | Limited |
-
-## 📈 Roadmap
-
-- [ ] **Pathway analysis** integration
-- [ ] **Survival analysis** plots
-- [ ] **Mutation signatures** analysis
-- [ ] **Copy number** visualization
-- [ ] **Multi-sample** comparison tools
-- [ ] **Export to** common formats (VCF, MAF)
-
-## 🙏 Acknowledgments
-
-Inspired by the excellent work of:
-- **Maftools** (R package for mutation analysis)
-- **Mutscape** (R package for mutation landscape)
-- **TCGA** consortium for standardized data formats
-
----
-
-**⭐ If pyMut helps your research, please consider giving it a star!**
-
-*Made with ❤️ for the genomics community*
+| FUNCTIONAL CRITERIA                         | PYMUT (PROPOSAL)   | MUTSCAPE              | MAFTOOLS              |
+|---------------------------------------------|--------------------|-----------------------|-----------------------|
+| Input formats                               | VCF & MAF (native) | MAF                   | MAF                   |
+| VEP annotation                              | ✓                  |                       |                       |
+| Genomic range filtering                     | ✓                  | ✓                     | ✓                     |
+| PASS category variant filtering             | ✓                  | ✓                     |                       |
+| Sample filtering                            | ✓                  |                       | ✓                     |
+| Tissue expression filtering                 | ✓                  | ✓                     |                       |
+| File format transformation                  | ✓                  | ✓ *(VCF to MAF only)* | ✓ *(VCF to MAF only)* |
+| File combination                            | ✓                  |                       |                       |
+| Significantly mutated genes (SMG) detection |                    | ✓                     |                       |
+| Cancer-related gene annotation              | ✓                  | ✓                     |                       |
+| Tumor mutational burden (TMB) calculation   | ✓                  | ✓                     |                       |
+| Mutational signature identification         | ✓                  |                       |                       |
+| Medical implications mutation annotation    | ✓                  | ✓                     |                       |
+| PFAM annotation support                     | ✓                  |                       | ✓                     |
