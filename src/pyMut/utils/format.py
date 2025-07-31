@@ -1,5 +1,7 @@
 import re
+
 import pandas as pd
+
 
 def format_rs(string: str) -> str:
     """
@@ -33,6 +35,7 @@ def format_rs(string: str) -> str:
     codigos_solo_numeros = [codigo[2:] if codigo.startswith("rs") else codigo for codigo in codigos]
 
     return '|'.join(codigos_solo_numeros)
+
 
 def format_chr(string: str):
     """
@@ -96,6 +99,7 @@ def format_chr(string: str):
     else:
         return "chr" + string
 
+
 def reverse_format_chr(string: str) -> str:
     """
     Removes the 'chr' prefix from chromosome identifiers.
@@ -144,6 +148,7 @@ def reverse_format_chr(string: str) -> str:
         return result
     else:
         return string
+
 
 def normalize_variant_classification(df: pd.DataFrame) -> pd.DataFrame:
     """

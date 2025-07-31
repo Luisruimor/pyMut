@@ -1,11 +1,12 @@
-import subprocess
-import logging
-import re
 import csv
 import gzip
+import logging
+import re
+import subprocess
+from datetime import datetime
 from pathlib import Path
 from typing import Union, Optional, Tuple
-from datetime import datetime
+
 from ..utils.format import format_chr
 from ..utils.merge_vep_annotation import merge_maf_with_vep_annotations
 
@@ -13,12 +14,7 @@ logger = logging.getLogger(__name__)
 
 
 def _extract_assembly_and_version_from_cache(cache_dir: Union[str, Path]) -> tuple[str, str]:
-    """
-    Extract assembly and version information from VEP cache directory name.
-
-    Expected format: homo_sapiens_vep_{version}_{assembly}
-    Example: homo_sapiens_vep_114_GRCh38 -> ('GRCh38', '114')
-    """
+    """Extract assembly and version information from VEP cache directory name."""
     cache_path = Path(cache_dir)
     cache_name = cache_path.name
 
@@ -26,7 +22,8 @@ def _extract_assembly_and_version_from_cache(cache_dir: Union[str, Path]) -> tup
     match = re.search(pattern, cache_name)
 
     if not match:
-        raise ValueError(f"Cache directory name '{cache_name}' doesn't match expected format 'homo_sapiens_vep_{{version}}_{{assembly}}'")
+        raise ValueError(
+            f"Cache directory name '{cache_name}' doesn't match expected format 'homo_sapiens_vep_{{version}}_{{assembly}}'")
 
     version = match.group(1)
     assembly = match.group(2)
@@ -35,9 +32,7 @@ def _extract_assembly_and_version_from_cache(cache_dir: Union[str, Path]) -> tup
 
 
 def _get_case_insensitive_column(columns: list, target_column: str) -> str:
-    """
-    Find a column name in a case-insensitive manner.
-    """
+    """Find column name case-insensitively."""
     column_map = {col.lower(): col for col in columns}
     target_lower = target_column.lower()
     if target_lower in column_map:
@@ -46,26 +41,17 @@ def _get_case_insensitive_column(columns: list, target_column: str) -> str:
         raise KeyError(f"Column '{target_column}' not found in MAF file. Available columns: {columns}")
 
 
-def _maf_to_region(maf_path: Union[str, Path], 
+def _maf_to_region(maf_path: Union[str, Path],
                    out_path: Optional[Union[str, Path]] = None) -> Tuple[bool, str]:
     """
-    Convert a MAF file (compressed .gz or uncompressed .maf) to region format.
-
-    Output format: chr:start-end:strand/ALT
+    Convert a MAF file to region format.
 
     Args:
         maf_path: Path to the MAF file (.maf or .maf.gz)
-        out_path: Path to the output .region file (optional). If None, creates a file
-                 in the same directory with the same name but .region extension
+        out_path: Path to the output .region file (optional)
 
     Returns:
-        Tuple[bool, str]: (success_status, output_path) where success_status is True 
-                         if conversion was successful, and output_path is the path to 
-                         the output .region file
-
-    Raises:
-        FileNotFoundError: If the MAF file doesn't exist
-        Exception: For any other errors during processing
+        Tuple[bool, str]: (success_status, output_path)
     """
     maf_file = Path(maf_path)
 
@@ -135,26 +121,27 @@ def _maf_to_region(maf_path: Union[str, Path],
         return False, str(output_file) if 'output_file' in locals() else ""
 
 
-def wrap_maf_vep_annotate(maf_file: Union[str, Path],
-                          cache_dir: Union[str, Path],
-                          fasta: Union[str, Path],
-                          output_file: Optional[Union[str, Path]] = None,
-                          synonyms_file: Optional[Union[str, Path]] = None,
-                          assembly: Optional[str] = None,
-                          version: Optional[str] = None,
-                          compress: bool = True) -> Tuple[bool, str]:
+def wrap_maf_vep_annotate_protein(maf_file: Union[str, Path],
+                                  cache_dir: Union[str, Path],
+                                  fasta: Union[str, Path],
+                                  output_file: Optional[Union[str, Path]] = None,
+                                  synonyms_file: Optional[Union[str, Path]] = None,
+                                  assembly: Optional[str] = None,
+                                  version: Optional[str] = None,
+                                  compress: bool = True,
+                                  no_stats: bool = True) -> Tuple[bool, str]:
     """
     Wrapper method for VEP annotation that accepts MAF files and merges annotations back to MAF.
 
     This method converts a MAF file to region format internally, runs VEP annotation, and then
-    merges the VEP annotations back with the original MAF file. VEP annotation uses the following 
+    merges the VEP annotations back with the original MAF file. VEP annotation uses the following
     fixed parameters:
     - --offline --cache
     - --protein --uniprot --domains --symbol
     - --synonyms (automatically constructed from cache directory or provided explicitly)
-    - --no_stats
+    - --no_stats (only when no_stats=False)
 
-    After successful VEP annotation, the method automatically merges the VEP results with the 
+    After successful VEP annotation, the method automatically merges the VEP results with the
     original MAF file, creating an annotated MAF file with VEP_ prefixed columns. The original
     VEP annotation files are preserved and not deleted.
 
@@ -172,9 +159,10 @@ def wrap_maf_vep_annotate(maf_file: Union[str, Path],
         assembly: Genome assembly name (optional). If None, automatically extracted from cache directory name
         version: VEP cache version (optional). If None, automatically extracted from cache directory name
         compress: Whether to compress the merged output file with gzip (default: True)
+        no_stats: Whether to disable VEP statistics generation (default: True). When True, --no_stats flag is omitted
 
     Returns:
-        Tuple[bool, str]: (success_status, output_info) where success_status is True 
+        Tuple[bool, str]: (success_status, output_info) where success_status is True
                          if annotation was successful, and output_info contains information
                          about both the VEP file and the merged MAF file paths
 
@@ -208,7 +196,7 @@ def wrap_maf_vep_annotate(maf_file: Union[str, Path],
         output_dir = maf_path.parent / output_dir_name
         output_dir.mkdir(exist_ok=True)
 
-        output_filename = f"{maf_path.stem}_vep.txt"
+        output_filename = f"{maf_path.stem}_vep_protein.txt"
         output_path = output_dir / output_filename
     else:
         output_path = Path(output_file)
@@ -234,7 +222,6 @@ def wrap_maf_vep_annotate(maf_file: Union[str, Path],
         chr_synonyms_path = Path(synonyms_file)
         logger.info(f"Using provided chr synonyms path: {chr_synonyms_path}")
 
-    # Construct VEP command
     vep_cmd = [
         "vep",
         "--input_file", str(region_file),
@@ -246,9 +233,14 @@ def wrap_maf_vep_annotate(maf_file: Union[str, Path],
         "--fasta", str(fasta_path),
         "--protein", "--uniprot", "--domains", "--symbol",
         "--pick",
-        "--no_stats",
+        "--keep_csq",
+        "--force_overwrite",
         "--output_file", str(output_path)
     ]
+
+    # Add --no_stats when no_stats is True
+    if no_stats:
+        vep_cmd.insert(-2, "--no_stats")
 
     try:
         logger.info(f"Running VEP annotation: {' '.join(vep_cmd)}")
@@ -258,7 +250,6 @@ def wrap_maf_vep_annotate(maf_file: Union[str, Path],
         if result.stderr:
             logger.warning(f"VEP warnings/messages: {result.stderr}")
 
-        # Merge VEP annotations with original MAF file
         logger.info("Merging VEP annotations with original MAF file...")
         try:
             merged_df, merged_output_path = merge_maf_with_vep_annotations(
@@ -292,3 +283,155 @@ def wrap_maf_vep_annotate(maf_file: Union[str, Path],
                 logger.info(f"Cleaned up temporary region file: {region_file}")
         except Exception as e:
             logger.warning(f"Failed to clean up temporary region file {region_file}: {e}")
+
+
+def wrap_vcf_vep_annotate_unified(vcf_file: Union[str, Path],
+                                  cache_dir: Union[str, Path],
+                                  fasta: Union[str, Path],
+                                  output_file: Optional[Union[str, Path]] = None,
+                                  synonyms_file: Optional[Union[str, Path]] = None,
+                                  assembly: Optional[str] = None,
+                                  version: Optional[str] = None,
+                                  no_stats: bool = True,
+                                  # New parameters to control annotations
+                                  annotate_protein: bool = False,
+                                  annotate_gene: bool = False,
+                                  annotate_variant_class: bool = False,
+                                  distance: Optional[int] = None) -> Tuple[bool, str]:
+    """
+    Unified method for VEP annotation that allows combining different types of annotation.
+    
+    Args:
+        vcf_file: Path to the VCF file to annotate
+        cache_dir: Path to the VEP cache directory
+        fasta: Path to the reference FASTA file
+        output_file: Path to the output file (optional)
+        synonyms_file: Path to the chromosome synonyms file (optional)
+        assembly: Genome assembly name (optional)
+        version: VEP cache version (optional)
+        no_stats: Whether to disable VEP statistics generation
+        annotate_protein: Whether to include protein annotation (--protein --uniprot --domains --symbol)
+        annotate_gene: Whether to include gene annotation (--symbol)
+        annotate_variant_class: Whether to include variant classification (--variant_class)
+        distance: Distance for nearest gene search (only for annotate_gene)
+    
+    Returns:
+        Tuple[bool, str]: (success_status, output_info)
+    """
+    # Validation: at least one annotation must be enabled
+    if not any([annotate_protein, annotate_gene, annotate_variant_class]):
+        raise ValueError("At least one annotation option must be enabled")
+
+    vcf_path = Path(vcf_file)
+    cache_path = Path(cache_dir)
+    fasta_path = Path(fasta)
+
+    # Validate input files
+    if not vcf_path.exists():
+        raise FileNotFoundError(f"VCF file not found: {vcf_path}")
+    if not cache_path.exists():
+        raise FileNotFoundError(f"Cache directory not found: {cache_path}")
+    if not fasta_path.exists():
+        raise FileNotFoundError(f"FASTA file not found: {fasta_path}")
+
+    logger.info(f"Starting unified VEP annotation for VCF file: {vcf_path}")
+
+    # Handle output file creation
+    if output_file is None:
+        timestamp = datetime.now().strftime("%H%M%d%m")
+        output_dir_name = f"vep_annotation_{timestamp}"
+        output_dir = vcf_path.parent / output_dir_name
+        output_dir.mkdir(exist_ok=True)
+
+        # Create descriptive name based on selected annotations
+        annotations = []
+        if annotate_protein:
+            annotations.append("protein")
+        if annotate_gene:
+            annotations.append("gene")
+        if annotate_variant_class:
+            annotations.append("variant_class")
+
+        output_filename = f"{vcf_path.stem}_vep_{'_'.join(annotations)}.vcf"
+        output_path = output_dir / output_filename
+    else:
+        output_path = Path(output_file)
+
+    # Extract assembly and version from cache if not provided
+    if assembly is None or version is None:
+        try:
+            extracted_assembly, extracted_version = _extract_assembly_and_version_from_cache(cache_path)
+            if assembly is None:
+                assembly = extracted_assembly
+            if version is None:
+                version = extracted_version
+            logger.info(f"Extracted from cache: assembly={assembly}, version={version}")
+        except ValueError as e:
+            logger.error(f"Failed to extract assembly/version from cache: {e}")
+            raise
+    else:
+        logger.info(f"Using provided: assembly={assembly}, version={version}")
+
+    # Handle chromosome synonyms file
+    if synonyms_file is None:
+        chr_synonyms_path = cache_path / "homo_sapiens" / f"{version}_{assembly}" / "chr_synonyms.txt"
+        logger.info(f"Auto-constructed chr synonyms path: {chr_synonyms_path}")
+    else:
+        chr_synonyms_path = Path(synonyms_file)
+        logger.info(f"Using provided chr synonyms path: {chr_synonyms_path}")
+
+    # Build base VEP command
+    vep_cmd = [
+        "vep",
+        "--input_file", str(vcf_path),
+        "--vcf",
+        "--offline",
+        "--cache",
+        "--cache_version", version,
+        "--dir_cache", str(cache_path),
+        "--assembly", assembly,
+        "--synonyms", str(chr_synonyms_path),
+        "--fasta", str(fasta_path),
+        "--pick",
+        "--force_overwrite",
+        "--output_file", str(output_path)
+    ]
+
+    # Add specific parameters based on selected options
+    if annotate_protein:
+        vep_cmd.extend(["--protein", "--uniprot", "--domains", "--symbol"])
+
+    if annotate_gene:
+        if not annotate_protein:  # Avoid duplicating --symbol
+            vep_cmd.append("--symbol")
+
+        # Add distance parameters if specified
+        if distance is not None:
+            vep_cmd.extend(["--nearest", "symbol", "--distance", str(distance)])
+
+    if annotate_variant_class:
+        # Add --variant_class WITHOUT --fields to get all variant class fields
+        vep_cmd.append("--variant_class")
+
+    # Add --no_stats when no_stats is True
+    if no_stats:
+        vep_cmd.append("--no_stats")
+
+    try:
+        logger.info(f"Running unified VEP annotation: {' '.join(vep_cmd)}")
+        result = subprocess.run(vep_cmd, check=True, capture_output=True, text=True)
+        logger.info("Unified VEP annotation completed successfully")
+
+        if result.stderr:
+            logger.warning(f"VEP warnings/messages: {result.stderr}")
+
+        return True, f"VEP output file: {output_path}"
+
+    except (subprocess.CalledProcessError, FileNotFoundError) as e:
+        logger.error(f"Unified VEP annotation failed: {e}")
+        if hasattr(e, 'stderr') and e.stderr:
+            logger.error(f"VEP error output: {e.stderr}")
+        return False, str(output_path)
+    except Exception as e:
+        logger.error(f"Unexpected error during unified VEP annotation: {e}")
+        return False, str(output_path)

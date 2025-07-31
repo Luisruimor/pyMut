@@ -1,11 +1,9 @@
 import gzip
+import logging
 from pathlib import Path
 from typing import Optional
-import logging
 
-# ────────────────────────────────────────────────────────────────
-# LOGGER CONFIGURATION
-# ────────────────────────────────────────────────────────────────
+# Logger configuration
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)  # Change to DEBUG for more verbosity
 if not logger.handlers:
@@ -14,13 +12,14 @@ if not logger.handlers:
         level=logging.INFO,
     )
 
+
 def extract_vcf_subset(
-    input_vcf_path: str | Path,
-    output_vcf_path: str | Path,
-    max_variants: Optional[int] = None,
-    chromosome: Optional[str] = None,
-    start_pos: Optional[int] = None,
-    end_pos: Optional[int] = None
+        input_vcf_path: str | Path,
+        output_vcf_path: str | Path,
+        max_variants: Optional[int] = None,
+        chromosome: Optional[str] = None,
+        start_pos: Optional[int] = None,
+        end_pos: Optional[int] = None
 ) -> bool:
     """
     Extract a subset of variants from a VCF file
@@ -69,7 +68,6 @@ def extract_vcf_subset(
     input_path = Path(input_vcf_path)
     output_path = Path(output_vcf_path)
 
-    # Check if input file exists
     if not input_path.exists():
         logger.error("Input VCF file does not exist: %s", input_path)
         return False
@@ -82,13 +80,11 @@ def extract_vcf_subset(
         logger.info("Chromosome filter: %s", chromosome)
         logger.info("Position range: %s-%s", start_pos, end_pos)
 
-        # Open input file (handle both .gz and regular files)
         if str(input_path).endswith('.gz'):
             input_file = gzip.open(input_path, 'rt', encoding='utf-8')
         else:
             input_file = open(input_path, 'r', encoding='utf-8')
 
-        # Open output file
         output_file = open(output_path, 'w', encoding='utf-8')
 
         variants_written = 0
@@ -144,7 +140,6 @@ def extract_vcf_subset(
                 output_file.write(line + '\n')
                 variants_written += 1
 
-                # Log progress every 10000 variants
                 if variants_written % 10000 == 0:
                     logger.info("Processed %d variants...", variants_written)
 
@@ -152,7 +147,6 @@ def extract_vcf_subset(
             input_file.close()
             output_file.close()
 
-        # Get file sizes for logging
         input_size_mb = input_path.stat().st_size / (1024 * 1024)
         output_size_mb = output_path.stat().st_size / (1024 * 1024)
 

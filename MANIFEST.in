@@ -1,0 +1,4 @@
+include README.md
+include LICENSE
+recursive-include docs *.ipynb
+recursive-include src/pyMut/data/examples *.tsv *.maf.gz

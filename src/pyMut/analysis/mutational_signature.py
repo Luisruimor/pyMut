@@ -5,10 +5,11 @@ This module provides functionality for analyzing trinucleotide contexts
 and generating mutational signature matrices.
 """
 
-import pandas as pd
-import numpy as np
-from typing import Tuple, Dict, Optional
 import logging
+from typing import Tuple, Dict, Optional
+
+import numpy as np
+import pandas as pd
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -121,7 +122,7 @@ def _get_trinucleotide_context(fasta, chrom: str, pos: int) -> Optional[str]:
             return None
 
         # Extract trinucleotide (1-based coordinates)
-        trinuc = fasta[chrom_key][pos-2:pos+1].seq.upper()
+        trinuc = fasta[chrom_key][pos - 2:pos + 1].seq.upper()
 
         if len(trinuc) != 3 or 'N' in trinuc:
             return None
@@ -154,175 +155,185 @@ def _create_context_label(ref: str, alt: str, trinuc: str) -> str:
     return f"{trinuc[0]}[{ref}>{alt}]{trinuc[2]}"
 
 
-def trinucleotideMatrix(self, fasta_file: str) -> Tuple[pd.DataFrame, pd.DataFrame]:
+class MutationalSignatureMixin:
     """
-    Generate trinucleotide context matrix for mutational signature analysis.
-
-    This method calculates the 96 trinucleotide contexts for all SNVs in the dataset
-    and returns both a contexts matrix (96 x samples) and the original data enriched
-    with trinucleotide information.
-
-    Parameters
-    ----------
-    fasta_file : str
-        Path to the reference genome FASTA file
-
-    Returns
-    -------
-    Tuple[pd.DataFrame, pd.DataFrame]
-        - contexts_df: 96 x samples matrix with trinucleotide context counts
-        - enriched_data: Original data with added trinuc, class96, and idx96 columns
-
-    Raises
-    ------
-    ImportError
-        If pyfaidx is not installed
-    ValueError
-        If required columns are missing or no valid SNVs found
-    """
-    try:
-        import pyfaidx
-    except ImportError:
-        raise ImportError("pyfaidx is required for trinucleotide analysis. Install with: pip install pyfaidx")
-
-    # Get required columns and detect data format
-    from ..utils.fields import col
+    Mixin class providing mutational signature analysis functionality for PyMutation objects.
     
-    chrom_col = col(self.data, "Chromosome", required=True)
-    pos_col = col(self.data, "Start_Position", required=True) 
-    ref_col = col(self.data, "Reference_Allele", required=True)
-    alt_col = col(self.data, "Tumor_Seq_Allele2", required=True)
-    sample_col = col(self.data, "Tumor_Sample_Barcode", required=False)
+    This mixin adds trinucleotide context matrix generation and mutational signature
+    analysis capabilities to PyMutation, following the same architectural pattern 
+    as other mixins in the project.
+    """
 
-    if any(col is None for col in [chrom_col, pos_col, ref_col, alt_col]):
-        raise ValueError("Required columns not found. Need: Chromosome, Start_Position, Reference_Allele, Tumor_Seq_Allele2")
+    def trinucleotideMatrix(self, fasta_file: str) -> Tuple[pd.DataFrame, pd.DataFrame]:
+        """
+        Generate trinucleotide context matrix for mutational signature analysis.
 
-    if sample_col is None:
-        standard_cols = {'CHROM', 'POS', 'ID', 'REF', 'ALT', 'QUAL', 'FILTER', 'INFO', 'FORMAT',
-                        'Hugo_Symbol', 'Entrez_Gene_Id', 'Center', 'NCBI_Build', 'Start_Position', 
-                        'End_position', 'Strand', 'Variant_Classification', 'Variant_Type', 
-                        'Reference_Allele', 'Tumor_Seq_Allele1', 'Tumor_Seq_Allele2', 
-                        'Tumor_Sample_Barcode', 'Protein_Change', 'i_TumorVAF_WU', 'i_transcript_name'}
+        This method calculates the 96 trinucleotide contexts for all SNVs in the dataset
+        and returns both a contexts matrix (96 x samples) and the original data enriched
+        with trinucleotide information.
 
-        sample_columns = [col for col in self.data.columns if col not in standard_cols]
-        logger.info(f"Detected wide format with {len(sample_columns)} sample columns")
-        data_format = "wide"
-    else:
-        sample_columns = None
-        logger.info("Detected long format with Tumor_Sample_Barcode column")
-        data_format = "long"
+        Parameters
+        ----------
+        fasta_file : str
+            Path to the reference genome FASTA file
 
-    # Filter for SNVs and load reference genome
-    snv_mask = (
-        (ref_col.isin(['A', 'C', 'G', 'T'])) & 
-        (alt_col.isin(['A', 'C', 'G', 'T'])) &
-        (ref_col != alt_col)
-    )
+        Returns
+        -------
+        Tuple[pd.DataFrame, pd.DataFrame]
+            - contexts_df: 96 x samples matrix with trinucleotide context counts
+            - enriched_data: Original data with added trinuc, class96, and idx96 columns
 
-    if not snv_mask.any():
-        raise ValueError("No valid SNVs found in the dataset")
+        Raises
+        ------
+        ImportError
+            If pyfaidx is not installed
+        ValueError
+            If required columns are missing or no valid SNVs found
+        """
+        try:
+            import pyfaidx
+        except ImportError:
+            raise ImportError("pyfaidx is required for trinucleotide analysis. Install with: pip install pyfaidx")
 
-    snv_data = self.data[snv_mask].copy()
-    logger.info(f"Processing {len(snv_data)} SNVs from {len(self.data)} total mutations")
+        # Get required columns and detect data format
+        from ..utils.fields import col
 
-    try:
-        fasta = pyfaidx.Fasta(fasta_file)
-        logger.info(f"Loaded FASTA file: {fasta_file}")
-    except Exception as e:
-        raise ValueError(f"Error loading FASTA file {fasta_file}: {e}")
+        chrom_col = col(self.data, "Chromosome", required=True)
+        pos_col = col(self.data, "Start_Position", required=True)
+        ref_col = col(self.data, "Reference_Allele", required=True)
+        alt_col = col(self.data, "Tumor_Seq_Allele2", required=True)
+        sample_col = col(self.data, "Tumor_Sample_Barcode", required=False)
 
-    # Process each SNV to extract trinucleotide context
-    trinuc_contexts = []
-    class96_labels = []
-    idx96_values = []
+        if any(col is None for col in [chrom_col, pos_col, ref_col, alt_col]):
+            raise ValueError(
+                "Required columns not found. Need: Chromosome, Start_Position, Reference_Allele, Tumor_Seq_Allele2")
 
-    for idx, row in snv_data.iterrows():
-        chrom = str(row[chrom_col.name])
-        pos = int(row[pos_col.name])
-        ref = str(row[ref_col.name]).upper()
-        alt = str(row[alt_col.name]).upper()
+        if sample_col is None:
+            standard_cols = {'CHROM', 'POS', 'ID', 'REF', 'ALT', 'QUAL', 'FILTER', 'INFO', 'FORMAT',
+                             'Hugo_Symbol', 'Entrez_Gene_Id', 'Center', 'NCBI_Build', 'Start_Position',
+                             'End_position', 'Strand', 'Variant_Classification', 'Variant_Type',
+                             'Reference_Allele', 'Tumor_Seq_Allele1', 'Tumor_Seq_Allele2',
+                             'Tumor_Sample_Barcode', 'Protein_Change', 'i_TumorVAF_WU', 'i_transcript_name'}
 
-        trinuc = _get_trinucleotide_context(fasta, chrom, pos)
+            sample_columns = [col for col in self.data.columns if col not in standard_cols]
+            logger.info(f"Detected wide format with {len(sample_columns)} sample columns")
+            data_format = "wide"
+        else:
+            sample_columns = None
+            logger.info("Detected long format with Tumor_Sample_Barcode column")
+            data_format = "long"
 
-        if trinuc is None:
-            trinuc_contexts.append(None)
-            class96_labels.append(None)
-            idx96_values.append(None)
-            continue
+        # Filter for SNVs and load reference genome
+        snv_mask = (
+                (ref_col.isin(['A', 'C', 'G', 'T'])) &
+                (alt_col.isin(['A', 'C', 'G', 'T'])) &
+                (ref_col != alt_col)
+        )
 
-        norm_ref, norm_alt, norm_trinuc = _normalize_to_pyrimidine(ref, alt, trinuc)
-        context_label = _create_context_label(norm_ref, norm_alt, norm_trinuc)
-        context_idx = CONTEXT_TO_INDEX.get(context_label)
+        if not snv_mask.any():
+            raise ValueError("No valid SNVs found in the dataset")
 
-        trinuc_contexts.append(norm_trinuc)
-        class96_labels.append(context_label)
-        idx96_values.append(context_idx)
+        snv_data = self.data[snv_mask].copy()
+        logger.info(f"Processing {len(snv_data)} SNVs from {len(self.data)} total mutations")
 
-    # Add context information and filter valid entries
-    snv_data = snv_data.copy()
-    snv_data['trinuc'] = trinuc_contexts
-    snv_data['class96'] = class96_labels
-    snv_data['idx96'] = idx96_values
+        try:
+            fasta = pyfaidx.Fasta(fasta_file)
+            logger.info(f"Loaded FASTA file: {fasta_file}")
+        except Exception as e:
+            raise ValueError(f"Error loading FASTA file {fasta_file}: {e}")
 
-    valid_mask = snv_data['idx96'].notna()
-    valid_data = snv_data[valid_mask].copy()
+        # Process each SNV to extract trinucleotide context
+        trinuc_contexts = []
+        class96_labels = []
+        idx96_values = []
 
-    logger.info(f"Successfully processed {len(valid_data)} SNVs with valid trinucleotide contexts")
+        for idx, row in snv_data.iterrows():
+            chrom = str(row[chrom_col.name])
+            pos = int(row[pos_col.name])
+            ref = str(row[ref_col.name]).upper()
+            alt = str(row[alt_col.name]).upper()
 
-    if len(valid_data) == 0:
-        raise ValueError("No SNVs with valid trinucleotide contexts found")
+            trinuc = _get_trinucleotide_context(fasta, chrom, pos)
 
-    # Create 96 x samples matrix based on data format
-    if data_format == "long":
-        sample_names = valid_data[sample_col.name].unique()
-        contexts_matrix = np.zeros((96, len(sample_names)), dtype=int)
+            if trinuc is None:
+                trinuc_contexts.append(None)
+                class96_labels.append(None)
+                idx96_values.append(None)
+                continue
 
-        for sample_idx, sample in enumerate(sample_names):
-            sample_data = valid_data[valid_data[sample_col.name] == sample]
-            context_counts = sample_data['idx96'].value_counts()
+            norm_ref, norm_alt, norm_trinuc = _normalize_to_pyrimidine(ref, alt, trinuc)
+            context_label = _create_context_label(norm_ref, norm_alt, norm_trinuc)
+            context_idx = CONTEXT_TO_INDEX.get(context_label)
 
-            for context_idx, count in context_counts.items():
+            trinuc_contexts.append(norm_trinuc)
+            class96_labels.append(context_label)
+            idx96_values.append(context_idx)
+
+        # Add context information and filter valid entries
+        snv_data = snv_data.copy()
+        snv_data['trinuc'] = trinuc_contexts
+        snv_data['class96'] = class96_labels
+        snv_data['idx96'] = idx96_values
+
+        valid_mask = snv_data['idx96'].notna()
+        valid_data = snv_data[valid_mask].copy()
+
+        logger.info(f"Successfully processed {len(valid_data)} SNVs with valid trinucleotide contexts")
+
+        if len(valid_data) == 0:
+            raise ValueError("No SNVs with valid trinucleotide contexts found")
+
+        # Create 96 x samples matrix based on data format
+        if data_format == "long":
+            sample_names = valid_data[sample_col.name].unique()
+            contexts_matrix = np.zeros((96, len(sample_names)), dtype=int)
+
+            for sample_idx, sample in enumerate(sample_names):
+                sample_data = valid_data[valid_data[sample_col.name] == sample]
+                context_counts = sample_data['idx96'].value_counts()
+
+                for context_idx, count in context_counts.items():
+                    if pd.notna(context_idx):
+                        contexts_matrix[int(context_idx), sample_idx] = count
+
+        else:
+            sample_names = sample_columns
+            contexts_matrix = np.zeros((96, len(sample_names)), dtype=int)
+
+            for idx, row in valid_data.iterrows():
+                context_idx = row['idx96']
                 if pd.notna(context_idx):
-                    contexts_matrix[int(context_idx), sample_idx] = count
+                    context_idx = int(context_idx)
 
-    else:
-        sample_names = sample_columns
-        contexts_matrix = np.zeros((96, len(sample_names)), dtype=int)
+                    for sample_idx, sample_name in enumerate(sample_names):
+                        genotype = str(row[sample_name])
 
-        for idx, row in valid_data.iterrows():
-            context_idx = row['idx96']
-            if pd.notna(context_idx):
-                context_idx = int(context_idx)
+                        # Count mutations based on genotype
+                        # Genotypes like "G|A", "A|G" indicate heterozygous mutation
+                        # Genotypes like "A|A" indicate homozygous mutation
+                        # Genotypes like "G|G" indicate no mutation
+                        if '|' in genotype:
+                            alleles = genotype.split('|')
+                            ref_allele = str(row[ref_col.name]).upper()
+                            alt_allele = str(row[alt_col.name]).upper()
 
-                for sample_idx, sample_name in enumerate(sample_names):
-                    genotype = str(row[sample_name])
+                            alt_count = sum(1 for allele in alleles if allele == alt_allele)
+                            contexts_matrix[context_idx, sample_idx] += alt_count
 
-                    # Count mutations based on genotype
-                    # Genotypes like "G|A", "A|G" indicate heterozygous mutation
-                    # Genotypes like "A|A" indicate homozygous mutation
-                    # Genotypes like "G|G" indicate no mutation
-                    if '|' in genotype:
-                        alleles = genotype.split('|')
-                        ref_allele = str(row[ref_col.name]).upper()
-                        alt_allele = str(row[alt_col.name]).upper()
+        # Create contexts DataFrame
+        contexts_df = pd.DataFrame(
+            contexts_matrix,
+            index=TRINUCLEOTIDE_CONTEXTS,
+            columns=sample_names
+        )
 
-                        alt_count = sum(1 for allele in alleles if allele == alt_allele)
-                        contexts_matrix[context_idx, sample_idx] += alt_count
+        logger.info(f"Generated {contexts_df.shape[0]} x {contexts_df.shape[1]} trinucleotide context matrix")
 
-    # Create contexts DataFrame
-    contexts_df = pd.DataFrame(
-        contexts_matrix,
-        index=TRINUCLEOTIDE_CONTEXTS,
-        columns=sample_names
-    )
-
-    logger.info(f"Generated {contexts_df.shape[0]} x {contexts_df.shape[1]} trinucleotide context matrix")
-
-    return contexts_df, valid_data
+        return contexts_df, valid_data
 
 
 def estimateSignatures(contexts_df: pd.DataFrame, nMin: int = 2, nTry: int = 6,
-                      nrun: int = 5, parallel: int = 4, pConstant: Optional[float] = None) -> Dict:
+                       nrun: int = 5, parallel: int = 4, pConstant: Optional[float] = None) -> Dict:
     """
     Estimate optimal number of mutational signatures using NMF decomposition.
 
@@ -370,7 +381,7 @@ def estimateSignatures(contexts_df: pd.DataFrame, nMin: int = 2, nTry: int = 6,
     except ImportError as e:
         missing_pkg = str(e).split("'")[1] if "'" in str(e) else "required package"
         raise ImportError(f"{missing_pkg} is required for signature estimation. "
-                         f"Install with: pip install scikit-learn scipy")
+                          f"Install with: pip install scikit-learn scipy")
 
     # Validate input parameters
     if not isinstance(contexts_df, pd.DataFrame):
@@ -403,8 +414,8 @@ def estimateSignatures(contexts_df: pd.DataFrame, nMin: int = 2, nTry: int = 6,
     def _run_nmf_single(k, run_idx, matrix):
         """Run a single NMF decomposition."""
         try:
-            nmf = NMF(n_components=k, init='random', random_state=run_idx, 
-                     max_iter=1000, tol=1e-4)
+            nmf = NMF(n_components=k, init='random', random_state=run_idx,
+                      max_iter=1000, tol=1e-4)
             W = nmf.fit_transform(matrix)
             H = nmf.components_
 
@@ -537,8 +548,8 @@ def estimateSignatures(contexts_df: pd.DataFrame, nMin: int = 2, nTry: int = 6,
     }
 
 
-def extract_signatures(contexts_df: pd.DataFrame, k: int, nrun: int = 30, 
-                      pseudocount: float = 1e-4, random_seed: Optional[int] = None) -> Dict:
+def extract_signatures(contexts_df: pd.DataFrame, k: int, nrun: int = 30,
+                       pseudocount: float = 1e-4, random_seed: Optional[int] = None) -> Dict:
     """
     Extract mutational signatures using Non-negative Matrix Factorization (NMF).
 
@@ -593,7 +604,7 @@ def extract_signatures(contexts_df: pd.DataFrame, k: int, nrun: int = 30,
     except ImportError as e:
         missing_pkg = str(e).split("'")[1] if "'" in str(e) else "scikit-learn"
         raise ImportError(f"{missing_pkg} is required for signature extraction. "
-                         f"Install with: pip install scikit-learn")
+                          f"Install with: pip install scikit-learn")
 
     # Validate input parameters
     if not isinstance(contexts_df, pd.DataFrame):
@@ -664,8 +675,8 @@ def extract_signatures(contexts_df: pd.DataFrame, k: int, nrun: int = 30,
             original_safe = normalized_matrix + eps
             reconstructed_safe = reconstructed + eps
 
-            kl_div = np.sum(original_safe * np.log(original_safe / reconstructed_safe) 
-                           - original_safe + reconstructed_safe)
+            kl_div = np.sum(original_safe * np.log(original_safe / reconstructed_safe)
+                            - original_safe + reconstructed_safe)
 
             all_results.append({
                 'W': W.copy(),
@@ -713,8 +724,8 @@ def extract_signatures(contexts_df: pd.DataFrame, k: int, nrun: int = 30,
     }
 
 
-def compare_signatures(W: np.ndarray, cosmic_path: str, min_cosine: float = 0.6, 
-                      return_matrix: bool = False) -> Dict:
+def compare_signatures(W: np.ndarray, cosmic_path: str, min_cosine: float = 0.6,
+                       return_matrix: bool = False) -> Dict:
     """
     Compare extracted signatures with COSMIC catalog using cosine similarity.
 
@@ -762,7 +773,7 @@ def compare_signatures(W: np.ndarray, cosmic_path: str, min_cosine: float = 0.6,
     except ImportError as e:
         missing_pkg = str(e).split("'")[1] if "'" in str(e) else "scikit-learn"
         raise ImportError(f"{missing_pkg} is required for cosine similarity calculation. "
-                         f"Install with: pip install scikit-learn")
+                          f"Install with: pip install scikit-learn")
 
     # Validate input and load COSMIC catalog
     if not isinstance(W, np.ndarray):
@@ -891,7 +902,7 @@ def compare_signatures(W: np.ndarray, cosmic_path: str, min_cosine: float = 0.6,
         aetiology = "Unknown"
 
         summary_data.append({
-            'Signature_W': f'Signature_{i+1}',
+            'Signature_W': f'Signature_{i + 1}',
             'Best_COSMIC': match_status,
             'Cosine': best_cosine,
             'Aetiology': aetiology
@@ -907,10 +918,3 @@ def compare_signatures(W: np.ndarray, cosmic_path: str, min_cosine: float = 0.6,
         result['cosine_matrix'] = cosine_matrix
 
     return result
-
-
-# Add the method to PyMutation class
-def add_trinucleotide_method_to_pymutation():
-    """Add trinucleotideMatrix method to PyMutation class."""
-    from ..core import PyMutation
-    PyMutation.trinucleotideMatrix = trinucleotideMatrix

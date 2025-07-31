@@ -1,12 +1,15 @@
-import pandas as pd
-import duckdb
-from pathlib import Path
-from typing import Optional, Dict, Any
 import gzip
 import logging
+from pathlib import Path
+from typing import Optional, Dict
+
+import duckdb
+import pandas as pd
+
 from .format import format_chr
 
 logger = logging.getLogger(__name__)
+
 
 def _parse_vep_extra_column(extra_str: str) -> Dict[str, str]:
     """
@@ -35,6 +38,7 @@ def _parse_vep_extra_column(extra_str: str) -> Dict[str, str]:
 
     return result
 
+
 def _create_region_key_from_maf(row: pd.Series) -> str:
     """
     Create a region key from MAF row that matches the VEP Uploaded_variation format.
@@ -60,14 +64,15 @@ def _create_region_key_from_maf(row: pd.Series) -> str:
     end = int(row['End_position'])  # Use the real range
     ref = str(row['Reference_Allele'])
     alt = str(row['Tumor_Seq_Allele2'] or row['Tumor_Seq_Allele1'] or "-")
-    
+
     return f"{chrom}:{start}-{end}:{len(ref)}/{alt}"
 
+
 def merge_maf_with_vep_annotations(
-    maf_file: str | Path,
-    vep_file: str | Path,
-    output_file: Optional[str | Path] = None,
-    compress: bool = False
+        maf_file: str | Path,
+        vep_file: str | Path,
+        output_file: Optional[str | Path] = None,
+        compress: bool = False
 ) -> tuple[pd.DataFrame, Path]:
     """
     Merge MAF file with VEP annotations using pandas and DuckDB for optimization.
@@ -115,7 +120,6 @@ def merge_maf_with_vep_annotations(
 
     logger.info(f"Reading MAF file: {maf_file}")
 
-    # Read MAF file
     if maf_file.suffix == '.gz':
         with gzip.open(maf_file, 'rt') as f:
             maf_df = pd.read_csv(f, sep='\t', comment='#', low_memory=False)
@@ -123,7 +127,6 @@ def merge_maf_with_vep_annotations(
         maf_df = pd.read_csv(maf_file, sep='\t', comment='#', low_memory=False)
 
     logger.info(f"MAF file loaded: {maf_df.shape[0]} rows, {maf_df.shape[1]} columns")
-
 
     logger.info(f"Reading VEP file: {vep_file}")
 
@@ -145,14 +148,12 @@ def merge_maf_with_vep_annotations(
 
     logger.info(f"VEP file loaded: {vep_df.shape[0]} rows, {vep_df.shape[1]} columns")
 
-    # Create region keys for MAF data
     logger.info("Creating region keys for MAF data...")
     maf_df['region_key'] = maf_df.apply(_create_region_key_from_maf, axis=1)
 
     # Use VEP Uploaded_variation as the key (after removing # prefix)
     vep_df['region_key'] = vep_df['Uploaded_variation']
 
-    # Parse VEP Extra column to extract annotations
     logger.info("Parsing VEP Extra column...")
     vep_extra_parsed = vep_df['Extra'].apply(_parse_vep_extra_column)
     extra_df = pd.json_normalize(vep_extra_parsed)
@@ -162,14 +163,13 @@ def merge_maf_with_vep_annotations(
 
     # Remove rows without meaningful annotations (only IMPACT=MODIFIER)
     meaningful_annotations = vep_with_extra[
-        ~((vep_with_extra['Extra'] == 'IMPACT=MODIFIER') | 
+        ~((vep_with_extra['Extra'] == 'IMPACT=MODIFIER') |
           (vep_with_extra['Extra'].isna()) |
           (vep_with_extra['Gene'] == '-'))
     ].copy()
 
     logger.info(f"Filtered to {meaningful_annotations.shape[0]} meaningful annotations")
 
-    # Remove duplicates from VEP before merge to avoid cartesian product
     logger.info("Removing VEP duplicates...")
     original_vep_count = len(meaningful_annotations)
     meaningful_annotations = meaningful_annotations.drop_duplicates("region_key", keep="first")

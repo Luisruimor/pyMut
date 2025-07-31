@@ -154,3 +154,9 @@ src/pyMut/data/examples/tcga_laml.maf
 **/tcga_laml_aux_*
 src/pyMut/data/examples/PAAD-TP.final_analysis_set.maf
 **/vep_annotation_*
+*.pdf
+
+*.DS_Store
+
+examples/oncoplot_outputs/
+docs/examples/data_conversion/output

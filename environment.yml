@@ -1,0 +1,15 @@
+name: PyMutTFG
+channels:
+  - defaults
+  - bioconda
+  - conda-forge
+  - bbglab
+  - https://repo.anaconda.com/pkgs/main
+  - https://repo.anaconda.com/pkgs/r
+dependencies:
+  - bcftools
+  - ensembl-vep
+  - htslib
+  - python=3.10
+  - tabix
+prefix: /home/luisruimore/anaconda3/envs/PyMutTFG

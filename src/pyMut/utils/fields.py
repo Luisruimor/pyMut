@@ -1,33 +1,19 @@
 """
-====================================================
-Mapa de nombres de campo estándar (canónicos) y sus
-alias en salidas MAF/VEP/ANNOVAR/cBioPortal, etc.
-----------------------------------------------------
+Field mapping utilities for pyMut.
 
-• Fácil de ampliar → añade una entrada más en el
-  diccionario
-• Proporciona utilidades para obtener el nombre
-  canónico a partir de cualquier alias **sin modificar
-  el DataFrame original**.
+Maps canonical field names to their aliases in MAF/VEP/ANNOVAR/cBioPortal outputs.
+Provides utilities to get canonical names from any alias without modifying the original DataFrame.
 
-Ejemplo rápido
-~~~~~~~~~~~~~~
+Example:
 >>> from fields import col
->>> aa_series = col(df, "Protein_position")  # Devuelve df[alias_encontrado]
+>>> aa_series = col(df, "Protein_position")
 >>> uniprot_series = col(df, "UNIPROT", required=True)
-
-A partir de aquí tu código se abstrae de los alias;
-si en el DataFrame la columna se llama `AAPos` o
-`VEP_Protein_position`, tu lógica siempre usa el nombre
-canónico.
 """
 from __future__ import annotations
 
 from typing import Dict, List, Sequence
 
-# ---------------------------------------------------------------------------
-# Diccionario principal: clave = nombre canónico, valor = lista de alias
-# ---------------------------------------------------------------------------
+# Main dictionary: key = canonical name, value = list of aliases
 FIELDS: Dict[str, List[str]] = {
     # Posición de aminoácido en la proteína
     "Protein_position": [
@@ -42,11 +28,13 @@ FIELDS: Dict[str, List[str]] = {
     # Símbolo de gen (HGNC)
     "Hugo_Symbol": [
         "Hugo_Symbol",
+        "HUGO_SYMBOL",
         "VEP_SYMBOL",
         "SYMBOL",
-        "Gene",
-        "Gene_Name",
-        "GENE_SYMBOL"
+        "VEP_NEAREST",
+        "NEAREST",
+        "Gene_Symbol",
+        "GENE_SYMBOL",
     ],
     # Consecuencia funcional de la variante
     "Consequence": [
@@ -160,25 +148,31 @@ FIELDS: Dict[str, List[str]] = {
         "Mutation_Type",
         "MutationType",
     ],
-    # Cromosoma
+    # Cromosoma (CONSOLIDADO)
     "Chromosome": [
         "Chromosome",
         "Chr",
         "CHROM",
+        "CHR",
         "chromosome",
         "chr",
+        "chrom",
     ],
-    # Posición de inicio
+    # Posición de inicio (CONSOLIDADO)
     "Start_Position": [
         "Start_Position",
         "Start_position",
         "StartPosition",
         "POS",
         "Position",
+        "Pos",
+        "pos",
         "start_pos",
         "start_position",
+        "start",
+        "Start",
     ],
-    # Alelo de referencia
+    # Alelo de referencia (CONSOLIDADO)
     "Reference_Allele": [
         "Reference_Allele",
         "Ref_Allele",
@@ -186,6 +180,8 @@ FIELDS: Dict[str, List[str]] = {
         "Reference",
         "Ref",
         "reference_allele",
+        "ref",
+        "reference",
     ],
     # Alelo tumoral 1
     "Tumor_Seq_Allele1": [
@@ -195,87 +191,44 @@ FIELDS: Dict[str, List[str]] = {
         "Allele1",
         "tumor_seq_allele1",
     ],
-    # Alelo tumoral 2
+    # Alelo tumoral 2 (CONSOLIDADO)
     "Tumor_Seq_Allele2": [
         "Tumor_Seq_Allele2",
         "Tumor_Allele2",
         "TumorAllele2",
         "Allele2",
         "ALT",
-        "tumor_seq_allele2",
-    ],
-    # Código de barras de muestra tumoral
-    "Tumor_Sample_Barcode": [
-        "Tumor_Sample_Barcode",
-        "TumorSampleBarcode",
-        "Tumor_Sample_ID",
-        "Sample_ID",
-        "SAMPLE",
-        "Sample",
-        "tumor_sample_barcode",
-    ],
-    # Chromosome
-    "Chromosome": [
-        "Chromosome",
-        "CHROM",
-        "Chr",
-        "CHR",
-        "chrom",
-        "chr",
-    ],
-    # Start Position
-    "Start_Position": [
-        "Start_Position",
-        "Start_position",
-        "POS",
-        "Position",
-        "Pos",
-        "pos",
-        "start",
-        "Start",
-    ],
-    # Reference Allele
-    "Reference_Allele": [
-        "Reference_Allele",
-        "REF",
-        "Ref",
-        "ref",
-        "Reference",
-        "reference",
-    ],
-    # Tumor Sequence Allele 2
-    "Tumor_Seq_Allele2": [
-        "Tumor_Seq_Allele2",
-        "ALT",
         "Alt",
         "alt",
         "Alternative",
         "alternative",
         "Tumor_Allele",
+        "tumor_seq_allele2",
     ],
-    # Tumor Sample Barcode
+    # Código de barras de muestra tumoral (CONSOLIDADO)
     "Tumor_Sample_Barcode": [
         "Tumor_Sample_Barcode",
-        "Sample",
-        "sample",
+        "TumorSampleBarcode",
+        "Tumor_Sample_ID",
         "Sample_ID",
         "SampleID",
+        "SAMPLE",
+        "Sample",
+        "sample",
         "sample_id",
         "Barcode",
         "barcode",
+        "tumor_sample_barcode",
     ],
 }
 
-# ---------------------------------------------------------------------------
-# Alias inverso: alias → nombre canónico
-# ---------------------------------------------------------------------------
+# Reverse alias mapping: alias → canonical name
 ALIAS_TO_CANONICAL: Dict[str, str] = {
     alias: canonical for canonical, aliases in FIELDS.items() for alias in aliases
 }
 
-# ---------------------------------------------------------------------------
-# Funciones utilitarias
-# ---------------------------------------------------------------------------
+
+# Utility functions
 
 def canonical_name(column: str) -> str:
     """Devuelve el nombre canónico asociado a *column* (alias)."""
@@ -317,6 +270,7 @@ def canonicalize_columns(columns: List[str]) -> List[str]:
     """Conservado para compatibilidad, pero normalmente **no** se usa
     si prefieres dejar las columnas intactas y llamar a ``col``."""
     return [canonical_name(c) for c in columns]
+
 
 # Para añadir un nuevo campo:
 # 1. Edita este archivo

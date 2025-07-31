@@ -7,15 +7,11 @@ that show different statistics from mutation data.
 
 import pandas as pd
 import matplotlib.pyplot as plt
-import matplotlib.cm as cm
-import numpy as np
-import re
-from typing import List, Dict, Union, Optional, Tuple, Any
-from src.pyMut import PyMutation
+from typing import Dict, Optional, Tuple
+from ..core import PyMutation
 
 
-
-def create_variant_classification_plot(py_mut: PyMutation,
+def _create_variant_classification_plot(py_mut: PyMutation,
                                      variant_column: str = "Variant_Classification",
                                      ax: Optional[plt.Axes] = None,
                                      color_map: Optional[Dict] = None,
@@ -75,7 +71,7 @@ def create_variant_classification_plot(py_mut: PyMutation,
     return ax
 
 
-def create_variant_type_plot(py_mut: PyMutation,
+def _create_variant_type_plot(py_mut: PyMutation,
                            variant_column: str = "Variant_Type",
                            ax: Optional[plt.Axes] = None,
                            set_title: bool = True) -> plt.Axes:
@@ -138,7 +134,7 @@ def create_variant_type_plot(py_mut: PyMutation,
     return ax
 
 
-def create_snv_class_plot(py_mut: PyMutation,
+def _create_snv_class_plot(py_mut: PyMutation,
                         ref_column: str = "REF",
                         alt_column: str = "ALT",
                         ax: Optional[plt.Axes] = None,
@@ -234,7 +230,7 @@ def create_snv_class_plot(py_mut: PyMutation,
     return ax
 
 
-def create_variant_classification_summary_plot(py_mut: PyMutation,
+def _create_variant_classification_summary_plot(py_mut: PyMutation,
                                              variant_column: str = "Variant_Classification",
                                              sample_column: str = "Tumor_Sample_Barcode",
                                              ax: Optional[plt.Axes] = None,
@@ -282,7 +278,7 @@ def create_variant_classification_summary_plot(py_mut: PyMutation,
                                 (isinstance(col, str) and col.count('-') >= 2)]
         
         if not potential_sample_cols:
-            print(f"No sample columns found that look like identifiers")
+            print("No sample columns found that look like identifiers")
             if ax is None:
                 _, ax = plt.subplots(figsize=(12, 6))
             ax.text(0.5, 0.5, "No data available for Variant Classification Summary\nNo sample columns detected", 
@@ -470,7 +466,7 @@ def create_variant_classification_summary_plot(py_mut: PyMutation,
     return ax
 
 
-def create_summary_plot(py_mut: PyMutation,
+def _create_summary_plot(py_mut: PyMutation,
                       figsize: Tuple[int, int] = (16, 12),
                       title: str = "Mutation Summary",
                       max_samples: Optional[int] = 200,
@@ -522,8 +518,8 @@ def create_summary_plot(py_mut: PyMutation,
     variant_color_map = {variant: cmap(i % 20) for i, variant in enumerate(unique_variants) if pd.notna(variant)}
     
     # Create the variant classification plot using the predefined color map
-    var_class_ax = create_variant_classification_plot(
-        data, 
+    var_class_ax = _create_variant_classification_plot(
+        py_mut, 
         variant_column=variant_classification_col, 
         ax=axs[0, 0],
         color_map=variant_color_map,  # Pass the color map
@@ -531,10 +527,10 @@ def create_summary_plot(py_mut: PyMutation,
     )
     
     # Create the variant type plot
-    create_variant_type_plot(data, ax=axs[0, 1], set_title=True)
+    _create_variant_type_plot(py_mut, ax=axs[0, 1], set_title=True)
     
     # Create the SNV class plot
-    create_snv_class_plot(data, 
+    _create_snv_class_plot(py_mut, 
                          ref_column="REF",
                          alt_column="ALT",
                          ax=axs[0, 2],
@@ -542,8 +538,8 @@ def create_summary_plot(py_mut: PyMutation,
     
     # Create the variants per sample plot (TMB)
     # Passing the same color map used for the classification plot
-    variants_ax = create_variants_per_sample_plot(
-        data,
+    variants_ax = _create_variants_per_sample_plot(
+        py_mut,
         variant_column=variant_classification_col,
         sample_column=sample_column,
         ax=axs[1, 0],
@@ -553,8 +549,8 @@ def create_summary_plot(py_mut: PyMutation,
     )
     
     # Create the variant classification summary plot
-    var_boxplot_ax = create_variant_classification_summary_plot(
-        data,
+    var_boxplot_ax = _create_variant_classification_summary_plot(
+        py_mut,
         variant_column=variant_classification_col,
         sample_column=sample_column,
         ax=axs[1, 1],
@@ -564,8 +560,8 @@ def create_summary_plot(py_mut: PyMutation,
     )
     
     # Create the top mutated genes plot
-    top_genes_ax = create_top_mutated_genes_plot(
-        data,
+    top_genes_ax = _create_top_mutated_genes_plot(
+        py_mut,
         variant_column=variant_classification_col,
         gene_column=gene_column,
         sample_column=sample_column,
@@ -622,7 +618,7 @@ def create_summary_plot(py_mut: PyMutation,
     return fig
 
 
-def create_variants_per_sample_plot(py_mut: PyMutation,
+def _create_variants_per_sample_plot(py_mut: PyMutation,
                                    variant_column: str = "Variant_Classification",
                                    sample_column: str = "Tumor_Sample_Barcode",
                                    ax: Optional[plt.Axes] = None,
@@ -672,7 +668,7 @@ def create_variants_per_sample_plot(py_mut: PyMutation,
         potential_sample_cols = [col for col in data.columns if col.startswith('TCGA-') or '|' in str(data[col].iloc[0])]
         
         if not potential_sample_cols:
-            print(f"No sample columns found that start with TCGA- or contain the | character")
+            print("No sample columns found that start with TCGA- or contain the | character")
             if ax is None:
                 _, ax = plt.subplots(figsize=(10, 6))
             ax.text(0.5, 0.5, "No data available for Variants per Sample\nNo sample columns detected", 
@@ -805,7 +801,7 @@ def create_variants_per_sample_plot(py_mut: PyMutation,
     return ax
 
 
-def create_top_mutated_genes_plot(py_mut: PyMutation,
+def _create_top_mutated_genes_plot(py_mut: PyMutation,
                                mode: str = "variants",
                                variant_column: str = "Variant_Classification",
                                gene_column: str = "Hugo_Symbol",
@@ -870,7 +866,7 @@ def create_top_mutated_genes_plot(py_mut: PyMutation,
         print("No sample columns with TCGA-* format detected either")
         if ax is None:
             _, ax = plt.subplots(figsize=(10, 8))
-        ax.text(0.5, 0.5, f"No data available for Top Mutated Genes\nNo samples detected", 
+        ax.text(0.5, 0.5, "No data available for Top Mutated Genes\nNo samples detected", 
                ha='center', va='center', fontsize=12)
         if set_title:
             ax.set_title("Top Mutated Genes", fontsize=14, fontweight='bold')
