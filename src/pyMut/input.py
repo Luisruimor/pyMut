@@ -115,16 +115,22 @@ _required_canonical_MAF = {c.lower(): c for c in required_columns_MAF}
 
 # Utility functions
 
-def _get_cache_path(file_path: Path, cache_dir: Optional[Path] = None) -> Path:
-    """Generate cache file path based on file hash."""
+def _get_cache_path(file_path: Path, cache_dir: Optional[Path] = None, **config_params) -> Path:
+    """Generate cache file path based on file hash and configuration parameters."""
     if cache_dir is None:
         cache_dir = file_path.parent / ".pymut_cache"
 
     cache_dir.mkdir(parents=True, exist_ok=True)
 
-    # Create hash from file path and modification time
+    # Create hash from file path, modification time, size, and configuration parameters
     file_stat = file_path.stat()
     hash_input = f"{file_path}_{file_stat.st_mtime}_{file_stat.st_size}"
+    
+    # Add configuration parameters to hash
+    if config_params:
+        config_str = "_".join(f"{k}={v}" for k, v in sorted(config_params.items()))
+        hash_input += f"_{config_str}"
+    
     file_hash = hashlib.md5(hash_input.encode()).hexdigest()[:16]
 
     return cache_dir / f"{file_path.stem}_{file_hash}.parquet"
@@ -569,7 +575,122 @@ def _parse_info_column(info_series: pd.Series) -> pd.DataFrame:
 
 # Main functions
 
-def read_maf(path: str | Path, assembly: str, cache_dir: Optional[str | Path] = None) -> PyMutation:
+def _get_mutated_genotype_vectorized(genotype_series, ref_allele):
+    """
+    Función auxiliar optimizada para encontrar genotipos mutados.
+    
+    Parameters
+    ----------
+    genotype_series : pd.Series
+        Serie con genotipos para una muestra específica
+    ref_allele : str
+        Alelo de referencia
+    
+    Returns
+    -------
+    str
+        Genotipo mutado si existe, sino genotipo de referencia
+    """
+    ref_genotype = f"{ref_allele}|{ref_allele}"
+    
+    # Filtrar genotipos no nulos
+    valid_genotypes = genotype_series.dropna()
+    
+    # Encontrar genotipos mutados (diferentes de referencia)
+    mutated = valid_genotypes[valid_genotypes != ref_genotype]
+    
+    # Retornar el primer genotipo mutado encontrado, o referencia si no hay
+    return mutated.iloc[0] if len(mutated) > 0 else ref_genotype
+
+
+def _consolidate_variants(maf_df, samples):
+    """
+    Versión optimizada que consolida variantes idénticas usando operaciones vectorizadas.
+    
+    Parameters
+    ----------
+    maf_df : pd.DataFrame
+        DataFrame con variantes expandidas por muestra
+    samples : list
+        Lista de nombres de muestras
+    
+    Returns
+    -------
+    pd.DataFrame
+        DataFrame consolidado con variantes únicas
+    """
+    import time
+    start_time = time.time()
+    
+    # Crear una copia para no modificar el DataFrame original
+    maf_work = maf_df.copy()
+    
+    # OPTIMIZACIÓN 1: Usar hash numérico en lugar de concatenación de strings
+    # Crear clave de agrupación más eficiente
+    maf_work['chrom_hash'] = pd.util.hash_pandas_object(maf_work['CHROM'], index=False)
+    maf_work['variant_key'] = (
+        maf_work['chrom_hash'].astype(str) + '_' + 
+        maf_work['POS'].astype(str) + '_' + 
+        pd.util.hash_pandas_object(maf_work['REF'], index=False).astype(str) + '_' +
+        pd.util.hash_pandas_object(maf_work['ALT'], index=False).astype(str)
+    )
+    
+    # Separar columnas de muestras de columnas de anotación
+    annotation_cols = [col for col in maf_work.columns 
+                      if col not in samples + ['variant_key', 'chrom_hash']]
+    
+    # OPTIMIZACIÓN 2: Usar operaciones vectorizadas con groupby.agg()
+    logger = logging.getLogger(__name__)
+    logger.info("Consolidating variants using vectorized operations...")
+    
+    # Consolidar columnas de anotación (tomar el primer valor de cada grupo)
+    annotation_consolidated = maf_work.groupby('variant_key')[annotation_cols].first()
+    
+    # OPTIMIZACIÓN 3: Procesar todas las muestras de una vez usando operaciones vectorizadas
+    sample_data = {}
+    
+    for sample in samples:
+        # Para cada muestra, encontrar el genotipo no-referencia si existe
+        sample_col = maf_work.groupby('variant_key')[sample].apply(
+            lambda x: _get_mutated_genotype_vectorized(x, annotation_consolidated.loc[x.name, 'REF'])
+        )
+        sample_data[sample] = sample_col
+    
+    # Crear DataFrame de muestras consolidado
+    samples_df = pd.DataFrame(sample_data)
+    
+    # OPTIMIZACIÓN 4: Combinar usando concat en lugar de iteración
+    consolidated_df = pd.concat([annotation_consolidated, samples_df], axis=1)
+    
+    # Reset index y limpiar columnas temporales
+    consolidated_df.reset_index(drop=True, inplace=True)
+    
+    processing_time = time.time() - start_time
+    logger.info("Variant consolidation completed in %.2f seconds", processing_time)
+    
+    return consolidated_df
+
+
+def _consolidate_variants_chunked(maf_df, samples, chunk_size=50000):
+    """
+    Versión que procesa en chunks para datasets muy grandes.
+    """
+    if len(maf_df) <= chunk_size:
+        return _consolidate_variants(maf_df, samples)
+    
+    # Procesar en chunks
+    chunks = []
+    for i in range(0, len(maf_df), chunk_size):
+        chunk = maf_df.iloc[i:i+chunk_size]
+        consolidated_chunk = _consolidate_variants(chunk, samples)
+        chunks.append(consolidated_chunk)
+    
+    # Combinar chunks y consolidar resultado final
+    combined = pd.concat(chunks, ignore_index=True)
+    return _consolidate_variants(combined, samples)
+
+
+def read_maf(path: str | Path, assembly: str, cache_dir: Optional[str | Path] = None, consolidate_variants: bool = True) -> PyMutation:
     """
     Read a MAF file and return a PyMutation object with automatic caching.
 
@@ -582,6 +703,10 @@ def read_maf(path: str | Path, assembly: str, cache_dir: Optional[str | Path] = 
     cache_dir : str | Path, optional
         Directory for caching processed files. If None, uses a .pymut_cache
         directory next to the input file.
+    consolidate_variants : bool, default True
+        If True, consolidates identical variants that appear in multiple samples
+        into a single row. If False, maintains the original behavior where each
+        MAF row becomes a separate DataFrame row.
 
     Returns
     -------
@@ -620,7 +745,7 @@ def read_maf(path: str | Path, assembly: str, cache_dir: Optional[str | Path] = 
     logger.info("Starting MAF reading: %s", path)
 
     # Check cache
-    cache_path = _get_cache_path(path, cache_dir_path)
+    cache_path = _get_cache_path(path, cache_dir_path, consolidate_variants=consolidate_variants)
     if cache_path.exists():
         logger.info("Loading from cache: %s", cache_path)
         try:
@@ -737,7 +862,22 @@ def read_maf(path: str | Path, assembly: str, cache_dir: Optional[str | Path] = 
         mask = maf["Tumor_Sample_Barcode"] == sample
         maf.loc[mask, sample] = ref_alt[mask]
 
-    # ─── 5.5) REMOVE UNNECESSARY COLUMNS -------------------------------
+    # ─── 5.5) CONSOLIDATE DUPLICATE VARIANTS (OPTIONAL) ----------------
+    if consolidate_variants:
+        logger.info("Consolidating duplicate variants across samples...")
+        original_rows = len(maf)
+        
+        # Usar versión optimizada basada en el tamaño del dataset
+        if len(maf) > 100000:  # Para datasets grandes
+            maf = _consolidate_variants_chunked(maf, samples)
+        else:  # Para datasets normales
+            maf = _consolidate_variants(maf, samples)
+        
+        consolidated_rows = len(maf)
+        logger.info("Consolidated %d rows into %d unique variants", 
+                   original_rows, consolidated_rows)
+
+    # ─── 5.6) REMOVE UNNECESSARY COLUMNS -------------------------------
     # We no longer need 'Tumor_Sample_Barcode' (mutations were
     # expanded into columns) nor 'Chromosome' (now it's in 'CHROM').
     maf.drop(columns=["Chromosome"], inplace=True)
