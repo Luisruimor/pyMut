@@ -80,7 +80,7 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 | Sample filtering                            | ✓                  |                       | ✓                     |
 | Tissue expression filtering                 | ✓                  | ✓                     |                       |
 | File format transformation                  | ✓                  | ✓ *(VCF to MAF only)* | ✓ *(VCF to MAF only)* |
-| File combination                            | ✓                  |                       |                       |
+| File combination                            | ✓                  | ✓                     |                       |
 | Significantly mutated genes (SMG) detection |                    | ✓                     |                       |
 | Cancer-related gene annotation              | ✓                  | ✓                     |                       |
 | Tumor mutational burden (TMB) calculation   | ✓                  | ✓                     |                       |
