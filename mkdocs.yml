@@ -105,7 +105,7 @@ nav:
       - Visualization:
           - Variant Classification Plot: examples/visualization/maf_to_variant_classification.ipynb
       - Analysis:
-          - TMB Analysis Demo: examples/analysis/mutation_burden_demo.ipynb
+          - TMB Analysis Demo: examples/analysis/mutation_burden.ipynb
           - Pfam Domain Annotation Demo: examples/analysis/pfam_annotation_demo.ipynb
           - COSMIC Annotation Test: examples/analysis/test_cosmic_annotation.ipynb
           - Known Cancer Annotation Test: examples/analysis/test_knowncancer_simple.ipynb
