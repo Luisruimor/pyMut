@@ -71,19 +71,19 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 
 ## 🎯 Comparison with Other Tools
 
-| CRITERIO FUNCIONAL                                | PYMUT (PROPUESTA)  | MUTSCAPE                | MAFTOOLS                |
-|---------------------------------------------------|--------------------|-------------------------|-------------------------|
-| Formatos de entrada                               | VCF & MAF (nativo) | MAF                     | MAF                     |
-| Anotación con VEP                                 | ✓                  |                         |                         |
-| Filtrado por rango genómico                       | ✓                  | ✓                       | ✓                       |
-| Filtrado de variantes con categoría PASS          | ✓                  | ✓                       |                         |
-| Filtrado por muestra                              | ✓                  |                         | ✓                       |
-| Filtrado por expresión en tejido                  | ✓                  | ✓                       |                         |
-| Transformación de formato de fichero              | ✓                  | ✓ *(solo de VCF a MAF)* | ✓ *(solo de VCF a MAF)* |
-| Combinación de ficheros                           | ✓                  |                         |                         |
-| Detección de genes mutados (SMG)                  |                    | ✓                       |                         |
-| Anotación de genes relacionados con cáncer        | ✓                  | ✓                       |                         |
-| Cálculo de carga mutacional (TMB)                 | ✓                  | ✓                       |                         |
-| Identificación de firmas mutacionales             | ✓                  |                         |                         |
-| Anotación de mutaciones con implicaciones médicas | ✓                  | ✓                       |                         |
-| Soporte para anotación PFAM                       | ✓                  |                         | ✓                       |
+| FUNCTIONAL CRITERIA                         | PYMUT (PROPOSAL)   | MUTSCAPE              | MAFTOOLS              |
+|---------------------------------------------|--------------------|-----------------------|-----------------------|
+| Input formats                               | VCF & MAF (native) | MAF                   | MAF                   |
+| VEP annotation                              | ✓                  |                       |                       |
+| Genomic range filtering                     | ✓                  | ✓                     | ✓                     |
+| PASS category variant filtering             | ✓                  | ✓                     |                       |
+| Sample filtering                            | ✓                  |                       | ✓                     |
+| Tissue expression filtering                 | ✓                  | ✓                     |                       |
+| File format transformation                  | ✓                  | ✓ *(VCF to MAF only)* | ✓ *(VCF to MAF only)* |
+| File combination                            | ✓                  |                       |                       |
+| Significantly mutated genes (SMG) detection |                    | ✓                     |                       |
+| Cancer-related gene annotation              | ✓                  | ✓                     |                       |
+| Tumor mutational burden (TMB) calculation   | ✓                  | ✓                     |                       |
+| Mutational signature identification         | ✓                  |                       |                       |
+| Medical implications mutation annotation    | ✓                  | ✓                     |                       |
+| PFAM annotation support                     | ✓                  |                       | ✓                     |
