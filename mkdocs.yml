@@ -114,9 +114,8 @@ nav:
           - VCF to PyMutation Conversion: examples/data_conversion/vcf_to_PyMutation.ipynb
           - VCF Subset Extraction: examples/data_conversion/vcf_subset_extraction.ipynb
       - Annotation:
-          - VEP Annotation Merging: examples/annotation/merge_annotation.ipynb
-          - COSMIC Annotation Test: examples/analysis/test_cosmic_annotation.ipynb
-          - Known Cancer Annotation Test: examples/analysis/test_knowncancer_simple.ipynb
-
+          - VEP Annotation: examples/annotation/vep_annotation.ipynb
+          - Known Cancer: examples/annotation/cosmic_cancer_annotation.ipynb
+          - Actionable Mutation: examples/annotation/actionable_mutation_annotation.ipynb
 # Copyright
 copyright: Copyright &copy; 2025 pyMut Development Team
