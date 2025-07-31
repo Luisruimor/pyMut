@@ -23,9 +23,9 @@ For complete functionality including all bioinformatics tools, use the conda env
 
 ```bash
 # 0) Descargar el environment.yml (elige curl o wget)
-curl -fsSL https://raw.githubusercontent.com/Luisruimor/pyMut/<TAG-o-rama>/environment.yml -o environment.yml
+curl -fsSL https://raw.githubusercontent.com/Luisruimor/pyMut/main/environment.yml -o environment.yml
 # ó:
-# wget -O environment.yml https://raw.githubusercontent.com/Luisruimor/pyMut/<TAG-o-rama>/environment.yml
+# wget -O environment.yml https://raw.githubusercontent.com/Luisruimor/pyMut/main/environment.yml
 
 # 1) crear el entorno (añade tus binarios al environment.yml)
 conda env create -f environment.yml
