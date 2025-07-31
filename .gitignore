@@ -159,4 +159,4 @@ src/pyMut/data/examples/PAAD-TP.final_analysis_set.maf
 *.DS_Store
 
 examples/oncoplot_outputs/
-docs/examples/data_conversion/output
+docs/examples/data/output

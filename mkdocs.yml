@@ -99,23 +99,27 @@ nav:
           - VCF Subset Creation: api/Other Utilities/create_subset.md
           - VEP Annotation Merging: api/Other Utilities/merge_vep_annotation.md
   - Example Usage:
+      - Input Data:
+          - VCF: examples/data/input_read_vcf.ipynb
+          - MAF: examples/data/input_read_maf.ipynb
+      - Output Data:
+          - VCF: examples/data/PyMutation_to_vcf.ipynb
+          - MAF: examples/data/PyMutation_to_maf.ipynb
+      - Combination: examples/data/combination_2maf.ipynb
       - Filtering:
           - Data Filtering Examples: examples/filtering/example_filtering.ipynb
           - Tissue Expression Filter: examples/filtering/tissue_expression.ipynb
-      - Visualization (beta):
-          - Variant Classification Plot: examples/visualization/maf_to_variant_classification.ipynb
-          - Oncoplot Example: examples/visualization/oncoplot_example.ipynb
-          - Summary Plot Example: examples/visualization/summary_plot_example.ipynb
-      - Analysis:
-          - TMB Analysis: examples/analysis/mutation_burden.ipynb
-          - Mutational Signatures: examples/analysis/mutational_signatures.ipynb
-          - PFAM Domains: examples/analysis/domains_pfam.ipynb
-      - Data Conversion:
-          - VCF to PyMutation Conversion: examples/data_conversion/vcf_to_PyMutation.ipynb
-          - VCF Subset Extraction: examples/data_conversion/vcf_subset_extraction.ipynb
       - Annotation:
           - VEP Annotation: examples/annotation/vep_annotation.ipynb
           - Known Cancer: examples/annotation/cosmic_cancer_annotation.ipynb
           - Actionable Mutation: examples/annotation/actionable_mutation_annotation.ipynb
+      - Analysis:
+          - TMB Analysis: examples/analysis/mutation_burden.ipynb
+          - Mutational Signatures: examples/analysis/mutational_signatures.ipynb
+          - PFAM Domains: examples/analysis/domains_pfam.ipynb
+      - Visualization (beta):
+          - Variant Classification Plot: examples/visualization/maf_to_variant_classification.ipynb
+          - Oncoplot Example: examples/visualization/oncoplot_example.ipynb
+          - Summary Plot Example: examples/visualization/summary_plot_example.ipynb
 # Copyright
 copyright: Copyright &copy; 2025 pyMut Development Team
