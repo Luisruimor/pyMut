@@ -103,8 +103,8 @@ nav:
           - VCF: examples/data/input_read_vcf.ipynb
           - MAF: examples/data/input_read_maf.ipynb
       - Output Data:
-          - VCF: examples/data/PyMutation_to_vcf.ipynb
-          - MAF: examples/data/PyMutation_to_maf.ipynb
+          - VCF: examples/data/vcf_to_maf_and_vcf.ipynb
+          - MAF: examples/data/maf_to_vcf_and_maf.ipynb
       - Combination: examples/data/combination_2maf.ipynb
       - Filtering:
           - Data Filtering Examples: examples/filtering/example_filtering.ipynb
