@@ -102,8 +102,10 @@ nav:
       - Filtering:
           - Data Filtering Examples: examples/filtering/example_filtering.ipynb
           - Tissue Expression Filter: examples/filtering/tissue_expression.ipynb
-      - Visualization:
+      - Visualization (beta):
           - Variant Classification Plot: examples/visualization/maf_to_variant_classification.ipynb
+          - Oncoplot Example: examples/visualization/oncoplot_example.ipynb
+          - Summary Plot Example: examples/visualization/summary_plot_example.ipynb
       - Analysis:
           - TMB Analysis Demo: examples/analysis/mutation_burden.ipynb
           - Mutational Signatures: examples/analysis/mutational_signatures.ipynb
