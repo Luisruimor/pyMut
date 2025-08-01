@@ -92,7 +92,9 @@ nav:
       - Analysis Methods:
           - TMB Analysis: api/Analysis Methods/tmb_analysis.md
           - Pfam Domains Annotation: api/Analysis Methods/pfam_domains.md
-          - Mutational Signatures: api/Analysis Methods/mutational_signatures.md
+          - Mutational Signatures:
+              - Matriz Trinucleotide: api/Analysis Methods/Mutational Signatures/trinucleotideMatrix.md
+              - Estimated Signatures: api/Analysis Methods/Mutational Signatures/estimateSignatures.md
       - Annotation:
           - Known Cancer Gene Annotation: api/Analysis Methods/known_cancer_annotation.md
           - VEP Annotation: api/Analysis Methods/vep_annotation.md
