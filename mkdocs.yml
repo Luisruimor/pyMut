@@ -46,7 +46,7 @@ plugins:
       jupyter_dirs:
         - 'docs/examples'
       # Execute all cells in each build
-      execute: true
+      execute: false
       # Fail the build if there are exceptions
       allow_errors: false
       # Define the kernel to use
@@ -81,6 +81,8 @@ nav:
           - Read VCF Files: api/Data Loading/read_vcf.md
       - Data Export:
           - Export to MAF: api/Data Export/to_maf.md
+          - Export to VCF: api/Data Export/to_vcf.md
+      - Data Combination: api/Data Combination/combine_data.md
       - Filters:
           - Genomic Range Filters: api/Filters/genomic_range.md
           - Quality Filter (PASS): api/Filters/pass_filter.md
@@ -88,16 +90,16 @@ nav:
           - Tissue Expression Filter: api/Filters/tissue_expression_filter.md
       - Analysis Methods:
           - TMB Analysis: api/Analysis Methods/tmb_analysis.md
-          - Pfam Domain Annotation: api/Analysis Methods/pfam_annotation.md
-          - Known Cancer Gene Annotation: api/Analysis Methods/known_cancer_annotation.md
+          - Pfam Domains Annotation: api/Analysis Methods/pfam_domains.md
+          - Mutational Signatures: api/Analysis Methods/mutational_signatures.md
       - Annotation:
-          - COSMIC Annotation: api/Analysis Methods/cosmic_annotation.md
+          - Known Cancer Gene Annotation: api/Analysis Methods/known_cancer_annotation.md
           - VEP Annotation: api/Analysis Methods/vep_annotation.md
+          - PFAM Annotation: api/Analysis Methods/pfam_annotation.md
+          - Actionable Mutation Annotation: api/Analysis Methods/actionable_mutation_annotation.md
       - Visualization API:
           - Summary Plot: api/Visualization/summary_plot.md
-      - Other Utilities:
-          - VCF Subset Creation: api/Other Utilities/create_subset.md
-          - VEP Annotation Merging: api/Other Utilities/merge_vep_annotation.md
+
   - Example Usage:
       - Input Data:
           - VCF: examples/data/input_read_vcf.ipynb

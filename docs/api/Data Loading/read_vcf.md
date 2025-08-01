@@ -1,92 +1,76 @@
-# read_vcf - Lectura de Archivos VCF
+### read_vcf
 
-La función **read_vcf** permite cargar archivos VCF (Variant Call Format) en pyMut y convertirlos en objetos PyMutation para análisis de mutaciones.
+#### Short description
 
-## ¿Qué es read_vcf?
+High-performance reader that converts a VCF (or VCF-GZ) file into a `PyMutation` object, with PyArrow acceleration, automatic caching and optional Tabix indexing.&#x20;
 
-Es una función que lee archivos VCF (formato estándar para datos de variantes genómicas) y los convierte en objetos PyMutation que pueden ser utilizados para análisis y visualización de mutaciones.
-
-## Características Principales
-
-- **Soporte para archivos comprimidos**: Lee archivos `.vcf` y `.vcf.gz`
-- **Indexación automática**: Puede crear índices tabix automáticamente
-- **Optimización con pyarrow**: Utiliza pyarrow para mejor rendimiento cuando está disponible
-- **Manejo de genotipos**: Convierte genotipos VCF a formato alélico
-- **Parsing de INFO**: Extrae información del campo INFO de manera vectorizada
-- **Cache inteligente**: Sistema de cache para acelerar cargas repetidas
-- **Monitoreo de recursos**: Logging de información del sistema durante la carga
-
-## Uso Básico
+#### Signature
 
 ```python
-from pyMut.input import read_vcf
-
-# Cargar archivo VCF simple
-py_mut = read_vcf("variants.vcf")
-
-# Cargar archivo VCF comprimido
-py_mut = read_vcf("variants.vcf.gz")
-
-# Cargar con archivo FASTA de referencia
-py_mut = read_vcf("variants.vcf", fasta="reference.fasta")
-
-# Crear índice tabix automáticamente
-py_mut = read_vcf("variants.vcf.gz", create_index=True)
+def read_vcf(
+    path: str | pathlib.Path,
+    assembly: str,
+    create_index: bool = False,
+    cache_dir: str | pathlib.Path | None = None
+) -> PyMutation:
 ```
 
-## Parámetros
+#### Parameters
 
-### path (str | Path) [requerido]
-- **Descripción**: Ruta al archivo VCF
-- **Formatos soportados**: `.vcf`, `.vcf.gz`
-- **Ejemplo**: `"data/variants.vcf.gz"`
+| Parameter      | Type                  | Required | Description                                                                                                   |
+| -------------- | --------------------- | -------- | ------------------------------------------------------------------------------------------------------------- |
+| `path`         | `str \| Path`         | **Yes**  | Path to the VCF (plain or `*.vcf.gz`).                                                                        |
+| `assembly`     | `str`                 | **Yes**  | Genome build identifier, **must** be `"37"` or `"38"`.                                                        |
+| `create_index` | `bool`                | No       | If `True`, create a Tabix (`.tbi`) index if missing (requires `tabix` in `PATH`). Default `False`.            |
+| `cache_dir`    | `str \| Path \| None` | No       | Directory where parsed Parquet caches are stored. `None` (default) writes next to the VCF in `.pymut_cache/`. |
 
-### fasta (str | Path, opcional)
-- **Descripción**: Ruta al archivo FASTA de referencia
-- **Uso**: Se incluye en los metadatos del objeto PyMutation resultante
-- **Ejemplo**: `"reference/hg38.fasta"`
+#### Return value
 
-### create_index (bool, default=False)
-- **Descripción**: Si crear un índice tabix para el archivo VCF
-- **Uso**: Mejora el rendimiento para consultas posteriores
-- **Nota**: Solo funciona con archivos `.vcf.gz`
+`PyMutation` — a wide-format table of variants plus metadata and sample columns, ready for downstream analysis.
 
-### cache_dir (str | Path, opcional)
-- **Descripción**: Directorio para almacenar archivos de cache
-- **Default**: Directorio temporal del sistema
-- **Uso**: Acelera cargas repetidas del mismo archivo
+#### Exceptions
 
-## Valor de Retorno
+* `FileNotFoundError` – VCF file does not exist.
+* `ValueError` – invalid assembly, missing required VCF columns, or header problems.
+* `Exception` – any other I/O or parsing error (e.g. broken compression, PyArrow failure).
 
-Retorna un objeto **PyMutation** que contiene:
-- **data**: DataFrame con las variantes en formato VCF-like expandido
-- **samples**: Lista de muestras detectadas en el archivo VCF
-- **metadata**: Información sobre el archivo fuente y configuración
+#### Minimal usage example
 
-## Formato de Datos VCF
+```python
+from pymutation.io import read_vcf
 
-### Columnas Estándar VCF
+pymut = read_vcf(
+    "tumour.vcf.gz",
+    assembly="38",
+    create_index=True          # build Tabix if needed
+)
+
+print(pymut.data.shape)
+```
+### Standard VCF Columns
+
 ```
 CHROM | POS | ID | REF | ALT | QUAL | FILTER | INFO | FORMAT | SAMPLE_001 | SAMPLE_002
 chr1  | 100 | .  | A   | G   | 60   | PASS   | ...  | GT:DP  | 0/1:30    | 1/1:25
 ```
 
-### Conversión a Formato pyMut
+### Conversion to **pyMut** Format
+
 ```
 CHROM | POS | ID | REF | ALT | QUAL | FILTER | SAMPLE_001 | SAMPLE_002 | INFO_parsed
 chr1  | 100 | .  | A   | G   | 60   | PASS   | A|G        | G|G        | {...}
 ```
 
-## Ejemplo Completo
+## Complete Example
 
 ```python
 from pyMut.input import read_vcf
 import logging
 
-# Configurar logging para ver el progreso
+# Enable logging to monitor progress
 logging.basicConfig(level=logging.INFO)
 
-# Cargar datos VCF con todas las opciones
+# Load a VCF file with all options enabled
 py_mut = read_vcf(
     path="src/pyMut/data/examples/ALL.chr10.vcf.gz",
     fasta="reference/hg38.fasta",
@@ -94,143 +78,46 @@ py_mut = read_vcf(
     cache_dir="cache/"
 )
 
-# Verificar carga exitosa
-print(f"Muestras cargadas: {len(py_mut.samples)}")
-print(f"Variantes totales: {len(py_mut.data)}")
-print(f"Cromosomas únicos: {py_mut.data['CHROM'].unique()}")
+# Verify that the file was loaded successfully
+print(f"Loaded samples: {len(py_mut.samples)}")
+print(f"Total variants: {len(py_mut.data)}")
+print(f"Unique chromosomes: {py_mut.data['CHROM'].unique()}")
 
-# Información sobre genotipos
-print(f"Columnas de muestras: {py_mut.samples[:5]}...")  # Primeras 5 muestras
+# Genotype information
+print(f"Sample columns: {py_mut.samples[:5]}...")  # First 5 samples
 
-# Verificar metadatos
-print(f"Formato fuente: {py_mut.metadata.source_format}")
-print(f"Archivo FASTA: {py_mut.metadata.fasta}")
+# Check metadata
+print(f"Source format: {py_mut.metadata.source_format}")
+print(f"FASTA file: {py_mut.metadata.fasta}")
 ```
 
-## Manejo de Genotipos
+## Genotype Handling
 
-La función convierte automáticamente los genotipos VCF al formato alélico de pyMut:
+The function automatically converts VCF genotypes into pyMut’s allelic format:
 
-### Genotipos VCF (entrada)
+### VCF Genotypes (input)
+
 ```
 FORMAT: GT:DP:GQ
-SAMPLE_001: 0/1:30:99    # Heterocigoto
-SAMPLE_002: 1/1:25:99    # Homocigoto alternativo
-SAMPLE_003: 0/0:35:99    # Homocigoto referencia
+SAMPLE_001: 0/1:30:99    # Heterozygous
+SAMPLE_002: 1/1:25:99    # Homozygous alternate
+SAMPLE_003: 0/0:35:99    # Homozygous reference
 ```
 
-### Formato pyMut (salida)
+### pyMut Format (output)
+
 ```
 SAMPLE_001: A|G    # REF|ALT
 SAMPLE_002: G|G    # ALT|ALT  
 SAMPLE_003: A|A    # REF|REF
 ```
 
-## Parsing del Campo INFO
-
-El campo INFO se procesa automáticamente y se expande en columnas separadas:
+## Cache System
 
 ```python
-# INFO original: "AC=2;AF=0.5;AN=4;DP=100"
-# Se convierte en columnas:
-py_mut.data['INFO_AC']  # [2]
-py_mut.data['INFO_AF']  # [0.5]
-py_mut.data['INFO_AN']  # [4]
-py_mut.data['INFO_DP']  # [100]
-```
-
-## Sistema de Cache
-
-```python
-# Primera carga - crea cache
+# First load — cache is created
 py_mut1 = read_vcf("large_file.vcf.gz", cache_dir="cache/")
 
-# Segunda carga - usa cache (mucho más rápido)
+# Second load — cache is used (much faster)
 py_mut2 = read_vcf("large_file.vcf.gz", cache_dir="cache/")
 ```
-
-## Optimización y Rendimiento
-
-### Con pyarrow (recomendado)
-```python
-# Instalar pyarrow para mejor rendimiento
-# pip install pyarrow
-
-py_mut = read_vcf("variants.vcf.gz")  # Usa pyarrow automáticamente
-```
-
-### Sin pyarrow (fallback)
-```python
-# Si pyarrow no está disponible, usa cyvcf2 o pandas
-# El rendimiento será menor pero funcional
-```
-
-## Manejo de Errores
-
-### FileNotFoundError
-```python
-try:
-    py_mut = read_vcf("archivo_inexistente.vcf")
-except FileNotFoundError:
-    print("❌ Archivo VCF no encontrado")
-```
-
-### Archivo VCF malformado
-```python
-try:
-    py_mut = read_vcf("archivo_corrupto.vcf")
-except ValueError as e:
-    print(f"❌ Error en formato VCF: {e}")
-```
-
-### Problemas de memoria
-```python
-# Para archivos muy grandes
-import psutil
-print(f"Memoria disponible: {psutil.virtual_memory().available / 1e9:.1f} GB")
-
-# Considerar filtrar por región primero
-py_mut = read_vcf("huge_file.vcf.gz")
-filtered = py_mut.region("chr1", 1000000, 2000000)
-```
-
-## Indexación Tabix
-
-```python
-# Crear índice para consultas rápidas
-py_mut = read_vcf("variants.vcf.gz", create_index=True)
-
-# El índice se guarda como variants.vcf.gz.tbi
-# Permite consultas rápidas por región posteriormente
-```
-
-## Solución de Problemas
-
-### Archivo muy grande
-```python
-# Monitorear progreso con logging
-import logging
-logging.basicConfig(level=logging.INFO)
-
-py_mut = read_vcf("archivo_grande.vcf.gz")
-```
-
-### Muestras con nombres especiales
-```python
-# Los nombres de muestras se normalizan automáticamente
-# Caracteres especiales se reemplazan por guiones bajos
-```
-
-### Campos INFO complejos
-```python
-# Los campos INFO anidados se procesan automáticamente
-# Arrays se convierten en listas de Python
-```
-
-## Compatibilidad
-
-- **Versiones VCF**: Compatible con VCF 4.0, 4.1, 4.2, 4.3
-- **Compresión**: bgzip, gzip estándar
-- **Índices**: tabix (.tbi), CSI (.csi)
-- **Genotipos**: Diploides y haploides
-- **Campos especiales**: Soporte completo para INFO, FORMAT, FILTER

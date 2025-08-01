@@ -7,7 +7,11 @@ Reads a MAF file and returns a PyMutation object with automatic caching and perf
 #### Signature
 
 ```python
-def read_maf(path: str | Path, assembly: str, cache_dir: Optional[str | Path] = None, consolidate_variants: bool = True) -> PyMutation:
+def read_maf(path: str | Path,
+             assembly: str,
+             cache_dir: Optional[str | Path] = None,
+             consolidate_variants: bool = True
+) -> PyMutation:
 ```
 
 #### Parameters
