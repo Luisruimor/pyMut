@@ -1,10 +1,10 @@
-# PyMutation - Main Class for Mutation Analysis
+# PyMutation – Main Class for Mutation Analysis
 
-The **PyMutation** class is the central object of pyMut that encapsulates mutation data and provides methods for analysis and visualization.
+The **`PyMutation`** class is the central object in **pyMut**, encapsulating mutation data and providing methods for both analysis and visualisation.
 
 ## What is PyMutation?
 
-PyMutation is the main class that represents a mutation dataset. It contains data in structured format, metadata about the data origin, and methods to perform analysis and generate visualizations.
+`PyMutation` represents an entire mutation dataset: it stores the data in a structured table, keeps metadata about its origin, and exposes analysis and plotting helpers.
 
 ## Object Structure
 
@@ -13,13 +13,14 @@ PyMutation is the main class that represents a mutation dataset. It contains dat
 ```python
 class PyMutation:
     def __init__(self, data: pd.DataFrame, metadata: MutationMetadata, samples: List[str]):
-        self.data = data           # DataFrame with mutations in VCF-like format
-        self.samples = samples     # List of samples in the dataset
-        self.metadata = metadata   # Metadata about origin and configuration
+        self.data = data           # DataFrame of mutations (VCF-like columns)
+        self.samples = samples     # List of sample IDs
+        self.metadata = metadata   # Provenance and configuration metadata
 ```
 
-### `data` Attribute (pd.DataFrame)
-Contains mutations in VCF-like format with standard columns:
+### `data` Attribute (`pd.DataFrame`)
+
+VCF-style mutation table with standard columns:
 
 ```
 CHROM | POS | ID | REF | ALT | QUAL | FILTER | SAMPLE_001 | SAMPLE_002 | ANNOTATIONS | ...
@@ -27,39 +28,45 @@ chr1  | 100 | .  | A   | G   | .    | .      | A|G        | A|A        | ...    
 chr2  | 200 | .  | C   | T   | .    | .      | C|C        | C|T        | ...         | ...
 ```
 
-### `samples` Attribute (List[str])
-List of sample identifiers:
+### `samples` Attribute (`List[str]`)
+
+Sample identifiers:
+
 ```python
 ['SAMPLE_001', 'SAMPLE_002', 'SAMPLE_003', ...]
 ```
 
-### `metadata` Attribute (MutationMetadata)
-Information about origin and configuration:
+### `metadata` Attribute (`MutationMetadata`)
+
+Provenance and settings:
+
 ```python
-metadata.source_format    # "MAF" OR "VCF"
-metadata.file_path       # Path to original file
-metadata.loaded_at       # Loading timestamp
+metadata.source_format   # "MAF" or "VCF"
+metadata.file_path       # Path to the original file
+metadata.loaded_at       # Timestamp when loaded
 metadata.filters         # Applied filters
-metadata.fasta          # Reference FASTA file
-metadata.notes          # Comments from original file
+metadata.fasta           # Reference FASTA
+metadata.notes           # Original file comments
 ```
 
-## Creating PyMutation Objects
+## Creating `PyMutation` Objects
 
-### From MAF file
+### From a MAF file
+
 ```python
 from pyMut.io import read_maf
 
-# Recommended method
+# Recommended entry-point
 py_mut = read_maf("mutations.maf")
 ```
 
-### Creación manual (avanzado)
+### Manual creation (advanced)
+
 ```python
 import pandas as pd
 from pyMut.core import PyMutation, MutationMetadata
 
-# Crear DataFrame con formato requerido
+# Build a DataFrame with the required columns
 data = pd.DataFrame({
     'CHROM': ['chr1', 'chr2'],
     'POS': [100, 200],
@@ -71,27 +78,28 @@ data = pd.DataFrame({
     'Variant_Classification': ['Missense_Mutation', 'Nonsense_Mutation']
 })
 
-# Crear metadatos
+# Create metadata
 metadata = MutationMetadata(
     source_format="Manual",
     file_path="manual_creation",
     filters=["."],
     fasta="",
-    notes="Creado manualmente"
+    notes="Manually created"
 )
 
-# Crear objeto PyMutation
+# Instantiate the object
 samples = ['SAMPLE_001', 'SAMPLE_002']
 py_mut = PyMutation(data, metadata, samples)
 ```
 
-## Métodos de Visualización
+## Visualisation Methods
 
-### Summary Plot - Análisis Completo
+### Summary Plot – Complete Analysis
+
 ```python
-# Generar resumen completo con 6 visualizaciones
+# Produce a 6-panel overview figure
 fig = py_mut.summary_plot(
-    title="Mi Análisis de Mutaciones",
+    title="My Mutation Analysis",
     figsize=(16, 12),
     max_samples=100,
     top_genes_count=15,
@@ -99,281 +107,294 @@ fig = py_mut.summary_plot(
 fig.savefig("summary_analysis.png")
 ```
 
-### Visualizaciones Individuales
+### Individual Plots
 
-#### Clasificación de Variantes
+#### Variant Classification
+
 ```python
 fig = py_mut.variant_classification_plot(
-    title="Distribución de Tipos de Mutación",
+    title="Mutation Type Distribution",
     figsize=(10, 6)
 )
 ```
 
-#### Tipos de Variante
+#### Variant Types
+
 ```python
 fig = py_mut.variant_type_plot(
-    title="Distribución de Tipos de Variante",
+    title="Variant Type Distribution",
     figsize=(10, 6)
 )
 ```
 
-#### Clases de SNV
+#### SNV Classes
+
 ```python
 fig = py_mut.snv_class_plot(
-    title="Distribución de Cambios Nucleotídicos",
+    title="Nucleotide Change Distribution",
     figsize=(10, 6)
 )
 ```
 
-#### Variantes por Muestra (TMB)
+#### Variants per Sample (TMB)
+
 ```python
 fig = py_mut.variants_per_sample_plot(
-    title="Carga Mutacional por Muestra",
+    title="Tumour Mutation Burden per Sample",
     max_samples=50,
     figsize=(12, 6)
 )
 ```
 
-#### Resumen de Clasificación por Muestra
+#### Per-Sample Classification Summary
+
 ```python
 fig = py_mut.variant_classification_summary_plot(
-    title="Resumen de Clasificaciones",
+    title="Per-Sample Classification Summary",
     figsize=(10, 6)
 )
 ```
 
-#### Genes Más Mutados
+#### Most-Mutated Genes
+
 ```python
 fig = py_mut.top_mutated_genes_plot(
-    title="Top Genes Mutados",
+    title="Top Mutated Genes",
     count=20,
     figsize=(10, 8)
 )
 ```
 
-## Métodos de Análisis
+## Analysis Methods
 
-### Análisis TMB (Tumor Mutation Burden)
+### Tumour Mutation Burden (TMB)
+
 ```python
-# Análisis completo de carga mutacional
+# Full TMB analysis
 tmb_results = py_mut.calculate_tmb_analysis(
     variant_classification_column="Variant_Classification",
-    genome_size_bp=60456963,  # WES
+    genome_size_bp=60_456_963,  # WES
     output_dir="results",
     save_files=True
 )
 
-# Acceder a resultados
+# Access results
 analysis_df = tmb_results['analysis']
 statistics_df = tmb_results['statistics']
 ```
 
-## Métodos de Utilidad
+## Utility Methods
 
-### Configuración de Alta Calidad
+### High-Quality Plot Configuration
+
 ```python
-# Configurar matplotlib para alta calidad (recomendado)
+# Global matplotlib settings for publication-ready output
 PyMutation.configure_high_quality_plots()
 
-# Ahora todas las figuras se guardan automáticamente en alta calidad
+# All subsequent figures are rendered at high DPI
 fig = py_mut.summary_plot()
-fig.savefig("high_quality_plot.png")  # Automáticamente DPI=300
+fig.savefig("high_quality_plot.png")  # Automatically DPI=300
 ```
 
-### Guardado de Figuras
+### Centralised Figure Saving
+
 ```python
-# Método centralizado para guardar figuras
 fig = py_mut.summary_plot()
 
-# Guardado básico
+# Basic save
 py_mut.save_figure(fig, "analysis.png")
 
-# Guardado personalizado
-py_mut.save_figure(fig, "analysis.pdf", dpi=600, bbox_inches='tight')
+# Custom save
+py_mut.save_figure(fig, "analysis.pdf", dpi=600, bbox_inches="tight")
 ```
 
-## Ejemplo Completo de Uso
+## End-to-End Example
 
 ```python
 from pyMut.io import read_maf
 from pyMut import PyMutation
 import matplotlib.pyplot as plt
 
-# 1. CARGAR DATOS
-print("📂 Cargando datos MAF...")
+# 1. LOAD DATA
+print("📂 Loading MAF data...")
 py_mut = read_maf("src/pyMut/data/examples/tcga_laml.maf.gz")
 
-# 2. EXPLORAR ESTRUCTURA
-print(f"✅ Datos cargados exitosamente:")
-print(f"   • Muestras: {len(py_mut.samples)}")
-print(f"   • Mutaciones: {len(py_mut.data)}")
-print(f"   • Formato fuente: {py_mut.metadata.source_format}")
-print(f"   • Archivo: {py_mut.metadata.file_path}")
+# 2. EXPLORE STRUCTURE
+print("✅ Data successfully loaded:")
+print(f"   • Samples: {len(py_mut.samples)}")
+print(f"   • Mutations: {len(py_mut.data)}")
+print(f"   • Source format: {py_mut.metadata.source_format}")
+print(f"   • File: {py_mut.metadata.file_path}")
 
-# 3. CONFIGURAR ALTA CALIDAD
+# 3. HIGH-QUALITY SETTINGS
 PyMutation.configure_high_quality_plots()
 
-# 4. ANÁLISIS VISUAL COMPLETO
-print("\n📊 Generando análisis visual...")
+# 4. COMPREHENSIVE VISUAL ANALYSIS
+print("\n📊 Generating visual analysis...")
 summary_fig = py_mut.summary_plot(
-    title="TCGA-LAML: Análisis Completo de Mutaciones",
+    title="TCGA-LAML: Comprehensive Mutation Analysis",
     figsize=(18, 14),
     max_samples=150,
     top_genes_count=20
 )
 
-# Guardar en múltiples formatos
+# Save in multiple formats
 py_mut.save_figure(summary_fig, "tcga_laml_summary.png")
 py_mut.save_figure(summary_fig, "tcga_laml_summary.pdf", dpi=300)
 
-# 5. ANÁLISIS TMB
-print("\n🧬 Calculando TMB...")
+# 5. TMB ANALYSIS
+print("\n🧬 Calculating TMB...")
 tmb_results = py_mut.calculate_tmb_analysis(
-    genome_size_bp=60456963,  # WES estándar
+    genome_size_bp=60_456_963,  # Standard WES
     output_dir="results/tmb_analysis",
     save_files=True
 )
 
-# Explorar resultados TMB
+# Explore TMB output
 analysis_df = tmb_results['analysis']
 statistics_df = tmb_results['statistics']
 
-print(f"   • Muestras analizadas: {len(analysis_df)}")
-print(f"   • TMB promedio: {analysis_df['TMB_Total_Normalized'].mean():.3f} mut/Mb")
-print(f"   • TMB mediano: {analysis_df['TMB_Total_Normalized'].median():.3f} mut/Mb")
+print(f"   • Analysed samples: {len(analysis_df)}")
+print(f"   • Mean TMB: {analysis_df['TMB_Total_Normalized'].mean():.3f} mut/Mb")
+print(f"   • Median TMB: {analysis_df['TMB_Total_Normalized'].median():.3f} mut/Mb")
 
-# 6. VISUALIZACIONES INDIVIDUALES
-print("\n📈 Generando visualizaciones específicas...")
+# 6. INDIVIDUAL VISUALISATIONS
+print("\n📈 Generating specific plots...")
 
-# TMB por muestra
+# TMB per sample
 tmb_fig = py_mut.variants_per_sample_plot(
-    title="Carga Mutacional Tumoral (TMB)",
+    title="Tumour Mutation Burden (TMB)",
     max_samples=100
 )
 py_mut.save_figure(tmb_fig, "tmb_per_sample.png")
 
-# Genes más mutados
+# Top mutated genes
 genes_fig = py_mut.top_mutated_genes_plot(
-    title="Top 25 Genes Más Mutados",
+    title="Top 25 Mutated Genes",
     count=25
 )
 py_mut.save_figure(genes_fig, "top_mutated_genes.png")
 
-# Tipos de mutación
+# Mutation types
 classification_fig = py_mut.variant_classification_plot(
-    title="Distribución de Tipos de Mutación"
+    title="Mutation Type Distribution"
 )
 py_mut.save_figure(classification_fig, "variant_classification.png")
 
-# 7. ANÁLISIS PERSONALIZADO
-print("\n🔍 Análisis personalizado...")
+# 7. CUSTOM ANALYSIS
+print("\n🔍 Custom analysis...")
 
-# Identificar muestras con TMB alto
+# Identify high-TMB samples
 high_tmb_threshold = 10  # mut/Mb
 high_tmb_samples = analysis_df[
     analysis_df['TMB_Total_Normalized'] > high_tmb_threshold
 ]
 
-print(f"   • Muestras con TMB alto (>{high_tmb_threshold} mut/Mb): {len(high_tmb_samples)}")
+print(f"   • High-TMB samples (>{high_tmb_threshold} mut/Mb): {len(high_tmb_samples)}")
 
 if len(high_tmb_samples) > 0:
-    print("   • Top 5 muestras con mayor TMB:")
+    print("   • Top 5 samples by TMB:")
     top_samples = high_tmb_samples.nlargest(5, 'TMB_Total_Normalized')
     for _, row in top_samples.iterrows():
         print(f"     - {row['Sample']}: {row['TMB_Total_Normalized']:.3f} mut/Mb")
 
-# Genes más frecuentemente mutados
+# Most frequently mutated genes
 gene_counts = py_mut.data['Hugo_Symbol'].value_counts().head(10)
-print(f"\n   • Top 10 genes más mutados:")
+print("\n   • Top 10 mutated genes:")
 for gene, count in gene_counts.items():
-    print(f"     - {gene}: {count} mutaciones")
+    print(f"     - {gene}: {count} mutations")
 
-print("\n✅ Análisis completo finalizado!")
-print("📁 Archivos generados:")
-print("   • tcga_laml_summary.png/pdf - Resumen completo")
-print("   • tmb_per_sample.png - TMB por muestra")
-print("   • top_mutated_genes.png - Genes más mutados")
-print("   • variant_classification.png - Tipos de mutación")
-print("   • results/tmb_analysis/ - Análisis TMB detallado")
+print("\n✅ Complete analysis finished!")
+print("📁 Generated files:")
+print("   • tcga_laml_summary.png/pdf – full overview")
+print("   • tmb_per_sample.png – TMB per sample")
+print("   • top_mutated_genes.png – most mutated genes")
+print("   • variant_classification.png – mutation types")
+print("   • results/tmb_analysis/ – detailed TMB results")
 ```
 
-## Acceso a Datos
+## Data Access
 
-### Explorar estructura de datos
+### Basic Exploration
+
 ```python
-# Información básica
-print(f"Dimensiones: {py_mut.data.shape}")
-print(f"Columnas: {list(py_mut.data.columns)}")
-print(f"Muestras: {py_mut.samples}")
+# Basic info
+print(f"Shape: {py_mut.data.shape}")
+print(f"Columns: {list(py_mut.data.columns)}")
+print(f"Samples: {py_mut.samples}")
 
-# Primeras filas
+# Preview rows
 print(py_mut.data.head())
 
-# Información de columnas
+# Column info
 print(py_mut.data.info())
 ```
 
-### Filtrar datos
-```python
-# Filtrar por gen específico
-gene_data = py_mut.data[py_mut.data['Hugo_Symbol'] == 'TP53']
+### Filtering
 
-# Filtrar por tipo de mutación
+```python
+# By gene
+tp53_data = py_mut.data[py_mut.data['Hugo_Symbol'] == 'TP53']
+
+# By mutation type
 missense_data = py_mut.data[
     py_mut.data['Variant_Classification'] == 'Missense_Mutation'
 ]
 
-# Filtrar por cromosoma
+# By chromosome
 chr1_data = py_mut.data[py_mut.data['CHROM'] == 'chr1']
 ```
 
-### Estadísticas descriptivas
+### Descriptive Statistics
+
 ```python
-# Conteos por tipo de mutación
+# Count by mutation type
 mutation_counts = py_mut.data['Variant_Classification'].value_counts()
 print(mutation_counts)
 
-# Genes únicos
+# Unique genes
 unique_genes = py_mut.data['Hugo_Symbol'].nunique()
-print(f"Genes únicos: {unique_genes}")
+print(f"Unique genes: {unique_genes}")
 
-# Mutaciones por muestra
+# Mutations per sample
 mutations_per_sample = {}
 for sample in py_mut.samples:
-    # Contar genotipos que no son REF|REF
-    sample_mutations = 0
-    for idx, row in py_mut.data.iterrows():
+    count = 0
+    for _, row in py_mut.data.iterrows():
         genotype = row[sample]
-        ref_allele = row['REF']
-        if genotype != f"{ref_allele}|{ref_allele}":
-            sample_mutations += 1
-    mutations_per_sample[sample] = sample_mutations
+        ref = row['REF']
+        if genotype != f"{ref}|{ref}":  # not REF|REF
+            count += 1
+    mutations_per_sample[sample] = count
 
-print("Mutaciones por muestra:")
-for sample, count in sorted(mutations_per_sample.items(), 
-                           key=lambda x: x[1], reverse=True)[:10]:
+print("Mutations per sample:")
+for sample, count in sorted(mutations_per_sample.items(),
+                            key=lambda x: x[1], reverse=True)[:10]:
     print(f"  {sample}: {count}")
 ```
 
-## Integración con Otros Análisis
+## Integration with Other Analyses
 
-### Exportar datos para análisis externos
+### Export Data for External Tools
+
 ```python
-# Exportar datos completos
-py_mut.data.to_csv("mutations_export.tsv", sep='\t', index=False)
+# Full export
+py_mut.data.to_csv("mutations_export.tsv", sep="\t", index=False)
 
-# Exportar solo mutaciones de una muestra específica
-sample_name = py_mut.samples[0]
-sample_mutations = py_mut.data[py_mut.data[sample_name] != f"{py_mut.data['REF']}|{py_mut.data['REF']}"]
-sample_mutations.to_csv(f"{sample_name}_mutations.tsv", sep='\t', index=False)
+# Export mutations for a single sample
+sample = py_mut.samples[0]
+sample_mut = py_mut.data[
+    py_mut.data[sample] != f"{py_mut.data['REF']}|{py_mut.data['REF']}"
+]
+sample_mut.to_csv(f"{sample}_mutations.tsv", sep="\t", index=False)
 
-# Exportar metadatos
+# Export metadata
 metadata_info = {
-    'source_format': py_mut.metadata.source_format,
-    'file_path': py_mut.metadata.file_path,
-    'loaded_at': str(py_mut.metadata.loaded_at),
-    'total_samples': len(py_mut.samples),
-    'total_mutations': len(py_mut.data)
+    "source_format": py_mut.metadata.source_format,
+    "file_path": py_mut.metadata.file_path,
+    "loaded_at": str(py_mut.metadata.loaded_at),
+    "total_samples": len(py_mut.samples),
+    "total_mutations": len(py_mut.data)
 }
 
 import json
@@ -381,87 +402,84 @@ with open("metadata.json", "w") as f:
     json.dump(metadata_info, f, indent=2)
 ```
 
-### Combinar con pandas para análisis avanzados
+### Combine with `pandas` for Advanced Analyses
+
 ```python
 import pandas as pd
 import numpy as np
 
-# Análisis de co-ocurrencia de mutaciones
-def analyze_gene_cooccurrence(py_mut, genes_of_interest):
-    """Analizar co-ocurrencia de mutaciones en genes específicos"""
-    results = []
-    
+def analyse_gene_cooccurrence(py_mut, genes):
+    """Analyse mutation co-occurrence in specific genes."""
+    rows = []
     for sample in py_mut.samples:
-        sample_genes = []
-        for gene in genes_of_interest:
-            gene_data = py_mut.data[py_mut.data['Hugo_Symbol'] == gene]
-            if not gene_data.empty:
-                # Verificar si hay mutación en esta muestra
-                has_mutation = False
-                for idx, row in gene_data.iterrows():
-                    genotype = row[sample]
-                    ref_allele = row['REF']
-                    if genotype != f"{ref_allele}|{ref_allele}":
-                        has_mutation = True
-                        break
-                if has_mutation:
-                    sample_genes.append(gene)
-        
-        results.append({
-            'Sample': sample,
-            'Mutated_Genes': sample_genes,
-            'Gene_Count': len(sample_genes)
+        mutated = []
+        for gene in genes:
+            gene_rows = py_mut.data[py_mut.data['Hugo_Symbol'] == gene]
+            if gene_rows.empty:
+                continue
+            for _, row in gene_rows.iterrows():
+                genotype = row[sample]
+                ref = row['REF']
+                if genotype != f"{ref}|{ref}":
+                    mutated.append(gene)
+                    break
+        rows.append({
+            "Sample": sample,
+            "Mutated_Genes": mutated,
+            "Gene_Count": len(mutated)
         })
-    
-    return pd.DataFrame(results)
+    return pd.DataFrame(rows)
 
-# Ejemplo de uso
-oncogenes = ['TP53', 'KRAS', 'PIK3CA', 'APC', 'EGFR']
-cooccurrence_df = analyze_gene_cooccurrence(py_mut, oncogenes)
+# Example usage
+oncogenes = ["TP53", "KRAS", "PIK3CA", "APC", "EGFR"]
+cooccurrence_df = analyse_gene_cooccurrence(py_mut, oncogenes)
 print(cooccurrence_df.head())
 ```
 
-## Mejores Prácticas
+## Best Practices
 
-### 1. Configuración inicial recomendada
+### 1. Recommended Initial Setup
+
 ```python
 from pyMut.io import read_maf
 from pyMut import PyMutation
 
-# Siempre configurar alta calidad al inicio
+# Always enable high-quality plotting early
 PyMutation.configure_high_quality_plots()
 
-# Cargar datos
+# Load data
 py_mut = read_maf("data.maf")
 ```
 
-### 2. Verificación de datos
+### 2. Data Validation
+
 ```python
-# Verificar carga exitosa
-assert len(py_mut.samples) > 0, "No se encontraron muestras"
-assert len(py_mut.data) > 0, "No se encontraron mutaciones"
-assert 'Hugo_Symbol' in py_mut.data.columns, "Falta columna de genes"
+assert len(py_mut.samples) > 0, "No samples found"
+assert len(py_mut.data) > 0, "No mutations found"
+assert "Hugo_Symbol" in py_mut.data.columns, "Missing gene column"
 ```
 
-### 3. Análisis sistemático
+### 3. Systematic Workflow
+
 ```python
-# 1. Resumen visual
+# 1. Visual overview
 summary_fig = py_mut.summary_plot()
 
-# 2. Análisis TMB
+# 2. TMB analysis
 tmb_results = py_mut.calculate_tmb_analysis()
 
-# 3. Visualizaciones específicas según necesidad
-# 4. Análisis personalizado con los datos
+# 3. Specific plots as needed
+# 4. Custom data analysis
 ```
 
-### 4. Gestión de archivos
+### 4. File Management
+
 ```python
 import os
 
-# Crear directorio de resultados
+# Create results directory
 os.makedirs("results", exist_ok=True)
 
-# Guardar todas las figuras en el directorio
+# Save all figures centrally
 py_mut.save_figure(summary_fig, "results/summary.png")
 ```

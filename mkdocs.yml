@@ -6,6 +6,7 @@ docs_dir: docs
 # Repository
 repo_name: Luisruimor/pyMut
 repo_url: https://github.com/Luisruimor/pyMut
+website_url: https://luisruimor.github.io/pyMut/
 
 # Configuration
 theme:
