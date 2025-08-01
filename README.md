@@ -4,7 +4,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![PyPI version](https://badge.fury.io/py/pymut-bio.svg)](https://badge.fury.io/py/pymut-bio)
 
-A Python library for gene mutation analysis and visualisation
+A Python library designed for the preprocessing, analysis and visualization of somatic genetic variants in standard formats such as VCF and MAF.
 
 ## 🚀 Quick Start
 
@@ -45,6 +45,14 @@ The conda environment includes essential bioinformatics tools:
 - **tabix**: Generic indexer for TAB-delimited genome position files
 
 These tools enable advanced genomic data processing capabilities that are not available with pip-only installation.
+
+## 📚 Documentation
+
+- **[Complete Documentation](https://luisruimor.github.io/pyMut/)** - Comprehensive guides and API reference
+- **[Installation Guide](https://luisruimor.github.io/pyMut/installation/)** - Detailed installation instructions
+- **[API Reference](https://luisruimor.github.io/pyMut/api/Core/pymutation_class/)** - Complete API documentation
+- **[Examples](https://luisruimor.github.io/pyMut/examples/data/input_read_maf/#example-loading-tcga-laml-maf-file)** - Real-world usage examples
+
 
 ## 📋 Requirements
 
