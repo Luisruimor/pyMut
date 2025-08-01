@@ -95,6 +95,8 @@ nav:
           - Mutational Signatures:
               - Matriz Trinucleotide: api/Analysis Methods/Mutational Signatures/trinucleotideMatrix.md
               - Estimated Signatures: api/Analysis Methods/Mutational Signatures/estimateSignatures.md
+              - Extract Signatures: api/Analysis Methods/Mutational Signatures/extract_signatures.md
+              - Compare Signatures: api/Analysis Methods/Mutational Signatures/compare_signatures.md
       - Annotation:
           - Known Cancer Gene Annotation: api/Analysis Methods/known_cancer_annotation.md
           - VEP Annotation: api/Analysis Methods/vep_annotation.md
