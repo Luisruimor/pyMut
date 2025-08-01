@@ -73,7 +73,6 @@ markdown_extensions:
 nav:
   - Home: index.md
   - Installation: installation.md
-  - Quickstart: quickstart.md
   - API Reference:
       - Core:
           - PyMutation Class: api/Core/pymutation_class.md
@@ -99,7 +98,9 @@ nav:
               - Compare Signatures: api/Analysis Methods/Mutational Signatures/compare_signatures.md
       - Annotation:
           - Known Cancer Gene Annotation: api/Analysis Methods/known_cancer_annotation.md
-          - VEP Annotation: api/Analysis Methods/vep_annotation.md
+          - VEP Annotation:
+              - MAF annotation: api/Analysis Methods/vep_annotation_maf.md
+              - VCF annotation: api/Analysis Methods/vep_annotation_vcf.md
           - PFAM Annotation: api/Analysis Methods/pfam_annotation.md
           - Actionable Mutation Annotation: api/Analysis Methods/actionable_mutation_annotation.md
       - Visualization API:
