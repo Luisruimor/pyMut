@@ -6,6 +6,7 @@ docs_dir: docs
 # Repository
 repo_name: Luisruimor/pyMut
 repo_url: https://github.com/Luisruimor/pyMut
+website_url: https://luisruimor.github.io/pyMut/
 
 # Configuration
 theme:
@@ -46,7 +47,7 @@ plugins:
       jupyter_dirs:
         - 'docs/examples'
       # Execute all cells in each build
-      execute: true
+      execute: false
       # Fail the build if there are exceptions
       allow_errors: false
       # Define the kernel to use
@@ -72,7 +73,6 @@ markdown_extensions:
 nav:
   - Home: index.md
   - Installation: installation.md
-  - Quickstart: quickstart.md
   - API Reference:
       - Core:
           - PyMutation Class: api/Core/pymutation_class.md
@@ -81,6 +81,8 @@ nav:
           - Read VCF Files: api/Data Loading/read_vcf.md
       - Data Export:
           - Export to MAF: api/Data Export/to_maf.md
+          - Export to VCF: api/Data Export/to_vcf.md
+      - Data Combination: api/Data Combination/combine_data.md
       - Filters:
           - Genomic Range Filters: api/Filters/genomic_range.md
           - Quality Filter (PASS): api/Filters/pass_filter.md
@@ -88,32 +90,44 @@ nav:
           - Tissue Expression Filter: api/Filters/tissue_expression_filter.md
       - Analysis Methods:
           - TMB Analysis: api/Analysis Methods/tmb_analysis.md
-          - Pfam Domain Annotation: api/Analysis Methods/pfam_annotation.md
-          - Known Cancer Gene Annotation: api/Analysis Methods/known_cancer_annotation.md
+          - Pfam Domains Annotation: api/Analysis Methods/pfam_domains.md
+          - Mutational Signatures:
+              - Matriz Trinucleotide: api/Analysis Methods/Mutational Signatures/trinucleotideMatrix.md
+              - Estimated Signatures: api/Analysis Methods/Mutational Signatures/estimateSignatures.md
+              - Extract Signatures: api/Analysis Methods/Mutational Signatures/extract_signatures.md
+              - Compare Signatures: api/Analysis Methods/Mutational Signatures/compare_signatures.md
       - Annotation:
-          - COSMIC Annotation: api/Analysis Methods/cosmic_annotation.md
-          - VEP Annotation: api/Analysis Methods/vep_annotation.md
+          - Known Cancer Gene Annotation: api/Analysis Methods/known_cancer_annotation.md
+          - VEP Annotation:
+              - MAF annotation: api/Analysis Methods/VEP annotate/vep_annotation_maf.md
+              - VCF annotation: api/Analysis Methods/VEP annotate/vep_annotation_vcf.md
+          - PFAM Annotation: api/Analysis Methods/pfam_annotation.md
+          - Actionable Mutation Annotation: api/Analysis Methods/actionable_mutation_annotation.md
       - Visualization API:
           - Summary Plot: api/Visualization/summary_plot.md
-      - Other Utilities:
-          - VCF Subset Creation: api/Other Utilities/create_subset.md
-          - VEP Annotation Merging: api/Other Utilities/merge_vep_annotation.md
+
   - Example Usage:
+      - Input Data:
+          - VCF: examples/data/input_read_vcf.ipynb
+          - MAF: examples/data/input_read_maf.ipynb
+      - Output Data:
+          - VCF: examples/data/vcf_to_maf_and_vcf.ipynb
+          - MAF: examples/data/maf_to_vcf_and_maf.ipynb
+      - Combination: examples/data/combination_2maf.ipynb
       - Filtering:
           - Data Filtering Examples: examples/filtering/example_filtering.ipynb
           - Tissue Expression Filter: examples/filtering/tissue_expression.ipynb
-      - Visualization:
-          - Variant Classification Plot: examples/visualization/maf_to_variant_classification.ipynb
-      - Analysis:
-          - TMB Analysis Demo: examples/analysis/mutation_burden_demo.ipynb
-          - Pfam Domain Annotation Demo: examples/analysis/pfam_annotation_demo.ipynb
-          - COSMIC Annotation Test: examples/analysis/test_cosmic_annotation.ipynb
-          - Known Cancer Annotation Test: examples/analysis/test_knowncancer_simple.ipynb
-      - Data Conversion:
-          - VCF to PyMutation Conversion: examples/data_conversion/vcf_to_PyMutation.ipynb
-          - VCF Subset Extraction: examples/data_conversion/vcf_subset_extraction.ipynb
       - Annotation:
-          - VEP Annotation Merging: examples/annotation/merge_annotation.ipynb
-
+          - VEP Annotation: examples/annotation/vep_annotation.ipynb
+          - Known Cancer: examples/annotation/cosmic_cancer_annotation.ipynb
+          - Actionable Mutation: examples/annotation/actionable_mutation_annotation.ipynb
+      - Analysis:
+          - TMB Analysis: examples/analysis/mutation_burden.ipynb
+          - Mutational Signatures: examples/analysis/mutational_signatures.ipynb
+          - PFAM Domains: examples/analysis/domains_pfam.ipynb
+      - Visualization (beta):
+          - Variant Classification Plot: examples/visualization/maf_to_variant_classification.ipynb
+          - Oncoplot Example: examples/visualization/oncoplot_example.ipynb
+          - Summary Plot Example: examples/visualization/summary_plot_example.ipynb
 # Copyright
 copyright: Copyright &copy; 2025 pyMut Development Team
