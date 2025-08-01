@@ -99,8 +99,8 @@ nav:
       - Annotation:
           - Known Cancer Gene Annotation: api/Analysis Methods/known_cancer_annotation.md
           - VEP Annotation:
-              - MAF annotation: api/Analysis Methods/vep_annotation_maf.md
-              - VCF annotation: api/Analysis Methods/vep_annotation_vcf.md
+              - MAF annotation: api/Analysis Methods/VEP annotate/vep_annotation_maf.md
+              - VCF annotation: api/Analysis Methods/VEP annotate/vep_annotation_vcf.md
           - PFAM Annotation: api/Analysis Methods/pfam_annotation.md
           - Actionable Mutation Annotation: api/Analysis Methods/actionable_mutation_annotation.md
       - Visualization API:
